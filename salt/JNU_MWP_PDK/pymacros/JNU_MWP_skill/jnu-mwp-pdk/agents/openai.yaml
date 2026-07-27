@@ -1,0 +1,7 @@
+interface:
+  display_name: "JNU_MWP_PDK"
+  short_description: "Develop and package the JNU KLayout photonic PDK."
+  default_prompt: "Use $jnu-mwp-pdk to update, verify, or package the JNU_MWP_PDK KLayout PDK."
+policy:
+  allow_implicit_invocation: true
+

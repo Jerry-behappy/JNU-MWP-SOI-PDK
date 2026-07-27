@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="utf-8"?>
+<klayout-macro>
+ <description>JNU_MWP_PDK Menu</description>
+ <version/>
+ <category>pymacros</category>
+ <prolog/>
+ <epilog/>
+ <doc/>
+ <autorun>true</autorun>
+ <autorun-early>false</autorun-early>
+ <shortcut/>
+ <show-in-menu>false</show-in-menu>
+ <group-name/>
+ <menu-path/>
+ <interpreter>python</interpreter>
+ <dsl-interpreter-name/>
+ <text># -*- coding: utf-8 -*-
+# 创建者: Junyi Zhang
+# 时间: 2026-07
+
+# JNU_MWP_PDK GUI 菜单初始化宏。
+# 该宏在 KLayout 顶部菜单创建 JNU_MWP_PDK 入口，并使用持久化的
+# pya.Action 注册功能项，确保 autorun 宏结束后回调仍然有效：
+#   Waveguides -> Path to Waveguide
+#   Waveguides -> Waveguide to Path
+#   Waveguides -> SBend connect
+#   Layout     -> Make Pins for Cell
+#   Layout     -> Layer Exclude
+#   Layout     -> Numerical text array
+#   Layout     -> Snap components
+#   DRC        -> JNU_MWP_DRC（临时可编辑规则与图层定义）
+#   Reload JNU PDK
+#
+# 注意事项：
+# - .lym autorun 宏执行完毕后，其局部命名空间会被 KLayout 销毁。
+#   因此必须把 pya.Action 对象挂到 main_window 属性上，防止回调失效。
+# - 回调中使用内联 import，避免依赖外部函数闭包。
+
+import sys
+import os
+
+import pya
+
+
+# -----------------------------------------------------------------------------
+# 将 pymacros 目录加入 sys.path（.lym 宏环境可能不自动包含）
+# -----------------------------------------------------------------------------
+_PYMACROS_DIR = os.path.dirname(os.path.abspath(__file__))
+if _PYMACROS_DIR not in sys.path:
+    sys.path.insert(0, _PYMACROS_DIR)
+_PDK_ROOT = os.path.dirname(_PYMACROS_DIR)
+
+# -----------------------------------------------------------------------------
+# 工具函数：把模块导入代码写成字符串，在回调中通过 exec 执行内联 import。
+# 因为回调函数对象可能被 GC，改用这种"后期绑定"方式确保每次点击菜单时
+# 都重新执行完整的 import → 调用流程。
+# -----------------------------------------------------------------------------
+
+_PATH_TO_WAVEGUIDE_CODE = r"""
+import sys
+_PD = r'%(pymacros_dir)s'
+if _PD not in sys.path:
+    sys.path.insert(0, _PD)
+from JNU_MWP_tools.actions.path_to_waveguide import path_to_waveguide as _fn
+_fn()
+""" % {"pymacros_dir": _PYMACROS_DIR.replace("\\", "\\\\")}
+
+_WAVEGUIDE_TO_PATH_CODE = r"""
+import sys
+_PD = r'%(pymacros_dir)s'
+if _PD not in sys.path:
+    sys.path.insert(0, _PD)
+from JNU_MWP_tools.actions.waveguide_to_path import waveguide_to_path as _fn
+_fn()
+""" % {"pymacros_dir": _PYMACROS_DIR.replace("\\", "\\\\")}
+
+_SBEND_CONNECT_CODE = r"""
+import sys
+_PD = r'%(pymacros_dir)s'
+if _PD not in sys.path:
+    sys.path.insert(0, _PD)
+from JNU_MWP_tools.actions.sbend_connect import sbend_connect as _fn
+_fn()
+""" % {"pymacros_dir": _PYMACROS_DIR.replace("\\", "\\\\")}
+
+_MAKE_PINS_CODE = r"""
+import sys
+_PD = r'%(pymacros_dir)s'
+if _PD not in sys.path:
+    sys.path.insert(0, _PD)
+from JNU_MWP_tools.actions.make_pins_for_cell import make_pins_for_cell as _fn
+_fn()
+""" % {"pymacros_dir": _PYMACROS_DIR.replace("\\", "\\\\")}
+
+_LAYER_EXCLUDE_CODE = r"""
+import sys
+_PD = r'%(pymacros_dir)s'
+if _PD not in sys.path:
+    sys.path.insert(0, _PD)
+from JNU_MWP_tools.actions.layer_exclude import layer_exclude as _fn
+_fn()
+""" % {"pymacros_dir": _PYMACROS_DIR.replace("\\", "\\\\")}
+
+_NUMERICAL_TEXT_ARRAY_CODE = r"""
+import sys
+_PD = r'%(pymacros_dir)s'
+if _PD not in sys.path:
+    sys.path.insert(0, _PD)
+from JNU_MWP_tools.actions.numerical_text_array import numerical_text_array as _fn
+_fn()
+""" % {"pymacros_dir": _PYMACROS_DIR.replace("\\", "\\\\")}
+
+_SNAP_COMPONENTS_CODE = r"""
+import sys
+_PD = r'%(pymacros_dir)s'
+if _PD not in sys.path:
+    sys.path.insert(0, _PD)
+from JNU_MWP_tools.actions.snap_components import snap_components as _fn
+_fn()
+""" % {"pymacros_dir": _PYMACROS_DIR.replace("\\", "\\\\")}
+
+_RELOAD_PDK_CODE = r"""
+import importlib
+import sys
+_PD = r'%(pymacros_dir)s'
+if _PD not in sys.path:
+    sys.path.insert(0, _PD)
+_module = importlib.import_module("JNU_MWP_tools.actions.reload_pdk")
+_module = importlib.reload(_module)
+_module.schedule_reload_jnu_pdk()
+""" % {"pymacros_dir": _PYMACROS_DIR.replace("\\", "\\\\")}
+
+_JNU_DRC_CODE = r"""
+import sys
+_PD = r'%(pymacros_dir)s'
+if _PD not in sys.path:
+    sys.path.insert(0, _PD)
+from JNU_MWP_tools.actions.drc import run_drc as _fn
+_fn()
+""" % {"pymacros_dir": _PYMACROS_DIR.replace("\\", "\\\\")}
+
+
+def _make_action(title, code_string):
+    """创建 pya.Action 并绑定回调。
+
+    回调使用 exec(code_string) 方式，避免闭包/函数对象在 autorun 宏结束后被 GC。
+    """
+    action = pya.Action()
+    action.title = title
+    # 使用 lambda 捕获 code_string，每次触发时 exec 执行最新代码
+    action.on_triggered(lambda _checked=False, c=code_string: exec(c))
+    return action
+
+
+def _action_property(action, name, default=None):
+    """兼容读取 pya.Action 属性/方法形式。"""
+    try:
+        value = getattr(action, name)
+        return value() if callable(value) else value
+    except Exception:
+        return default
+
+
+def _set_action_shortcut(action, shortcut):
+    """把旧 Action 的当前快捷键复制到重建后的 Action。"""
+    try:
+        action.shortcut = str(shortcut or "")
+        return True
+    except Exception:
+        return False
+
+
+def _decode_config_shortcut(value):
+    """把 key-bindings 配置中的引号字符串还原为 Action shortcut。"""
+    text = str(value or "").strip()
+    if len(text) >= 2 and text[0] == text[-1] and text[0] in ("'", '"'):
+        return text[1:-1]
+    return text
+
+
+def _configured_shortcuts(app, action_specs):
+    """按稳定菜单路径读取 KLayout 已保存的快捷键，不改写用户配置。"""
+    path_to_id = {
+        parent + "." + item_id: item_id
+        for parent, item_id, _title, _code in action_specs
+    }
+    shortcuts = {}
+    try:
+        config = str(app.get_config("key-bindings") or "")
+    except Exception:
+        return shortcuts
+    for entry in config.split(";"):
+        if ":" not in entry:
+            continue
+        menu_path, encoded = entry.split(":", 1)
+        item_id = path_to_id.get(menu_path.strip())
+        if item_id is not None:
+            shortcuts[item_id] = _decode_config_shortcut(encoded)
+    return shortcuts
+
+
+def register_jnu_menu_items():
+    """创建 JNU_MWP_PDK 顶层菜单，并注册各功能项。"""
+    app = pya.Application.instance()
+    main_window = app.main_window()
+    if main_window is None:
+        return
+
+    menu = main_window.menu()
+
+    # ---- 顶层菜单 ----
+    root_menu = "jnu_mwp_pdk_menu"
+    if not menu.is_menu(root_menu):
+        menu.insert_menu("help_menu", root_menu, "JNU_MWP_PDK")
+
+    # ---- Waveguides 子菜单 ----
+    waveguide_parent = root_menu + ".waveguides"
+    if not menu.is_menu(waveguide_parent):
+        menu.insert_menu(root_menu + ".begin", "waveguides", "Waveguides")
+
+    # ---- Layout 子菜单 ----
+    layout_parent = root_menu + ".layout"
+    if not menu.is_menu(layout_parent):
+        menu.insert_menu(root_menu + ".waveguides+", "layout", "Layout")
+
+    # ---- DRC 子菜单（保留给 JNU_MWP_DRC） ----
+    drc_parent = root_menu + ".drc"
+    if not menu.is_menu(drc_parent):
+        menu.insert_menu(root_menu + ".layout+", "drc", "DRC")
+
+    action_specs = (
+        (waveguide_parent, "jnu_action_path_to_waveguide", "Path to Waveguide", _PATH_TO_WAVEGUIDE_CODE),
+        (waveguide_parent, "jnu_action_waveguide_to_path", "Waveguide to Path", _WAVEGUIDE_TO_PATH_CODE),
+        (waveguide_parent, "jnu_action_sbend_connect_between_two_cells", "SBend connect", _SBEND_CONNECT_CODE),
+        (layout_parent, "jnu_action_make_pins_for_cell", "Make Pins for Cell", _MAKE_PINS_CODE),
+        (layout_parent, "jnu_action_layer_exclude", "Layer Exclude", _LAYER_EXCLUDE_CODE),
+        (layout_parent, "jnu_action_numerical_text_array", "Numerical text array", _NUMERICAL_TEXT_ARRAY_CODE),
+        (layout_parent, "jnu_action_snap_components", "Snap components", _SNAP_COMPONENTS_CODE),
+        (drc_parent, "jnu_action_jnu_mwp_drc", "JNU_MWP_DRC", _JNU_DRC_CODE),
+        (root_menu, "jnu_action_reload_jnu_pdk", "Reload JNU PDK", _RELOAD_PDK_CODE),
+    )
+
+    # 先按稳定 action ID 保存当前会话中的快捷键。第一次从旧版菜单升级时，
+    # 旧代码尚无 ID 映射，因此再按唯一标题恢复一次。
+    old_actions = list(getattr(main_window, "_jnu_menu_actions", []))
+    old_actions_by_id = dict(getattr(main_window, "_jnu_menu_actions_by_id", {}))
+    title_to_id = {title: item_id for _parent, item_id, title, _code in action_specs}
+    shortcut_by_id = _configured_shortcuts(app, action_specs)
+    for item_id, action in old_actions_by_id.items():
+        shortcut = _action_property(action, "shortcut", "")
+        if shortcut or item_id not in shortcut_by_id:
+            shortcut_by_id[item_id] = shortcut
+    for action in old_actions:
+        title = str(_action_property(action, "title", ""))
+        item_id = title_to_id.get(title)
+        shortcut = _action_property(action, "shortcut", "")
+        if item_id and (shortcut or item_id not in shortcut_by_id):
+            shortcut_by_id[item_id] = shortcut
+
+    # 重载菜单宏时先移除旧入口和旧 Action 引用，保证菜单注册幂等。
+    item_paths = [parent + "." + item_id for parent, item_id, _title, _code in action_specs]
+    item_paths.append(layout_parent + ".jnu_action_snap_selected_components")
+    for item_path in item_paths:
+        try:
+            menu.delete_item(item_path)
+        except Exception:
+            pass
+    actions = []
+    actions_by_id = {}
+    main_window._jnu_menu_actions = actions
+    main_window._jnu_menu_actions_by_id = actions_by_id
+
+    # ===== 注册功能项 =====
+    for parent, item_id, title, code_string in action_specs:
+        action = _make_action(title, code_string)
+        if item_id in shortcut_by_id:
+            _set_action_shortcut(action, shortcut_by_id[item_id])
+        position = parent + (".begin" if item_id == "jnu_action_reload_jnu_pdk" else ".end")
+        menu.insert_item(position, item_id, action)
+        actions.append(action)
+        actions_by_id[item_id] = action
+
+
+
+register_jnu_menu_items()
+</text>
+</klayout-macro>

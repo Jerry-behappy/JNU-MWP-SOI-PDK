@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<klayout-macro>
+ <description>JNU_MWP_DRC</description>
+ <version/>
+ <category>drc</category>
+ <prolog/>
+ <epilog/>
+ <doc/>
+ <autorun>false</autorun>
+ <autorun-early>false</autorun-early>
+ <priority>0</priority>
+ <shortcut/>
+ <show-in-menu>false</show-in-menu>
+ <group-name>drc_scripts</group-name>
+ <menu-path>jnu_mwp_pdk_menu.drc.begin</menu-path>
+ <interpreter>dsl</interpreter>
+ <dsl-interpreter-name>drc-dsl-xml</dsl-interpreter-name>
+ <text># 创建者: Junyi Zhang
+# 时间: 2026-06
+
+# 暨南大学 微波光子实验室 DRC 检查脚本
+# 作者：ZJY，2026
+
+# 生成DRC报告标题
+report("JNU MWP 设计规则检查")
+
+#################
+# 图层定义
+#################
+LayerSi     = input(1,0)      # 硅波导层
+LayerSi_rib = input(2,0)      # 脊型硅层
+DevRec      = input(68,0)     # 器件区域层
+PinRec      = input(1,10)     # 端口/引脚层
+LayerFP     = input(99)       # 版图边界/允许设计区域
+LayerM1     = input(11,0)     # 金属1层（加热电极）
+LayerM2     = input(12,0)     # 金属2层（布线）
+LayerMLOpen = input(13,0)     # 金属焊盘开口层
+LayerDeepTrench = input(40,0) # 深槽隔离层
+
+#################
+# 非物理规则检查（功能检查）
+#################
+
+# 检查器件是否重叠（已注释）
+#overlaps = DevRec.merged(2)
+#output(overlaps, "器件重叠","器件不能相互重叠")
+
+# 检查所有波导是否在边界范围内
+#LayerSi.outside(LayerFP).output("边界错误", "器件超出版图边界范围")
+
+#################
+# 物理规则检查（核心尺寸检查）
+#################
+
+# 容差设置：2nm，用于避免曲线波导误报
+tol = 2e-3
+
+#################
+# 硅波导（Si）规则
+#################
+# 最小宽度 60nm，最小间距 40nm
+LayerSi.width(0.06-tol, angle_limit(80)).output("硅宽度违规", "硅最小宽度违规，最小要求 60 nm")
+LayerSi.space(0.04-tol, angle_limit(80)).output("硅间距违规", "硅最小间距违规，最小要求 40 nm")
+
+#################
+# 金属层规则
+#################
+
+# 金属1层（加热电极）：最小宽度1μm，间距5μm
+LayerM1.width(1.0-tol, angle_limit(70)).output("M1宽度违规", "M1最小宽度违规，最小要求 1 µm")
+LayerM1.space(6.0-tol).output("M1间距违规", "M1最小间距违规，最小要求 5 µm")
+
+# 金属2层（布线）：最小宽度5μm，间距8μm
+LayerM2.width(10.0-tol, angle_limit(70)).output("M2宽度违规", "M2最小宽度违规，最小要求 10 µm")
+LayerM2.space(6.0-tol).output("M2间距违规", "M2最小间距违规，最小要求 6 µm")
+
+#################
+# 层间最小重叠规则
+#################
+LayerM2.overlap(LayerM1,3.0-tol).output("M2与M1重叠违规", "M2与M1最小重叠违规，最小要求 3 µm")
+#LayerM2.overlap(LayerVC, 5.0-tol).output("M2与VC重叠违规", "金属2与VC最小重叠违规，最小要求 5 µm")
+#LayerN.overlap(LayerNpp, 3.0-tol).output("N与NPP重叠违规", "N与NPP最小重叠违规，最小要求 3 µm")
+#LayerVC.overlap(LayerNpp, 5.0-tol).output("VC与NPP重叠违规", "VC与NPP最小重叠违规，最小要求 5 µm")
+
+#################
+# 最小包裹规则
+#################
+#LayerM2.enclosing(LayerVC, 1.0-tol).output("M2包裹VC违规", "M2包裹VC最小距离违规，最小要求 1 µm")
+#LayerSi_rib.enclosing(LayerVC, 1.0-tol).output("脊型硅包裹VC违规", "脊型硅包裹VC最小距离违规，最小要求 1 µm")
+
+#################
+# 波导检查：断开、不匹配
+#################
+PinRec.not_inside(LayerSi).output( "波导断开警告" , "可能存在波导不匹配或断开：端口必须包裹硅材料" )
+
+# 深槽与金属1的最小间距：12μm
+LayerDeepTrench.separation(LayerM1, 12.0-tol).output("深槽与金属间距违规", "深槽与金属最小间距违规，最小要求 12 µm")
+
+# 深槽与金属2的最小间距：12μm
+LayerDeepTrench.separation(LayerM2, 20.0-tol).output("深槽与金属间距违规", "深槽与金属最小间距违规，最小要求 12 µm")
+</text>
+</klayout-macro>

@@ -1,0 +1,11 @@
+gdstk-1.0.0.dist-info/INSTALLER,sha256=zuuue4knoyJ-UwPPXg8fezS7VCrXJQrAP7zeNuwvFQg,4
+gdstk-1.0.0.dist-info/METADATA,sha256=4i5wCUwbaJWPEi5OMjmnwLcLqw5Xqz9tO2gcLWqh4u4,8761
+gdstk-1.0.0.dist-info/RECORD,,
+gdstk-1.0.0.dist-info/REQUESTED,sha256=47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU,0
+gdstk-1.0.0.dist-info/WHEEL,sha256=chqeLhPBtPdrOoreR34YMcofSk3yWDQhkrsDJ2n48LU,106
+gdstk-1.0.0.dist-info/licenses/LICENSE,sha256=vrjkLp1rQoTgMwTQWoGgdVIAqWX8jQpeCuoehM-AXW4,1361
+gdstk/__init__.py,sha256=obzv4q3OB-B1Tt4VyFzzj4A5Pu2upCFbQeeXrLQWEyw,56
+gdstk/__pycache__/__init__.cpython-312.pyc,,
+gdstk/_gdstk.cp312-win_amd64.pyd,sha256=p1aKzFhMKcFJJKh-WTF_L0xRWsK1AuhsMqUqzr2tPq0,1141248
+gdstk/_gdstk.pyi,sha256=_0RbaomnwbB1FB0rln21hBfbPddcMpJM7cL8oGQM5do,38072
+gdstk/py.typed,sha256=47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU,0

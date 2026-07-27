@@ -1,0 +1,10 @@
+# JNU 白盒固定器件 GDS 不推送到远端仓库。
+salt/JNU_MWP_PDK/pymacros/JNU_MWP_gds/
+pymacros/JNU_MWP_gds/
+
+# KLayout 和 Python 运行时生成文件不纳入版本控制。
+klayoutrc*
+__pycache__/
+*.pyc
+*.pyo
+*.log

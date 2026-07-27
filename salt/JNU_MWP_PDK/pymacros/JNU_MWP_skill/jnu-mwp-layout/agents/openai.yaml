@@ -1,0 +1,4 @@
+interface:
+  display_name: "JNU MWP Layout"
+  short_description: "Design, edit, and verify JNU photonic layouts"
+  default_prompt: "Use $jnu-mwp-layout to design, edit, and verify this JNU photonic layout safely."
