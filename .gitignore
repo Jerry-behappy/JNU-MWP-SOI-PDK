@@ -2,6 +2,9 @@
 salt/JNU_MWP_PDK/pymacros/JNU_MWP_gds/
 pymacros/JNU_MWP_gds/
 
+# 本机维护的 KLayout 版图操作 skill 不纳入 PDK 源码仓库。
+salt/JNU_MWP_PDK/pymacros/JNU_MWP_skill/klayout-sip-skill/
+
 # KLayout 和 Python 运行时生成文件不纳入版本控制。
 klayoutrc*
 __pycache__/
