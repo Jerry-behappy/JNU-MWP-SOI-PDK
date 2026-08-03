@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-07
+# 时间: 2026-08
 
 """回形针螺旋波导 PCell。"""
 
@@ -40,7 +40,7 @@ if PYMACROS_DIR not in sys.path:
 from JNU_MWP_tools.core.bend_sampling import AUTO_SAMPLE_COUNT, effective_points_per_90, points_per_90
 from JNU_MWP_tools.core.bend_curvature import bezier_Rmax_Rmin, euler_Reff
 from JNU_MWP_tools.core.devrec import insert_device_devrec
-from JNU_MWP_tools.core.path_geometry import insert_centerline_polygons
+from JNU_MWP_tools.core.path_geometry import centerline_path_region
 
 # 从 bend_90deg 导入公共弯曲点生成函数（局部坐标系）
 from .bend_90deg import (
@@ -519,24 +519,41 @@ class PaperclipSpiral(pya.PCellDeclarationHelper):
         pin_layer = self._layout_layer(self.pin_layer, pya.LayerInfo(1, 10))
         text_layer = self.layout.layer(TEXT_LAYER)
 
-        # 为 Si 完全覆盖 PinRec（20 nm 长，中心在端口），在端口外侧增加 10 nm 水平延伸。
-        extended = list(points)
+        start_bridge = None
+        end_bridge = None
         if len(points) >= 2:
             start = points[0]
             following = points[1]
             start_dir = self._cardinal_direction(
                 start.x - following.x, start.y - following.y
             )
-            extended.insert(0, _port_extension_point(start, start_dir, PORT_STRAIGHT_UM))
+            start_bridge = self._cardinal_port_bridge_polygon(
+                start, start_dir, self.wg_width, dbu
+            )
 
             end = points[-1]
             previous = points[-2]
             end_dir = self._cardinal_direction(
                 end.x - previous.x, end.y - previous.y
             )
-            extended.append(_port_extension_point(end, end_dir, PORT_STRAIGHT_UM))
+            end_bridge = self._cardinal_port_bridge_polygon(
+                end, end_dir, self.wg_width, dbu
+            )
 
-        self._insert_centerline_polygons(wg_layer, extended, self.wg_width, dbu)
+        # 端口内侧 landing 在写入前与首尾主体段做布尔合并，避免 GDS 中
+        # 保留独立 shape 的内部边界；Si 端面仍位于 PinRec 中心，使 pin
+        # 外侧一半露出，同时不影响长 Spiral 在安全直波导处的分段策略。
+        self._insert_centerline_polygons(
+            wg_layer,
+            points,
+            self.wg_width,
+            dbu,
+            start_bridge=start_bridge,
+            end_bridge=end_bridge,
+            start_port=(start, start_dir) if len(points) >= 2 else None,
+            end_port=(end, end_dir) if len(points) >= 2 else None,
+        )
+
         self._insert_pins(points, pin_layer)
         insert_device_devrec(self.cell, wg_layer, pin_layer)
         self._insert_parameter_text(points, text_layer)
@@ -892,7 +909,7 @@ class PaperclipSpiral(pya.PCellDeclarationHelper):
             radius,
             dbu,
         )
-        return self._round_waypoints(
+        rounded = self._round_waypoints(
             waypoints,
             radius,
             actual_points_per_90,
@@ -900,6 +917,41 @@ class PaperclipSpiral(pya.PCellDeclarationHelper):
             float(values.get("bezier", self.bezier)),
             euler_rmax,
             euler_rmin,
+        )
+        return self._with_strict_port_landings(rounded)
+
+    def _with_strict_port_landings(self, points):
+        """在两个端口内侧插入严格 10 nm 的轴向直段。
+
+        PinRec 的方向过去由接近水平的曲线采样段归一得到，但 Si 中心线在
+        pin 坐标处仍可能带有极小斜率。端口外侧覆盖段只能覆盖 PinRec，不能
+        修正端口内侧的实际切线；因此在端口到主体之间显式加入公共 Bend 规范
+        的 10 nm landing。端口坐标不变，长度计算与实际 pin-to-pin 中心线一致。
+        """
+        points = self._remove_duplicate_points(points)
+        if len(points) < 2:
+            return points
+
+        start = points[0]
+        following = points[1]
+        end = points[-1]
+        previous = points[-2]
+        start_dir = self._cardinal_direction(
+            start.x - following.x, start.y - following.y
+        )
+        end_dir = self._cardinal_direction(
+            end.x - previous.x, end.y - previous.y
+        )
+
+        # 从端口向器件内部反向延伸，保证首尾相邻中心线段严格水平或垂直。
+        start_inner = _port_extension_point(
+            start, (start_dir + 180) % 360, PORT_STRAIGHT_UM
+        )
+        end_inner = _port_extension_point(
+            end, (end_dir + 180) % 360, PORT_STRAIGHT_UM
+        )
+        return self._remove_duplicate_points(
+            [start, start_inner] + list(points[1:-1]) + [end_inner, end]
         )
 
     def _round_waypoints(
@@ -1346,6 +1398,43 @@ class PaperclipSpiral(pya.PCellDeclarationHelper):
         width = max(1, int(round(float(width_um) / dbu)))
         return pya.Path(ipoints, width)
 
+    def _cardinal_port_bridge_polygon(self, center, direction, width_um, dbu):
+        """返回从 PinRec 中心向器件内侧延伸 10 nm 的矩形 landing。
+
+        Si 端面固定在 PinRec 中心，因此 20 nm pin 的外侧 10 nm 露出，内侧
+        10 nm 与波导重叠。该 landing 与主体做布尔合并，不参与中心线长度计算。
+        """
+        direction = int(direction) % 360
+        inner = _port_extension_point(
+            center, (direction + 180) % 360, PORT_STRAIGHT_UM
+        )
+        center_x = int(round(center.x / dbu))
+        center_y = int(round(center.y / dbu))
+        inner_x = int(round(inner.x / dbu))
+        inner_y = int(round(inner.y / dbu))
+        width = max(1, int(round(float(width_um) / dbu)))
+        lower_half = width // 2
+        upper_half = width - lower_half
+
+        if direction in (0, 180):
+            left = min(center_x, inner_x)
+            right = max(center_x, inner_x)
+            bottom = center_y - lower_half
+            top = center_y + upper_half
+        else:
+            left = center_x - lower_half
+            right = center_x + upper_half
+            bottom = min(center_y, inner_y)
+            top = max(center_y, inner_y)
+
+        rectangle = pya.Polygon([
+            pya.Point(left, bottom),
+            pya.Point(right, bottom),
+            pya.Point(right, top),
+            pya.Point(left, top),
+        ])
+        return rectangle
+
     def _safe_straight_range(self, points, start_idx, end_idx, dbu):
         """在 [start_idx, end_idx) 范围内寻找严格水平/垂直的安全直波导段。
 
@@ -1496,7 +1585,17 @@ class PaperclipSpiral(pya.PCellDeclarationHelper):
 
         return segments
 
-    def _insert_centerline_polygons(self, layer, points, width_um, dbu):
+    def _insert_centerline_polygons(
+        self,
+        layer,
+        points,
+        width_um,
+        dbu,
+        start_bridge=None,
+        end_bridge=None,
+        start_port=None,
+        end_port=None,
+    ):
         """分段插入中心线扫掠 Polygon，只在直波导段内部分段。
 
         total_length 和 delta_L 已基于完整 metric_points 计算，GDS 分段不影响。
@@ -1504,27 +1603,78 @@ class PaperclipSpiral(pya.PCellDeclarationHelper):
         width_dbu = max(1, int(round(float(width_um) / dbu)))
         if len(points) <= MAX_GDS_POLYGON_CENTERLINE_POINTS:
             path = self._path_to_itype(points, width_um, dbu)
-            insert_centerline_polygons(
-                self.cell,
-                layer,
-                list(path.each_point()),
-                width_dbu,
-            )
+            region = centerline_path_region(list(path.each_point()), width_dbu)
+            if start_port is not None:
+                region = self._clip_region_at_port_face(
+                    region, start_port[0], start_port[1], dbu
+                )
+            if end_port is not None:
+                region = self._clip_region_at_port_face(
+                    region, end_port[0], end_port[1], dbu
+                )
+            if start_bridge is not None:
+                region.insert(start_bridge)
+            if end_bridge is not None:
+                region.insert(end_bridge)
+            region.merge()
+            for polygon in region.each():
+                self.cell.shapes(layer).insert(polygon)
             return
 
         segments = self._split_centerline_on_straights(
             points,
             MAX_GDS_POLYGON_CENTERLINE_POINTS,
         )
-        for segment in segments:
+        last_index = len(segments) - 1
+        for index, segment in enumerate(segments):
             if len(segment) >= 2:
                 path = self._path_to_itype(segment, width_um, dbu)
-                insert_centerline_polygons(
-                    self.cell,
-                    layer,
-                    list(path.each_point()),
-                    width_dbu,
+                region = centerline_path_region(
+                    list(path.each_point()), width_dbu
                 )
+                if index == 0 and start_port is not None:
+                    region = self._clip_region_at_port_face(
+                        region, start_port[0], start_port[1], dbu
+                    )
+                if index == last_index and end_port is not None:
+                    region = self._clip_region_at_port_face(
+                        region, end_port[0], end_port[1], dbu
+                    )
+                if index == 0 and start_bridge is not None:
+                    region.insert(start_bridge)
+                if index == last_index and end_bridge is not None:
+                    region.insert(end_bridge)
+                region.merge()
+                for polygon in region.each():
+                    self.cell.shapes(layer).insert(polygon)
+
+    @staticmethod
+    def _clip_region_at_port_face(region, center, direction, dbu):
+        """按 PinRec 中心半平面裁剪端帽，确保 Si 不进入 pin 外侧一半。"""
+        if region.is_empty():
+            return region
+        bbox = region.bbox()
+        center_x = int(round(center.x / dbu))
+        center_y = int(round(center.y / dbu))
+        direction = int(direction) % 360
+        margin = 1
+        if direction == 180:
+            clip_box = pya.Box(
+                center_x, bbox.bottom - margin, bbox.right + margin, bbox.top + margin
+            )
+        elif direction == 0:
+            clip_box = pya.Box(
+                bbox.left - margin, bbox.bottom - margin, center_x, bbox.top + margin
+            )
+        elif direction == 270:
+            clip_box = pya.Box(
+                bbox.left - margin, center_y, bbox.right + margin, bbox.top + margin
+            )
+        else:
+            clip_box = pya.Box(
+                bbox.left - margin, bbox.bottom - margin, bbox.right + margin, center_y
+            )
+        return region & pya.Region(clip_box)
 
     @staticmethod
     def _unit_vector(p1, p2):

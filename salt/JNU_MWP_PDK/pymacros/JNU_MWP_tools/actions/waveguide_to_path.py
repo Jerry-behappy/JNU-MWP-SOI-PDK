@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-06
+# 时间: 2026-08
 
 # JNU_MWP_PDK Waveguide to Path 功能。
 # 将波导 instance 还原为 Si 层原始 Manhattan Path，便于再次执行 Path to Waveguide。
@@ -322,11 +322,11 @@ def _container_waveguide_instances(container_instance, full_container_trans=None
     return instances
 
 
-def _collect_waveguide_instances(view, cell):
-    """收集直接或内部容器中的 Waveguide 实例及其完整层级变换。"""
+def _selected_waveguide_instances(view):
+    """收集用户显式选中的 Waveguide 实例及其完整层级变换。"""
     instances = []
 
-    # 优先处理用户选中的实例；ObjectInstPath.trans 是完整层级变换。
+    # ObjectInstPath.trans 是从当前 cell 到实例的完整层级变换。
     for obj in view.object_selection:
         if not obj.is_cell_inst():
             continue
@@ -342,6 +342,13 @@ def _collect_waveguide_instances(view, cell):
         elif _is_waveguide_container_cell(inst.cell):
             instances.extend(_container_waveguide_instances(inst, trans))
 
+    return instances
+
+
+def _collect_waveguide_instances(view, cell):
+    """收集选中实例；未选中时回退扫描当前 cell。"""
+    instances = _selected_waveguide_instances(view)
+
     if instances:
         return instances
 
@@ -355,6 +362,26 @@ def _collect_waveguide_instances(view, cell):
             instances.extend(_container_waveguide_instances(inst))
 
     return instances
+
+
+def _current_cell_conversion_message(instance_count):
+    """生成未选中 Waveguide 时的批量转换确认文案。"""
+    return (
+        "未选中 Waveguide 实例。\n\n"
+        "当前页面中找到 %d 个 Waveguide。继续将把它们全部转换为 Si 层 Manhattan Path，"
+        "并删除对应的 Waveguide 实例。\n\n"
+        "是否继续？" % int(instance_count)
+    )
+
+
+def _confirm_current_cell_conversion(instance_count):
+    """确认用户是否要把当前 cell 中的全部 Waveguide 批量转换为 Path。"""
+    question = pya.QMessageBox()
+    question.setWindowTitle("JNU_MWP_PDK")
+    question.setText(_current_cell_conversion_message(instance_count))
+    question.setStandardButtons(pya.QMessageBox.Yes | pya.QMessageBox.No)
+    question.setDefaultButton(pya.QMessageBox.No)
+    return pya.QMessageBox_StandardButton(question.exec_()) == pya.QMessageBox.Yes
 
 
 def _cleanup_empty_waveguide_containers(layout, parent_cell, cleanup_cell_indices):
@@ -382,13 +409,18 @@ def waveguide_to_path():
     """把选中的 Waveguide PCell 反转换为 Si 层原始 Manhattan Path。
 
     从 PCell 参数中读取并恢复原始 Manhattan path，避免从圆角实体反推而丢失拐点。
-    若未选中任何波导，自动扫描当前 cell 中所有 Waveguide 实例并转换。
+    若未选中任何波导，先提示用户确认，再扫描并转换当前 cell 中所有 Waveguide 实例。
     """
     transaction_started = False
     try:
         view, layout, cell = _active_context()
 
-        selected_instances = _collect_waveguide_instances(view, cell)
+        selected_instances = _selected_waveguide_instances(view)
+        if not selected_instances:
+            # 未明确选中时，批量转换具有破坏性，必须由用户再次确认。
+            selected_instances = _collect_waveguide_instances(view, cell)
+            if selected_instances and not _confirm_current_cell_conversion(len(selected_instances)):
+                return
         if not selected_instances:
             _message("JNU_MWP_PDK", "当前 cell 中没有找到 Waveguide 实例。")
             return

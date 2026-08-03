@@ -16,7 +16,7 @@
  <dsl-interpreter-name/>
  <text># -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-07
+# 时间: 2026-08
 
 # JNU_MWP_PDK GUI 菜单初始化宏。
 # 该宏在 KLayout 顶部菜单创建 JNU_MWP_PDK 入口，并使用持久化的
@@ -28,7 +28,7 @@
 #   Layout     -> Layer Exclude
 #   Layout     -> Numerical text array
 #   Layout     -> Snap components
-#   DRC        -> JNU_MWP_DRC（临时可编辑规则与图层定义）
+#   DRC        -> JNU_MWP_DRC / Run JNU_MWP_DRC
 #   Reload JNU PDK
 #
 # 注意事项：
@@ -49,6 +49,13 @@ _PYMACROS_DIR = os.path.dirname(os.path.abspath(__file__))
 if _PYMACROS_DIR not in sys.path:
     sys.path.insert(0, _PYMACROS_DIR)
 _PDK_ROOT = os.path.dirname(_PYMACROS_DIR)
+
+# 早期恢复宏之外，菜单 autorun 再执行一次幂等安装，覆盖热重载与旧版
+# KLayout 没有运行 early macro 的环境；该调用不会注册到公开 JNULib。
+from JNU_MWP_tools.core.internal_waveguide_registry import (
+    install_internal_waveguide_registration,
+)
+install_internal_waveguide_registration()
 
 # -----------------------------------------------------------------------------
 # 工具函数：把模块导入代码写成字符串，在回调中通过 exec 执行内联 import。
@@ -135,7 +142,16 @@ import sys
 _PD = r'%(pymacros_dir)s'
 if _PD not in sys.path:
     sys.path.insert(0, _PD)
-from JNU_MWP_tools.actions.drc import run_drc as _fn
+from JNU_MWP_tools.actions.drc import open_drc_macro_editor as _fn
+_fn()
+""" % {"pymacros_dir": _PYMACROS_DIR.replace("\\", "\\\\")}
+
+_RUN_JNU_DRC_CODE = r"""
+import sys
+_PD = r'%(pymacros_dir)s'
+if _PD not in sys.path:
+    sys.path.insert(0, _PD)
+from JNU_MWP_tools.actions.drc import run_current_cell_drc as _fn
 _fn()
 """ % {"pymacros_dir": _PYMACROS_DIR.replace("\\", "\\\\")}
 
@@ -237,6 +253,7 @@ def register_jnu_menu_items():
         (layout_parent, "jnu_action_numerical_text_array", "Numerical text array", _NUMERICAL_TEXT_ARRAY_CODE),
         (layout_parent, "jnu_action_snap_components", "Snap components", _SNAP_COMPONENTS_CODE),
         (drc_parent, "jnu_action_jnu_mwp_drc", "JNU_MWP_DRC", _JNU_DRC_CODE),
+        (drc_parent, "jnu_action_run_jnu_mwp_drc", "Run JNU_MWP_DRC", _RUN_JNU_DRC_CODE),
         (root_menu, "jnu_action_reload_jnu_pdk", "Reload JNU PDK", _RELOAD_PDK_CODE),
     )
 

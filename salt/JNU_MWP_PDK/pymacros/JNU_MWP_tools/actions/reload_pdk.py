@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-07
+# 时间: 2026-08
 
 """在不重启 KLayout 的情况下重新加载 JNU_MWP_PDK 运行时代码。"""
 
@@ -19,6 +19,8 @@ _PYMACROS_DIR = os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )
 _MENU_MACRO = os.path.join(_PYMACROS_DIR, "JNU_MWP_PDK_Menu.lym")
+# importlib.reload 会复用模块字典；保留尚未触发的 timer，避免重复菜单回调。
+_PENDING_RELOAD_TIMER = globals().get("_PENDING_RELOAD_TIMER", None)
 
 
 def _property_or_call(obj, name, *args):
@@ -231,10 +233,34 @@ def _run_reload_with_feedback(main_window):
             pya.MessageBox.Ok,
         )
     finally:
+        _clear_pending_reload_timer()
+
+
+def _clear_pending_reload_timer(timer=None):
+    """清除模块级 timer 引用，不依赖 MainWindow 的动态 Python 属性。"""
+    global _PENDING_RELOAD_TIMER
+    if timer is None or _PENDING_RELOAD_TIMER is timer:
+        _PENDING_RELOAD_TIMER = None
+
+
+def _schedule_reload(main_window, timer_factory):
+    """创建单次延时重载；已有活跃 timer 时合并重复触发。"""
+    global _PENDING_RELOAD_TIMER
+    existing = _PENDING_RELOAD_TIMER
+    if existing is not None:
         try:
-            main_window._jnu_reload_pdk_timer = None
+            if existing.isActive():
+                return False
         except Exception:
-            pass
+            # 已被 Qt 删除的 timer 不能再复用，直接替换为新的单次 timer。
+            _PENDING_RELOAD_TIMER = None
+
+    timer = timer_factory(main_window)
+    timer.setSingleShot(True)
+    timer.timeout(lambda: _run_reload_with_feedback(main_window))
+    _PENDING_RELOAD_TIMER = timer
+    timer.start(0)
+    return True
 
 
 def schedule_reload_jnu_pdk():
@@ -245,19 +271,7 @@ def schedule_reload_jnu_pdk():
     if main_window is None:
         raise RuntimeError("当前没有可用的 KLayout 主窗口。")
 
-    existing = getattr(main_window, "_jnu_reload_pdk_timer", None)
-    if existing is not None:
-        try:
-            if existing.isActive():
-                return
-        except Exception:
-            pass
-
-    timer = pya.QTimer(main_window)
-    timer.setSingleShot(True)
-    timer.timeout(lambda: _run_reload_with_feedback(main_window))
-    main_window._jnu_reload_pdk_timer = timer
-    timer.start(0)
+    _schedule_reload(main_window, pya.QTimer)
 
 
 __all__ = [

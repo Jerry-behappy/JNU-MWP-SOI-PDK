@@ -20,11 +20,15 @@
 
 # JNU_MWP_PDK 菜单动作：把 Path 转换为 JNU Waveguide PCell。
 # 这里调用 JNU 本地 GUI，可直接设置 width、radius 和 bend_type，不依赖 WAVEGUIDES.xml。
+import os
 import sys
 
 import pya
 
-PYMACROS_DIR = r"C:\Users\zjy\KLayout\salt\JNU_MWP_PDK\pymacros"
+# 按当前用户主目录定位 PDK，避免快捷键宏绑定开发者本机用户名。
+PYMACROS_DIR = os.path.join(
+    os.path.expanduser("~"), "KLayout", "salt", "JNU_MWP_PDK", "pymacros"
+)
 if PYMACROS_DIR not in sys.path:
     # KLayout 菜单动作宏有时不会继承 pymacros 路径，这里显式加入以保证工具模块可导入。
     sys.path.insert(0, PYMACROS_DIR)

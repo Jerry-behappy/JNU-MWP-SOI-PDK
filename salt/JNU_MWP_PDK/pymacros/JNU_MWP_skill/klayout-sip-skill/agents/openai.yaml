@@ -1,0 +1,4 @@
+interface:
+  display_name: "KLayout SiP Skill"
+  short_description: "Design, edit, and verify silicon-photonic layouts"
+  default_prompt: "Use $klayout-sip-skill to design, edit, and verify this silicon-photonic layout safely."

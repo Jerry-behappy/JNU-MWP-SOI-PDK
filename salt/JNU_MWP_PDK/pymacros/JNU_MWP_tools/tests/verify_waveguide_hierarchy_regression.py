@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-07
+# 时间: 2026-08
 
 """验证 Path to Waveguide 的直接 PCell 层级、参数化命名和 GDS 往返。"""
 
@@ -23,6 +23,7 @@ from JNU_MWP_tools.actions.path_to_waveguide import (  # noqa: E402
     _store_waveguide_recovery_property,
 )
 from JNU_MWP_tools.actions.waveguide_to_path import (  # noqa: E402
+    _current_cell_conversion_message,
     _is_waveguide_cell,
     _path_from_waveguide_cell,
 )
@@ -97,6 +98,10 @@ def _write_and_reread(layout):
 
 
 def main():
+    confirmation = _current_cell_conversion_message(3)
+    if not all(text in confirmation for text in ("未选中 Waveguide", "3 个 Waveguide", "是否继续")):
+        raise RuntimeError("Waveguide to Path 批量转换确认文案不完整：%s" % confirmation)
+
     layout = pya.Layout()
     layout.dbu = DBU
     ensure_internal_waveguide_pcells(layout)

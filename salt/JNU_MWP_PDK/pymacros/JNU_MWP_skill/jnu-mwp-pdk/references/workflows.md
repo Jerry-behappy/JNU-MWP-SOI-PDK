@@ -25,17 +25,17 @@
 - `Taper.length` 只定义渐变段；`port1_extension_length`/`port2_extension_length` 默认0 µm并分别在渐变段前后增加 width1/width2 恒宽直段。opt1固定为x=0，opt2位于总长度末端；Si保持单一连续Polygon，DevRec覆盖总长度，PinRec宽度与端部局部宽度一致。
 - Path to Waveguide复合模式把弯曲primitive设为bend width；起始端/终端下拉只能选择straight width或bend width。选择bend width时，起始端到第一个弯曲入口或最后一个弯曲出口到终端保持bend width，不再经过straight width；其他bend width到straight width的局部过渡完整放在直段，顺序为bend-width恒宽transition、taper、straight-width恒宽transition，其中transition默认2 µm、taper默认20 µm。opt1/opt2 PinRec分别使用端部实际宽度，Waveguide to Path恢复为straight width。路径容量按弯曲占用、端部taper和直/弯局部过渡共同检查；继续生成时每条Path统一降低到最大可行半径，Euler保持Rmax/Rmin比例。
 - Path to Waveguide只转换原始Manhattan Path；选择集中若包含已圆滑Waveguide/S_Bend内部Path或其他非Manhattan Path，跳过并汇总提示，不影响同批有效Path继续转换。
-- `Waveguide` 与 `Composite_Waveguide` 不进入公开 `JNULib`；启动、创建 LayoutView/CellView 和热重载时在每个用户 layout 中预注册同名本地 PCell 声明，确保 GDS 解析时即可恢复 PCell 身份。Path to Waveguide 创建的 variant 直接实例化在原所属 cell 中，不新增中间容器。KLayout 禁止在活动 Undo transaction 中注册本地 PCell，也不允许本地 PCell 首次生产时向受 Undo 管理的只读 shape list 写入图形，因此声明注册和全部 variant 预生成都必须在 `LayoutView.transaction` 开始前完成；transaction 内只插入实例、写入实例恢复属性并删除输入 Path。若预生成或 transaction 失败，清理本轮新增且无父实例引用的 variant。原始 Manhattan Path 由 TypeShape `path` 参数保存；名为 `JNU_MWP_raw_manhattan_path` 的无图形属性提供后备，并以 GDS 数字实例属性镜像跨文件保存。新波导的 `1/99` 必须为空，不得创建 raw helper cell，也不得强制切换当前视图的图层显隐。反向转换依次读取 PCell 参数、恢复属性、旧版 cell 内 `1/99` 和旧版 helper；旧版容器和 helper 读取后删除，但不把 Path 写回 `1/99`。
+- `Waveguide` 与 `Composite_Waveguide` 不进入公开 `JNULib`；`JNU_MWP_InternalWaveguideRegistry.lym` 以 early autorun 安装注册器，`pymacros/__init__.py` 和菜单 autorun 再作幂等安装。注册器必须覆盖已有视图、CellView 创建和文件打开前的视图同步，在每个用户 layout 中预注册同名本地 PCell 声明，确保用户在 GUI 重启后打开 GDS 时即可恢复 PCell 身份。Path to Waveguide 创建的 variant 直接实例化在原所属 cell 中，不新增中间容器。KLayout 禁止在活动 Undo transaction 中注册本地 PCell，也不允许本地 PCell 首次生产时向受 Undo 管理的只读 shape list 写入图形，因此声明注册和全部 variant 预生成都必须在 `LayoutView.transaction` 开始前完成；transaction 内只插入实例、写入实例恢复属性并删除输入 Path。若预生成或 transaction 失败，清理本轮新增且无父实例引用的 variant。原始 Manhattan Path 由 TypeShape `path` 参数保存；名为 `JNU_MWP_raw_manhattan_path` 的无图形属性提供后备，并以 GDS 数字实例属性镜像跨文件保存。新波导的 `1/99` 必须为空，不得创建 raw helper cell，也不得强制切换当前视图的图层显隐。反向转换依次读取 PCell 参数、恢复属性、旧版 cell 内 `1/99` 和旧版 helper；旧版容器和 helper 读取后删除，但不把 Path 写回 `1/99`。
 - Cell 名称包含所有可编辑弯曲参数及 Rmax/Rmin/Reff，排除 Bend Points 和波导层；完全相同的局部路径与参数复用同一 variant，不同路径碰撞同一基础名称时按稳定签名追加 `__002`、`__003`，不得保留 `$N`。
 
 ## Interactive DRC
 
-- `DRC → JNU_MWP_DRC` 打开单次生效的双栏窗口：左栏 `Layer Definitions` 以九个不可编辑中文层名配可编辑 `Source Specification`；右栏先是可编辑全局参数，再是九行“`Rules to Check` 勾选框 + 不可编辑层名 + 可编辑完整 DRC DSL 参数”。默认仅选中 Si、PinRec、M1、M2、DeepTrench；未勾选层允许用户填写规则后再启用。规则、图层与勾选状态关闭后不保存，下次均恢复源码默认值；对话框尺寸仍可使用通用 GUI 状态保存。
-- 点击 OK 时不得改写 `drc/JNU_MWP_DRC.lydrc`。应把左栏重新组合为稳定变量名的图层定义，并仅组合右栏已勾选行的规则；勾选但规则为空、或任一 Source Specification 为空时必须阻止执行。随后把当前内存 layout 写到临时 GDS，临时 DRC 宏对该文件显式调用 `source(path, top_cell)` 与 `report(title, temporary_lyrdb)`；运行结束后将 `.lyrdb` 读入当前 LayoutView 的 Marker Browser，并清理所有临时文件。Cancel 不运行 DRC。
+- `DRC → JNU_MWP_DRC` 直接打开 KLayout 原生 `Macro Development` 并定位到 `drc/JNU_MWP_DRC.lydrc`；使用原生保存功能持久化规则。规则文件只保留一个单参数 `report("标题")`，供原生绿色 Run 建立报告上下文；禁止 `source()` 和带报告路径的 `report()`。执行时选择 `DRC → Run JNU_MWP_DRC`，该动作会剥离单参数 report、注入临时输入与报告路径，只针对当前编辑 Cell 运行已保存代码。
+- 点击 Run DRC 时，把当前内存 layout 写到临时 GDS，临时 DRC 宏显式调用 `source(path, active_cell)` 与 `report(title, temporary_lyrdb)`；其中 `active_cell` 是当前 GUI 正在编辑的 cell，DRC 只检查该 cell 及其子层级，不得按全局 top cell 扫描其他区域。规则注释、违规 output 描述和其 DSL 数值阈值必须一致。运行结束后将 `.lyrdb` 读入当前 LayoutView 的 Marker Browser，并清理所有临时文件。
 
 ## Runtime Reload
 
-- `JNU_MWP_PDK → Reload JNU PDK` 在当前菜单回调退出后异步执行，避免重建菜单时销毁正在触发的 Action。
+- `JNU_MWP_PDK → Reload JNU PDK` 在当前菜单回调退出后异步执行，避免重建菜单时销毁正在触发的 Action。待触发的单次 timer 只能由 `reload_pdk` 模块级引用保存，禁止写入或读取 `MainWindow` 的动态 Python 属性；重复触发必须合并为一次。
 - 清除 `JNU_MWP_pcells`、`JNU_MWP_tools` 与 `JNULib` 模块缓存后从磁盘重新导入；同名公开库只保留一个，并调用 `Library.refresh()` 更新全部 client layout。
 - 对已打开 layout 中现存的 `Waveguide` / `Composite_Waveguide` 以同名新声明调用 `register_pcell`，保持 PCell ID 不变，再调用 `Layout.refresh()` 重算已有 variant。
 - 菜单宏注册必须幂等：删除全部已知 action item、替换主窗口持久 action 列表后再插入。重建前以稳定 action ID 保存当前 `pya.Action.shortcut`；若当前值已为空，则从 `Application.get_config("key-bindings")` 中相同完整菜单路径恢复，且不得改写用户配置。成功只写短暂状态栏消息，失败弹窗且不得删除用户布局对象。
@@ -51,7 +51,7 @@
 - Euler 名称与 Text 写 `Reff/Rmax/Rmin`，不写隐藏的普通 `R`。
 - `vertical_stretch` 不改变相邻波导 pitch；type3 保持边到边间距等于 gap，opt1 端口中心到第一个 90° Bend 起点固定为 10 nm。
 - 分段只能发生在 DBU 舍入后严格水平/垂直且满足安全距离的直段。
-- 端口 Si 向外延伸 10 nm，确保 PinRec 路径完全被 Si 覆盖，避免 DRC `PinRec.not_inside(LayerSi)` 误报。
+- 20 nm PinRec 以 Si 端面为中心，内侧 10 nm 与 Si 重叠、外侧 10 nm 露出；端口主体与内侧 landing 合并，DRC 使用相交检查而不是完整包覆检查。
 
 ## Archimedean_Spiral
 

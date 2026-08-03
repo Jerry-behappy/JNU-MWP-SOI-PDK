@@ -1,13 +1,14 @@
 # $autorun
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-07
+# 时间: 2026-08
 
 # 初始化 JNU MWP Python 器件库，并确保 Salt 安装时也能注册 Technology。
 
 print("JNU MWP PDK: load JNULib")
 
 import os
+import sys
 
 import pya
 
@@ -37,11 +38,17 @@ def _load_jnu_technology():
 
 _load_jnu_technology()
 
-from . import JNULib           # 加载完整器件库 JNULib。
-from . import JNULib_BlackBox  # 加载黑盒器件库 JNULib_BlackBox。
+# KLayout 会把本文件作为独立 autorun 宏执行，此时不存在包上下文，不能使用
+# ``from .`` 相对导入。显式加入 pymacros 后采用绝对导入，兼容 Salt 启动和
+# 顶层 PDK ``import pymacros`` 两种加载方式。
+if SCRIPT_DIR not in sys.path:
+    sys.path.insert(0, SCRIPT_DIR)
+
+import JNULib           # 加载完整器件库 JNULib。
+import JNULib_BlackBox  # 加载黑盒器件库 JNULib_BlackBox。
 
 # 新建 LayoutView/CellView 时先注册工具内部 PCell，使 GDS 中保存的参数能够在读取时恢复。
-from .JNU_MWP_tools.core.internal_waveguide_registry import (
+from JNU_MWP_tools.core.internal_waveguide_registry import (
     install_internal_waveguide_registration,
 )
 

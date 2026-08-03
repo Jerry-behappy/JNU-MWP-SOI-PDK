@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-07
+# 时间: 2026-08
 
 """批量验证 JNU Archimedean_Spiral 的弯曲、端口、拉伸、长度与 GDS 重读。"""
 
@@ -19,6 +19,7 @@ if str(PYMACROS_DIR) not in sys.path:
 
 import JNULib  # noqa: F401,E402  注册 JNULib。
 from JNU_MWP_pcells.Archimedean_spiral import (  # noqa: E402
+    ArchimedeanSpiral,
     _CENTER_PCELL_BEND_CORNER_INDICES,
     _TYPE3_PCELL_BEND_CORNER_INDICES,
     _build_type3_opt1_route,
@@ -34,6 +35,7 @@ from JNU_MWP_pcells.bend_90deg import (  # noqa: E402
 LIBRARY_NAME = "JNULib"
 SI_LAYER = pya.LayerInfo(1, 0)
 PIN_LAYER = pya.LayerInfo(1, 10)
+TEXT_LAYER = pya.LayerInfo(10, 0)
 DBU = 0.001
 
 
@@ -272,7 +274,70 @@ def _create_variant(layout, params, x_offset, geometry):
     if cell is None:
         raise RuntimeError("无法创建 Archimedean_Spiral PCell。")
     _check_pinrec_directions(cell, layout, params["ports_type"], geometry)
+    _check_parameter_text(cell, layout, geometry)
     return pya.CellInstArray(cell.cell_index(), pya.Trans(x_offset, 0))
+
+
+def _check_parameter_text(cell, layout, geometry):
+    """验证三行 Spiral Text 的内容、类型专属半径字段和内孔安全边界。"""
+    text_layer = layout.layer(TEXT_LAYER)
+    text_shapes = [
+        shape
+        for shape in cell.each_shape(text_layer)
+        if shape.is_text()
+    ]
+    if len(text_shapes) != 3:
+        raise RuntimeError("Archimedean_Spiral 应生成 3 行参数 Text，实际为 %d 行。" % len(text_shapes))
+    labels = [shape.text.string for shape in text_shapes]
+    if not labels[0].startswith("Archimedean_Spiral | ports="):
+        raise RuntimeError("Spiral Text 首行缺少器件与端口类型信息。")
+    if not labels[1].startswith("w=") or "pitch=" not in labels[1]:
+        raise RuntimeError("Spiral Text 第二行缺少宽度、间隙或 pitch 信息。")
+    if not labels[2].startswith("L=") or "delta_L=" not in labels[2] or "Dout=" not in labels[2]:
+        raise RuntimeError("Spiral Text 第三行缺少长度、delta_L 或 Dout 信息。")
+    bend_type = geometry["bend_type"]
+    if bend_type == "Circular" and "R=" not in labels[1]:
+        raise RuntimeError("Circular Spiral Text 缺少 R 字段。")
+    if bend_type == "Bezier" and not all(key in labels[1] for key in ("B=", "Rmax=", "Rmin=")):
+        raise RuntimeError("Bezier Spiral Text 缺少 B、Rmax 或 Rmin 字段。")
+    if bend_type == "Euler" and not all(key in labels[1] for key in ("Reff=", "Rmax=", "Rmin=")):
+        raise RuntimeError("Euler Spiral Text 缺少 Reff、Rmax 或 Rmin 字段。")
+    target_box = ArchimedeanSpiral._parameter_text_target_box(geometry, layout.dbu)
+    for shape in text_shapes:
+        bbox = shape.bbox()
+        if (
+            bbox.left < target_box.left
+            or bbox.right > target_box.right
+            or bbox.bottom < target_box.bottom
+            or bbox.top > target_box.top
+        ):
+            raise RuntimeError("Spiral 参数 Text 超出中心安全区域。")
+
+    _check_compact_display_text(geometry)
+
+
+def _check_compact_display_text(geometry):
+    """验证实例名称紧凑，同时不影响版图中的三行详细参数 Text。"""
+
+    label = ArchimedeanSpiral._compact_display_text(geometry)
+    expected_prefix = "Archimedean_Spiral(%s,%s,L=" % (
+        geometry["ports_type"],
+        geometry["bend_type"],
+    )
+    if not label.startswith(expected_prefix) or not label.endswith(")"):
+        raise RuntimeError("Archimedean_Spiral 实例名称格式不正确：%s" % label)
+    if not all(key in label for key in (",dL=", ",N=", ",w=", ",gap=")):
+        raise RuntimeError("Archimedean_Spiral 实例名称缺少关键参数：%s" % label)
+    if any(key in label for key in ("target=", "pitch=", "points/90=", "Dout=", " | ")):
+        raise RuntimeError("Archimedean_Spiral 实例名称仍包含冗长版图 Text 字段：%s" % label)
+
+    bend_type = geometry["bend_type"]
+    if bend_type == "Circular" and ",R=" not in label:
+        raise RuntimeError("Circular Archimedean_Spiral 实例名称缺少 R：%s" % label)
+    if bend_type == "Bezier" and not all(key in label for key in (",R=", ",B=")):
+        raise RuntimeError("Bezier Archimedean_Spiral 实例名称缺少 R 或 B：%s" % label)
+    if bend_type == "Euler" and not all(key in label for key in (",Reff=", ",Rmax=", ",Rmin=")):
+        raise RuntimeError("Euler Archimedean_Spiral 实例名称缺少派生半径：%s" % label)
 
 
 def _check_geometry(bend_type, ports_type):

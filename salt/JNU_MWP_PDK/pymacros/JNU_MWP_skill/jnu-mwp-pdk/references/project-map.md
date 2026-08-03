@@ -36,7 +36,7 @@
 ## Documentation State
 
 - `pymacros/README.md` 使用“完整中文在前、完整英文在后”的双语结构。
-- 当前图文使用说明位于 `D:\JNU PhD document\硅光理论推导与学习资料\JNU_MWP_SOI_PDK使用说明（KLayout）.docx`；文档展示名不改变工程内部标识。
+- 当前图文使用说明位于本地项目文档目录；文档展示名不改变工程内部标识。
 
 ## Blackbox Release
 

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""把 Codex/Claude 的 jnu-mwp-layout 入口链接到项目内规范源。"""
+"""将 Codex/Claude 的 klayout-sip-skill 入口链接到规范源。"""
 
 import argparse
 import os
@@ -10,14 +10,15 @@ import sys
 
 
 CANONICAL = Path(__file__).resolve().parents[1]
+SKILL_NAME = "klayout-sip-skill"
 TARGETS = (
-    Path.home() / ".codex" / "skills" / "jnu-mwp-layout",
-    Path.home() / ".claude" / "skills" / "jnu-mwp-layout",
+    Path.home() / ".codex" / "skills" / SKILL_NAME,
+    Path.home() / ".claude" / "skills" / SKILL_NAME,
 )
 REQUIRED = (
     Path("SKILL.md"),
     Path("agents/openai.yaml"),
-    Path("references/jnu-layout-conventions.md"),
+    Path("references/layout-conventions.md"),
     Path("references/editing-workflows.md"),
     Path("references/selection-and-hierarchy.md"),
     Path("references/verification.md"),
@@ -33,14 +34,14 @@ def is_link(path):
 
 
 def assert_safe_target(path):
-    """只允许操作两个固定的 jnu-mwp-layout 入口。"""
+    """只允许操作固定的 skill 入口。"""
     expected = {target.absolute() for target in TARGETS}
-    if path.absolute() not in expected or path.name != "jnu-mwp-layout":
+    if path.absolute() not in expected or path.name != SKILL_NAME:
         raise RuntimeError("拒绝操作非预期 skill 路径: %s" % path)
 
 
 def remove_target(path):
-    """删除旧入口；目录联接只删除联接本身。"""
+    """删除入口；目录联接只删除联接本身。"""
     assert_safe_target(path)
     if is_link(path):
         os.rmdir(str(path))

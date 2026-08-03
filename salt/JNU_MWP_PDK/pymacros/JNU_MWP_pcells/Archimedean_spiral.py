@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-07
+# 时间: 2026-08
 
 """双臂 Archimedean 螺旋波导 PCell。
 
@@ -899,29 +899,51 @@ class ArchimedeanSpiral(pya.PCellDeclarationHelper):
             pass
 
     def display_text_impl(self):
-        """返回包含全部用户几何参数的 PCell 名称。"""
-        radius_text = (
-            "Reff=%.3f,Rmax=%.3f,Rmin=%.3f"
-            % (self.Euler_Reff, self.Euler_Rmax, self.Euler_Rmin)
-            if self.bend_type == "Euler"
-            else "R=%.3f" % self.min_radius
-        )
-        bezier_text = ",B=%.3f" % self.bezier if self.bend_type == "Bezier" else ""
-        return (
-            "Archimedean_Spiral(%s,%s,target=%.3f,L=%.3f,dL=%.3f,%s,w=%.3f,gap=%.3f,vs=%.3f%s)"
-            % (
-                self.ports_type,
-                self.bend_type,
-                self.length,
-                self.total_length,
-                self.delta_L,
-                radius_text,
-                self.wg_width,
-                self.gap,
-                self.vertical_stretch,
-                bezier_text,
+        """返回用于 Library 与实例面板的紧凑 PCell 名称。"""
+        try:
+            dbu = self.layout.dbu if self.layout is not None else 0.001
+            return self._compact_display_text(self._current_geometry(dbu))
+        except Exception:
+            # PCell 尚未完成参数校验时，保留可辨识的最小名称，避免属性面板失效。
+            return "Archimedean_Spiral"
+
+    @staticmethod
+    def _compact_display_text(geometry):
+        """生成与 Paperclip 一致的紧凑实例名称，详细参数保留在版图 Text。"""
+
+        bend_type = geometry["bend_type"]
+        if bend_type == "Euler":
+            base = "Archimedean_Spiral(%s,%s,L=%.3f,dL=%.3f,Reff=%.3f,N=%d,w=%.3f,gap=%.3f" % (
+                geometry["ports_type"],
+                bend_type,
+                geometry["total_length"],
+                geometry["delta_L"],
+                geometry["Euler_Reff"],
+                geometry["turns"],
+                geometry["wg_width"],
+                geometry["gap"],
             )
-        )
+        else:
+            base = "Archimedean_Spiral(%s,%s,L=%.3f,dL=%.3f,R=%.3f,N=%d,w=%.3f,gap=%.3f" % (
+                geometry["ports_type"],
+                bend_type,
+                geometry["total_length"],
+                geometry["delta_L"],
+                geometry["min_radius"],
+                geometry["turns"],
+                geometry["wg_width"],
+                geometry["gap"],
+            )
+        if bend_type == "Bezier":
+            base += ",B=%.3f" % geometry["bezier"]
+        elif bend_type == "Euler":
+            base += ",Rmax=%.3f,Rmin=%.3f" % (
+                geometry["Euler_Rmax"],
+                geometry["Euler_Rmin"],
+            )
+        if geometry["vertical_stretch"] > 0:
+            base += ",vs=%.1f" % geometry["vertical_stretch"]
+        return base + ")"
 
     def _current_geometry(self, dbu):
         """按当前实例参数执行统一纯计算。"""
@@ -1082,22 +1104,126 @@ class ArchimedeanSpiral(pya.PCellDeclarationHelper):
         make_pin(self.cell, "opt1", start, float(self.wg_width), pin_layer, start_direction)
         make_pin(self.cell, "opt2", end, float(self.wg_width), pin_layer, end_direction)
 
-    def _insert_parameter_text(self, geometry, text_layer):
-        """在中心区域写入计算长度和 delta_L。"""
-        label = "Archimedean_Spiral type=%s bend=%s L=%.3fum delta_L=%.3fum" % (
-            self.ports_type,
-            self.bend_type,
-            self.total_length,
-            self.delta_L,
+    @staticmethod
+    def _parameter_text_lines(geometry):
+        """按统一格式生成 Spiral 版图 Text 与 PCell 显示名称的三行摘要。"""
+        bend_type = str(geometry["bend_type"])
+        line1 = (
+            "Archimedean_Spiral | ports=%s | bend=%s | target=%.3fum"
+            % (geometry["ports_type"], bend_type, geometry["target_length"])
         )
-        if self.bend_type == "Euler":
-            label += " Reff=%.3fum" % self.Euler_Reff
-        text = pya.Text(label, pya.Trans(pya.Trans.R0, 0, 0))
-        shape = self.cell.shapes(text_layer).insert(text)
-        shape.text_halign = 1
-        shape.text_valign = 1
-        diameter = max(2.0 * geometry["outer_radius"], self.wg_width)
-        shape.text_dsize = max(0.05, min(diameter * 0.025, diameter / max(1, len(label))))
+        line2 = (
+            "w=%.3fum | gap=%.3fum | pitch=%.3fum | vertical_stretch=%.3fum | "
+            % (
+                geometry["wg_width"],
+                geometry["gap"],
+                geometry["pitch"],
+                geometry["vertical_stretch"],
+            )
+        )
+        if bend_type == "Bezier":
+            line2 += "B=%.3f | Rmax=%.3fum | Rmin=%.3fum" % (
+                geometry["bezier"],
+                geometry["Bezier_Rmax"],
+                geometry["Bezier_Rmin"],
+            )
+        elif bend_type == "Euler":
+            line2 += "Reff=%.3fum | Rmax=%.3fum | Rmin=%.3fum" % (
+                geometry["Euler_Reff"],
+                geometry["Euler_Rmax"],
+                geometry["Euler_Rmin"],
+            )
+        else:
+            line2 += "R=%.3fum" % geometry["effective_radius"]
+        line3 = "L=%.3fum | delta_L=%.3fum | turns=%d | points/90=%d | Dout=%.3fum" % (
+            geometry["total_length"],
+            geometry["delta_L"],
+            geometry["turns"],
+            geometry["points_per_90"],
+            2.0 * geometry["outer_radius"],
+        )
+        return (line1, line2, line3)
+
+    @staticmethod
+    def _parameter_text_target_box(geometry, dbu):
+        """返回位于 Spiral 内孔的 Text 安全矩形，避免文字越过器件轮廓。"""
+        width = max(float(geometry["wg_width"]), float(dbu))
+        effective_radius = max(float(geometry["effective_radius"]), width)
+        stretch = max(0.0, float(geometry["vertical_stretch"]))
+        half_width = max(
+            2.0 * width,
+            float(geometry["arm_inner_radius"]) - 0.5 * effective_radius - width,
+        )
+        half_height = max(3.0 * width, effective_radius + 0.5 * stretch - 1.5 * width)
+        return pya.Box(
+            int(round(-half_width / dbu)),
+            int(round(-half_height / dbu)),
+            int(round(half_width / dbu)),
+            int(round(half_height / dbu)),
+        )
+
+    @staticmethod
+    def _parameter_text_dsize(target_box, dbu, lines):
+        """用最长文本行和三行间距计算保守且可读的初始字号。"""
+        available_width = max(float(dbu), target_box.width() * float(dbu))
+        available_height = max(float(dbu), target_box.height() * float(dbu))
+        longest_line = max(1, max(len(line) for line in lines))
+        by_width = available_width / (longest_line * 0.78)
+        by_height = available_height / (len(lines) * 1.80)
+        return max(float(dbu), min(by_width, by_height) * 0.80)
+
+    @staticmethod
+    def _text_shapes_bbox(shapes):
+        """合并多个 Text shape 的 bbox，供统一字号收缩检查使用。"""
+        combined = None
+        for shape in shapes:
+            bbox = shape.bbox()
+            if bbox.empty():
+                continue
+            combined = bbox if combined is None else combined + bbox
+        return combined
+
+    def _fit_parameter_text_dsize(self, shapes, target_box, dsize):
+        """迭代缩小三行文字，确保整体 bbox 留在 Spiral 内孔安全矩形。"""
+        dsize = max(float(self.layout.dbu), float(dsize))
+        for _index in range(32):
+            for shape in shapes:
+                shape.text_dsize = dsize
+            bbox = self._text_shapes_bbox(shapes)
+            if bbox is None or bbox.empty():
+                return dsize
+            if (
+                bbox.left >= target_box.left
+                and bbox.right <= target_box.right
+                and bbox.bottom >= target_box.bottom
+                and bbox.top <= target_box.top
+            ):
+                return dsize
+            dsize *= 0.80
+            if dsize <= self.layout.dbu:
+                return float(self.layout.dbu)
+        return dsize
+
+    def _insert_parameter_text(self, geometry, text_layer):
+        """在 Spiral 中心安全区域插入完整的三行技术参数 Text。"""
+        dbu = self.layout.dbu
+        lines = self._parameter_text_lines(geometry)
+        target_box = self._parameter_text_target_box(geometry, dbu)
+        dsize = self._parameter_text_dsize(target_box, dbu, lines)
+        line_pitch = 1.65 * dsize
+        shapes = []
+        for index, line in enumerate(lines):
+            y_um = (0.5 * (len(lines) - 1) - index) * line_pitch
+            text = pya.Text(
+                line,
+                pya.Trans(pya.Trans.R0, 0, int(round(y_um / dbu))),
+            )
+            shape = self.cell.shapes(text_layer).insert(text)
+            shape.text_halign = 1
+            shape.text_valign = 1
+            shape.text_dsize = dsize
+            shapes.append(shape)
+        self._fit_parameter_text_dsize(shapes, target_box, dsize)
 
     def produce_impl(self):
         """生成双臂 Spiral、中心 Bend、Paperclip 风格端口引出和参数文字。"""

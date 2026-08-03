@@ -29,9 +29,9 @@
 
 1. Path to Waveguide 只处理原始 Manhattan Path。遇到已圆滑的 `Waveguide`、`Waveguide_SBend`、S Bend 内部 Path 或非 Manhattan Path 时跳过，并在结果中列出跳过数量和原因。
 2. 单宽波导创建布局本地 `Waveguide` PCell；复合宽度波导创建布局本地 `Composite_Waveguide` PCell。不要为“看起来像波导”的多边形伪造公开库身份。
-3. 保留原始 Manhattan Path 的 PCell `path` 参数和恢复属性；新波导不向 `1/99` 写入 Path，不创建 raw helper cell，也不强行改变用户当前图层显隐。
+3. 保留原始 Manhattan Path 的 PCell path 参数和恢复属性；新波导不向项目定义的原始路径层写入 Path，不创建未经用户允许的 helper cell，也不强行改变用户当前图层显隐。
 4. 复合波导按直段容量放置 taper。若半径或直段不足，先列出问题线段；继续生成时每条 Path 使用统一最大可行半径，固定 taper 仍无法容纳的 Path 不转换。
-5. 用户要求保留 EBeam Waveguide 时，不重建任何 `Waveguide*` cell；只修改用户允许的 JNU 器件、文字、连接器或实例变换。
+5. 用户要求保留既有波导时，不重建任何 `Waveguide*` cell；只修改用户允许的器件、文字、连接器或实例变换。
 
 ## Bend、S Bend 与自动连接
 
@@ -44,7 +44,7 @@
 1. 在全局坐标中求两个端口中心、方向和波导宽度。
 2. 先选择允许移动的实例，再计算旋转/镜像和位移；不移动用户要求固定的器件。
 3. 对齐后验证端口中心重合、方向相反、Si 截面连续且没有短缺或额外重叠。
-4. 用户要求保留 EBeam Waveguide 时，不重建现有 Waveguide；只移动/旋转目标实例或添加明确允许的过渡段。
+4. 用户要求保留既有 Waveguide 时，不重建现有 Waveguide；只移动/旋转目标实例或添加明确允许的过渡段。
 5. spiral、adapter 或蓝框器件连接后，同时检查 opt1/opt2、层级、PCell 参数和周围净空。
 
 ## Spiral 绘制与放置

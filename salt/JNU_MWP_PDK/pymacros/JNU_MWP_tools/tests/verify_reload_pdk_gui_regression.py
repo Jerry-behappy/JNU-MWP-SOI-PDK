@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-07
+# 时间: 2026-08
 
 """在 KLayout 隐藏 GUI 中验证菜单宏和 PDK 重载入口的幂等性。"""
 
@@ -16,7 +16,7 @@ if str(PYMACROS_DIR) not in sys.path:
 
 
 MENU_MACRO = PYMACROS_DIR / "JNU_MWP_PDK_Menu.lym"
-EXPECTED_ACTION_COUNT = 9
+EXPECTED_ACTION_COUNT = 10
 EXPECTED_SHORTCUTS = {
     "jnu_action_path_to_waveguide": "9",
     "jnu_action_waveguide_to_path": "8",
@@ -26,6 +26,7 @@ EXPECTED_SHORTCUTS = {
     "jnu_action_layer_exclude": "Ctrl+Alt+L",
     "jnu_action_numerical_text_array": "Ctrl+Alt+N",
     "jnu_action_jnu_mwp_drc": "Ctrl+Alt+D",
+    "jnu_action_run_jnu_mwp_drc": "",
     "jnu_action_reload_jnu_pdk": "Ctrl+Alt+R",
 }
 
@@ -72,6 +73,7 @@ def _set_configured_shortcuts(app):
         "jnu_action_layer_exclude": "jnu_mwp_pdk_menu.layout",
         "jnu_action_numerical_text_array": "jnu_mwp_pdk_menu.layout",
         "jnu_action_jnu_mwp_drc": "jnu_mwp_pdk_menu.drc",
+        "jnu_action_run_jnu_mwp_drc": "jnu_mwp_pdk_menu.drc",
         "jnu_action_reload_jnu_pdk": "jnu_mwp_pdk_menu",
     }
     for item_id, shortcut in EXPECTED_SHORTCUTS.items():
@@ -87,6 +89,63 @@ def _check_shortcuts(main_window):
     for item_id, expected in EXPECTED_SHORTCUTS.items():
         actual = str(_action_value(actions_by_id[item_id], "shortcut"))
         _assert(actual == expected, "%s 快捷键丢失：%s != %s。" % (item_id, actual, expected))
+
+
+def _verify_reload_timer_lifecycle(reload_pdk):
+    """验证 timer 不写入 MainWindow 属性，并会合并重复菜单触发。"""
+    class MainWindow:
+        pass
+
+    class Timer:
+        def __init__(self, _parent):
+            self._active = False
+            self._callback = None
+            self.single_shot = False
+
+        def setSingleShot(self, value):
+            self.single_shot = bool(value)
+
+        def timeout(self, callback):
+            self._callback = callback
+
+        def start(self, _milliseconds):
+            self._active = True
+
+        def isActive(self):
+            return self._active
+
+        def fire(self):
+            self._active = False
+            self._callback()
+
+    main_window = MainWindow()
+    created = []
+    runs = []
+    original_runner = reload_pdk._run_reload_with_feedback
+    original_timer = reload_pdk._PENDING_RELOAD_TIMER
+    try:
+        reload_pdk._PENDING_RELOAD_TIMER = None
+
+        def timer_factory(parent):
+            timer = Timer(parent)
+            created.append(timer)
+            return timer
+
+        def fake_runner(window):
+            runs.append(window)
+            reload_pdk._clear_pending_reload_timer()
+
+        reload_pdk._run_reload_with_feedback = fake_runner
+        _assert(reload_pdk._schedule_reload(main_window, timer_factory), "首次重载 timer 未创建。")
+        _assert(not hasattr(main_window, "_jnu_reload_pdk_timer"), "timer 不应写入 MainWindow 属性。")
+        _assert(not reload_pdk._schedule_reload(main_window, timer_factory), "活跃 timer 未合并重复触发。")
+        _assert(len(created) == 1, "重复触发创建了多个 timer。")
+        created[0].fire()
+        _assert(runs == [main_window], "timer 未执行重载回调。")
+        _assert(reload_pdk._PENDING_RELOAD_TIMER is None, "timer 回调后未释放模块级引用。")
+    finally:
+        reload_pdk._run_reload_with_feedback = original_runner
+        reload_pdk._PENDING_RELOAD_TIMER = original_timer
 
 
 def main():
@@ -126,6 +185,8 @@ def main():
     layout.register_pcell("Composite_Waveguide", CompositeWaveguide())
 
     from JNU_MWP_tools.actions import reload_pdk
+
+    _verify_reload_timer_lifecycle(reload_pdk)
 
     for _index in range(3):
         result = reload_pdk.reload_jnu_pdk(main_window=main_window, reload_menu=True)

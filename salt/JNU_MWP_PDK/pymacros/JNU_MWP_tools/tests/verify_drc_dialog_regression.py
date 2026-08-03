@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-07
+# 时间: 2026-08
 
-"""验证按层 DRC 参数界面的临时规则组合与实际执行。"""
+"""验证原生 Macro Development DRC 编辑入口、规则持久化与当前 Cell 范围。"""
 
 import os
+from pathlib import Path
+import re
+import shutil
 import sys
 import tempfile
 import xml.etree.ElementTree as ET
@@ -12,15 +15,15 @@ import xml.etree.ElementTree as ET
 import pya
 
 
-THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-PYMACROS_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", ".."))
-if PYMACROS_DIR not in sys.path:
-    sys.path.insert(0, PYMACROS_DIR)
+PYMACROS_DIR = Path(__file__).resolve().parents[2]
+if str(PYMACROS_DIR) not in sys.path:
+    sys.path.insert(0, str(PYMACROS_DIR))
 
-from JNU_MWP_tools.actions import drc
+from JNU_MWP_tools.actions import drc  # noqa: E402
 
 
 def _expect_value_error(callback, message):
+    """确认无效规则代码会被明确拒绝。"""
     try:
         callback()
     except ValueError:
@@ -28,156 +31,147 @@ def _expect_value_error(callback, message):
     raise AssertionError(message)
 
 
-def _setting_by_key(settings, key):
-    for setting in settings:
-        if setting["key"] == key:
-            return setting
-    raise AssertionError("未找到图层设置：%s" % key)
+def _verify_active_cell_context():
+    """用内存替身验证子 Cell 会成为 DRC source 的 top cell。"""
+    layout = pya.Layout()
+    top = layout.create_cell("DRC_TOP")
+    child = layout.create_cell("DRC_CURRENT_CHILD")
+    top.insert(pya.CellInstArray(child.cell_index(), pya.Trans()))
+
+    class CellView:
+        def __init__(self, current_layout, cell):
+            self._layout = current_layout
+            self.cell = cell
+
+        def layout(self):
+            return self._layout
+
+    class View:
+        def __init__(self, cellview):
+            self._cellview = cellview
+
+        def active_cellview(self):
+            return self._cellview
+
+    class MainWindow:
+        def __init__(self, view):
+            self._view = view
+
+        def current_view(self):
+            return self._view
+
+    original_main_window = drc._main_window
+    try:
+        drc._main_window = lambda: MainWindow(View(CellView(layout, child)))
+        _view, _cellview, current_layout, current_cell = drc._current_layout_view_context()
+        assert current_layout is layout
+        assert current_cell.cell_index() == child.cell_index()
+    finally:
+        drc._main_window = original_main_window
+    return child.name
+
+
+def _verify_native_macro_editor_launch(macro_path):
+    """通过替身验证原生 Macro Development 的路径配置与 action 触发。"""
+    class Action:
+        def __init__(self):
+            self.trigger_count = 0
+
+        def trigger(self):
+            self.trigger_count += 1
+
+    class Menu:
+        def __init__(self, action):
+            self._action = action
+
+        def action(self, action_id):
+            assert action_id == "macros_menu.macro_development"
+            return self._action
+
+    class MainWindow:
+        def __init__(self, action):
+            self._menu = Menu(action)
+
+        def menu(self):
+            return self._menu
+
+    class Application:
+        def __init__(self):
+            self.config = {"macro-editor-open-macros": "'C:/existing/example.lym'"}
+
+        def get_config(self, key):
+            return self.config.get(key, "")
+
+        def set_config(self, key, value):
+            self.config[key] = value
+
+    action = Action()
+    application = Application()
+    assert drc._open_native_macro_editor(macro_path, application, MainWindow(action))
+    path_text = str(Path(macro_path).resolve()).replace("\\", "/")
+    assert application.config["macro-editor-current-macro"] == path_text
+    assert "'C:/existing/example.lym'" in application.config["macro-editor-open-macros"]
+    assert "'%s'" % path_text in application.config["macro-editor-open-macros"]
+    assert action.trigger_count == 1
 
 
 def main():
-    defaults = drc.default_layer_settings()
-    expected_keys = [spec["key"] for spec in drc.LAYER_DRC_SPECS]
-    assert [setting["key"] for setting in defaults] == expected_keys
-    assert len(defaults) == 9
-    assert _setting_by_key(defaults, "si")["source"] == "input(1,0)"
-    assert _setting_by_key(defaults, "pinrec")["source"] == "input(1,10)"
-    assert _setting_by_key(defaults, "deep_trench")["source"] == "input(40,0)"
+    default_code = drc.load_persisted_drc_code()
+    assert "LayerM1.space(6.0 - tol)" in default_code
+    assert "M1 最小间距违规，最小要求 6 um" in default_code
+    assert "LayerM2.width(10.0 - tol" in default_code
+    assert "LayerM2.space(6.0 - tol)" in default_code
+    assert "M2 最小宽度违规，最小要求 10 um" in default_code
+    assert "M2 最小间距违规，最小要求 6 um" in default_code
+    assert "LayerDeepTrench.separation(LayerM2, 12.0 - tol)" in default_code
+    assert "深槽与 M2 最小间距违规，最小要求 12 um" in default_code
+    executable_lines = [line.split("#", 1)[0].strip() for line in default_code.splitlines()]
+    assert not any(re.match(r"^source\s*\(", line) for line in executable_lines)
+    assert sum(bool(re.match(r"^report\s*\(", line)) for line in executable_lines) == 1
 
-    checked_keys = [setting["key"] for setting in defaults if setting["checked"]]
-    assert checked_keys == ["si", "pinrec", "m1", "m2", "deep_trench"]
-    assert not _setting_by_key(defaults, "si_rib")["checked"]
-    assert not _setting_by_key(defaults, "devrec")["checked"]
-    assert not _setting_by_key(defaults, "floorplan")["checked"]
-    assert not _setting_by_key(defaults, "ml_open")["checked"]
-
-    layer_definitions = drc.build_layer_definitions(defaults)
-    assert "LayerSi = input(1,0)" in layer_definitions
-    assert "LayerM2 = input(12,0)" in layer_definitions
-    assert "LayerDeepTrench = input(40,0)" in layer_definitions
-
-    selected_rules = drc.build_selected_drc_rules(
-        drc.DEFAULT_GLOBAL_DRC_PARAMETERS, defaults,
-    )
-    assert "tol = 2e-3" in selected_rules
-    assert "LayerSi.width" in selected_rules
-    assert "LayerM2.overlap(LayerM1" in selected_rules
-    assert "PinRec.not_inside" in selected_rules
-    assert "LayerDeepTrench.separation" in selected_rules
-
-    without_m2 = drc.default_layer_settings()
-    _setting_by_key(without_m2, "m2")["checked"] = False
-    without_m2_rules = drc.build_selected_drc_rules(
-        drc.DEFAULT_GLOBAL_DRC_PARAMETERS, without_m2,
-    )
-    assert "LayerM2.width" not in without_m2_rules
-    assert "LayerM2.overlap" not in without_m2_rules
-    assert "LayerM1.width" in without_m2_rules
-
-    custom_si_rib = drc.default_layer_settings()
-    rib = _setting_by_key(custom_si_rib, "si_rib")
-    rib["checked"] = True
-    rib["rules"] = 'LayerSi_rib.width(0.10).output("脊型硅宽度违规", "最小要求 100 nm")'
-    custom_rules = drc.build_selected_drc_rules("", custom_si_rib)
-    assert "LayerSi_rib.width" in custom_rules
-
-    missing_source = drc.default_layer_settings()
-    _setting_by_key(missing_source, "si")["source"] = ""
+    _expect_value_error(lambda: drc.validate_drc_code(""), "空 DRC 代码必须被拒绝。")
     _expect_value_error(
-        lambda: drc.build_layer_definitions(missing_source),
-        "空 Source Specification 必须被拒绝。",
+        lambda: drc.validate_drc_code('source("input.gds", "TOP")'),
+        "用户代码中的 source() 必须被拒绝。",
     )
-
-    missing_rule = drc.default_layer_settings()
-    _setting_by_key(missing_rule, "devrec")["checked"] = True
     _expect_value_error(
-        lambda: drc.build_selected_drc_rules("", missing_rule),
-        "勾选但规则为空的图层必须被拒绝。",
+        lambda: drc.validate_drc_code('report("DRC", "result.lyrdb")'),
+        "用户代码中的 report() 必须被拒绝。",
     )
 
-    edited = drc.default_layer_settings()
-    _setting_by_key(edited, "si")["source"] = "input(101,7)"
-    text = drc.build_drc_text(
-        drc.build_layer_definitions(edited),
-        drc.build_selected_drc_rules(drc.DEFAULT_GLOBAL_DRC_PARAMETERS, edited),
+    child_name = _verify_active_cell_context()
+    scoped_code = drc.build_drc_text(
+        default_code, "input.gds", child_name, "result.lyrdb",
     )
-    assert "LayerSi = input(101,7)" in text
-    assert text.index("LayerSi =") < text.index("LayerSi.width")
+    assert 'source("input.gds", "DRC_CURRENT_CHILD")' in scoped_code
+    assert 'report("JNU MWP 设计规则检查", "result.lyrdb")' in scoped_code
+    assert drc._strip_single_argument_report(default_code).rstrip() in scoped_code
 
-    xml_text = drc.build_drc_macro_xml(text)
-    root = ET.fromstring(xml_text)
+    macro_xml = drc.build_drc_macro_xml(scoped_code)
+    root = ET.fromstring(macro_xml)
     assert root.findtext("interpreter") == "dsl"
-    assert root.findtext("dsl-interpreter-name") == "drc-dsl-xml"
-    assert root.findtext("text") == text
+    assert root.findtext("text") == scoped_code
 
-    temporary = drc.write_temporary_drc_macro(text)
+    with tempfile.TemporaryDirectory(prefix="jnu_mwp_drc_test_") as directory:
+        test_macro = Path(directory) / "JNU_MWP_DRC.lydrc"
+        shutil.copyfile(drc.drc_macro_path(), test_macro)
+        saved_code = default_code + "\n# 回归测试持久化标记\n"
+        assert drc.save_persisted_drc_code(saved_code, test_macro) == drc.validate_drc_code(saved_code)
+        assert drc.load_persisted_drc_code(test_macro) == drc.validate_drc_code(saved_code)
+        persisted_root = ET.parse(str(test_macro)).getroot()
+        assert persisted_root.findtext("text") == drc.validate_drc_code(saved_code)
+        _verify_native_macro_editor_launch(test_macro)
+
+    temporary_macro = drc.write_temporary_drc_macro(scoped_code)
     try:
-        assert os.path.isfile(temporary)
-        with open(temporary, "r", encoding="utf-8") as stream:
-            assert ET.fromstring(stream.read()).findtext("text") == text
+        assert os.path.isfile(temporary_macro)
+        with open(temporary_macro, "r", encoding="utf-8") as stream:
+            assert ET.fromstring(stream.read()).findtext("text") == scoped_code
     finally:
-        if os.path.exists(temporary):
-            os.remove(temporary)
+        if os.path.isfile(temporary_macro):
+            os.remove(temporary_macro)
 
-    # 使用显式 source/report 实际执行临时宏，确认每层表单能生成可运行 DRC。
-    with tempfile.TemporaryDirectory(prefix="jnu_drc_input_") as directory:
-        gds_path = os.path.join(directory, "input.gds")
-        report_path = os.path.join(directory, "result.lyrdb")
-        input_layout = pya.Layout()
-        input_layout.dbu = 0.001
-        top = input_layout.create_cell("TOP")
-        top.shapes(input_layout.layer(1, 0)).insert(pya.Box(0, 0, 1000, 1000))
-        input_layout.write(gds_path)
-        temporary = drc.write_temporary_drc_macro(
-            drc.build_drc_text(
-                layer_definitions, selected_rules, gds_path, "TOP", report_path,
-            )
-        )
-        try:
-            pya.Macro(temporary).run()
-            assert os.path.isfile(report_path), "临时 DRC 未输出报告。"
-        finally:
-            if os.path.exists(temporary):
-                os.remove(temporary)
-
-    # 用替身对话框覆盖用户交互，完整验证 OK 分支会载入 RDB 到当前 LayoutView。
-    main_window = pya.Application.instance().main_window()
-    if main_window is not None:
-        cellview = main_window.create_layout(1)
-        view = main_window.current_view()
-        layout = cellview.layout()
-        layout.dbu = 0.001
-        top = layout.create_cell("JNU_DRC_DIALOG_RUN")
-        top.shapes(layout.layer(1, 0)).insert(pya.Box(0, 0, 1000, 1000))
-        view.select_cell(top.cell_index(), 0)
-        original_dialog = drc.show_drc_dialog
-        try:
-            drc.show_drc_dialog = lambda: {
-                "layers": drc.default_layer_settings(),
-                "global_parameters": drc.DEFAULT_GLOBAL_DRC_PARAMETERS,
-            }
-            assert drc.run_drc(), "OK 分支未成功执行 DRC。"
-        finally:
-            drc.show_drc_dialog = original_dialog
-
-        dialog, source_editors, global_editor, rule_controls = drc.create_drc_dialog()
-        try:
-            assert len(source_editors) == 9
-            assert len(rule_controls) == 9
-            assert drc._line_text(source_editors["si"]) == "input(1,0)"
-            assert drc._line_text(source_editors["m2"]) == "input(12,0)"
-            assert global_editor.toPlainText() == drc.DEFAULT_GLOBAL_DRC_PARAMETERS
-            assert rule_controls["si"][0].isChecked()
-            assert not rule_controls["si_rib"][0].isChecked()
-            assert rule_controls["deep_trench"][0].isChecked()
-        finally:
-            dialog.close()
-
-    # 表单不读取或写入内容设置；下一次调用重新得到未修改的默认值。
-    fresh_defaults = drc.default_layer_settings()
-    assert _setting_by_key(fresh_defaults, "si")["source"] == "input(1,0)"
-    assert _setting_by_key(fresh_defaults, "m2")["checked"]
-    print("OK: layer-based interactive DRC settings and execution")
+    print("OK: native Macro Development DRC editor, persistence and active-cell scope")
 
 
 if __name__ == "__main__":
