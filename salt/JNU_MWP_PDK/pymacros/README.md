@@ -130,8 +130,6 @@
 ### 在 KLayout Python 中读取固定 GDS
 
 ```python
-from pathlib import Path
-
 import pya
 
 # 创建版图对象。
@@ -139,15 +137,8 @@ layout = pya.Layout()
 
 # 读取固定器件版图。
 layout.read(
-    str(
-        Path.home()
-        / "KLayout"
-        / "salt"
-        / "JNU_MWP_PDK"
-        / "pymacros"
-        / "JNU_MWP_gds"
-        / "1550_1_2_MMI.gds"
-    )
+    r"C:\Users\zjy\KLayout\salt\JNU_MWP_PDK\pymacros"
+    r"\JNU_MWP_gds\1550_1_2_MMI.gds"
 )
 
 # 输出顶层单元名称。
@@ -290,8 +281,6 @@ The Composite-width tab defaults to a `2.0 µm` straight width, `0.5 µm` bend w
 ### Reading a Fixed GDS Cell with KLayout Python
 
 ```python
-from pathlib import Path
-
 import pya
 
 # Create a layout object.
@@ -299,15 +288,8 @@ layout = pya.Layout()
 
 # Read a fixed-device layout.
 layout.read(
-    str(
-        Path.home()
-        / "KLayout"
-        / "salt"
-        / "JNU_MWP_PDK"
-        / "pymacros"
-        / "JNU_MWP_gds"
-        / "1550_1_2_MMI.gds"
-    )
+    r"C:\Users\zjy\KLayout\salt\JNU_MWP_PDK\pymacros"
+    r"\JNU_MWP_gds\1550_1_2_MMI.gds"
 )
 
 # Print the top-cell names.

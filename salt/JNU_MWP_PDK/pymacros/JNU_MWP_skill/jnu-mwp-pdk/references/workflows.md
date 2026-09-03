@@ -109,7 +109,7 @@
 - 用 `tests/verify_numerical_text_array_regression.py` 检查递增/递减/单值序列、数量上限、`Basic.TEXT` PCell 身份、Magnification、目标层、横纵中心距、原点归一化、唯一命名和 GDS 重读。
 - 用 `tests/verify_snap_components_regression.py` 检查单实例、多实例移动组、primitive 混选、PinRec primitive、最近相向端口、同向端口拒绝、移动组包含参考对象拒绝和整体平移保持相对位置。
 - 用 KLayout 批处理运行 `tests/verify_make_pins_for_cell_regression.py`，检查 L/R 与 T 端口的 0.5 µm 非端口净空、M1 纳入器件 bbox、PinRec 数量和旧版单一小 DevRec 的升级。
-- 用 KLayout `-z -e` 运行 `tests/verify_drc_dialog_regression.py`，检查九层 Source Specification、默认勾选层、跨层规则归属、取消勾选后的规则过滤、自定义空规则层启用、临时宏 XML、空 Source Specification 或勾选空规则拒绝、显式 source/report 的实际 DRC 执行，以及 OK 分支把报告载入当前 LayoutView；确认临时编辑不写入默认规则或配置。
+- 用 KLayout `-z -e` 运行 `tests/verify_drc_dialog_regression.py`，检查唯一 Technology DRC 文件、规则持久化、当前 Cell source 注入、临时宏 XML，以及原生编辑器的 current/active macro 同步与调试模式关闭。再运行 `tests/verify_drc_execution_regression.py`，用确定违规版图确认原生规则连续执行两次都能新增非空 Marker Database，并确认当前 Cell 菜单入口也能载入报告。
 - 用 `tests/verify_public_pcell_devrec_regression.py` 审计全部公开 PCell 的 `68/0`，覆盖微环两种 drop 总线及三类 Spiral 的 type1/type2/type3，检查单一矩形边界、端口边/非端口边净空、Si 包含关系和 GDS 重读。
 - 用 `tests/verify_straight_waveguide_regression.py` 检查默认 W/L、Si 尺寸、两个水平端口、PinRec 宽度、上下 1 µm DevRec、Text 和 GDS 重读。
 - 用 `tests/verify_reload_pdk_regression.py` 连续重载三次，确认公开库不重复、Straight_Waveguide 保留、内部两类 Waveguide PCell ID 不变且已有 variant 完成重算。

@@ -9,11 +9,11 @@ description: Use when developing, verifying, or packaging the JNU_MWP_PDK KLayou
 
 ## Project Roots
 
-- Workspace: `%USERPROFILE%\KLayout`
-- PDK: `%USERPROFILE%\KLayout\salt\JNU_MWP_PDK`
-- Canonical skill: `%USERPROFILE%\KLayout\salt\JNU_MWP_PDK\pymacros\JNU_MWP_skill\jnu-mwp-pdk`
-- Fixed GDS source: `%USERPROFILE%\KLayout\salt\JNU_MWP_PDK\pymacros\JNU_MWP_gds`
-- Blackbox output: `%USERPROFILE%\Desktop\JNU_MWP_PDK_blackbox_v1.1`
+- Workspace: `C:\Users\zjy\KLayout`
+- PDK: `C:\Users\zjy\KLayout\salt\JNU_MWP_PDK`
+- Canonical skill: `C:\Users\zjy\KLayout\salt\JNU_MWP_PDK\pymacros\JNU_MWP_skill\jnu-mwp-pdk`
+- Fixed GDS source: `C:\Users\zjy\KLayout\salt\JNU_MWP_PDK\pymacros\JNU_MWP_gds`
+- Blackbox output: `C:\Users\zjy\Desktop\JNU_MWP_PDK_blackbox_v1.1`
 
 ## Core Rules
 
@@ -27,7 +27,7 @@ description: Use when developing, verifying, or packaging the JNU_MWP_PDK KLayou
 - `pymacros/JNU_MWP_tools` 按职责分为 `core/`（公共计算与端口）、`actions/`（菜单功能）、`release/`（发布工具）和 `tests/`（回归脚本）；根目录只保留包入口。PCell 文件确保 `pymacros` 位于 `sys.path`，并通过 `from JNU_MWP_tools.core.make_pin import make_pin` 导入端口生成函数。旧版 `JNU_MWP_tools.<module>` 导入仅由根 `__init__.py` 的运行时别名兼容，不恢复根目录重复文件。
 - Layout 菜单的 `Numerical text array` 生成普通容器 Cell；每个编号必须保持为 `Basic.TEXT` PCell 实例，字号字段直接映射 `Basic.Text.mag`，不得转换为普通 `pya.Text` 或多边形；排列距离定义为相邻文字实际 bbox 的中心距，DBU 量化误差不超过 1 DBU。
 - Layout 菜单的 `Snap components` 采用 transient selection 流程：当前选中的全部对象为移动组，鼠标悬停命中的对象为固定参考；不限制选中对象类型，只要选中集合和参考对象中能识别到 PinRec 光学端口即可，在双方全部端口中选择距离最近且方向相差 180° 的端口对，对移动组全部对象执行整体平移，不旋转、不镜像、不修改 PCell 参数。成功或端口已经重合时完全静默，仅失败时弹窗提示。
-- `DRC → JNU_MWP_DRC` 必须直接打开 KLayout 原生 `Macro Development` 并定位到 `drc/JNU_MWP_DRC.lydrc`，不得再实现自制文本编辑对话框。用户通过原生编辑器保存规则，修改跨重启保留。规则文件保留且只允许一个单参数 `report("标题")`，使原生绿色 Run 建立报告上下文；禁止直接调用 `source()` 或带报告路径的 `report()`。`DRC → Run JNU_MWP_DRC` 读取已保存规则、剥离该单参数 report，将当前内存 layout 写入临时 GDS，并注入当前正在编辑的 `active_cell` 作为 source top cell 与临时报告路径，因此只检查该 cell 及其子层级。所有规则的注释、`output()` 描述和数值阈值必须一致；临时 GDS、宏和 `.lyrdb` 在报告载入当前 Marker Browser 后删除。
+- `DRC → JNU_MWP_DRC` 必须直接打开 KLayout 原生 `Macro Development` 并定位到 `drc/JNU_MWP_DRC.lydrc`，不得再实现自制文本编辑对话框。打开时必须同步设置 `macro-editor-current-macro` 与 `macro-editor-active-macro`，并关闭 `macro-editor-debugging-enabled`，避免界面显示规则与绿色 Run 实际执行目标不一致，或连续 DRC 被调试状态占住。Technology 的 `drc` 目录只能保留这一份 `.lydrc`，禁止混入 KLayout 示例规则造成重复或误选。用户通过原生编辑器保存规则，修改跨重启保留。规则文件保留且只允许一个单参数 `report("标题")`，使原生绿色 Run 建立报告上下文；禁止直接调用 `source()` 或带报告路径的 `report()`。`DRC → Run JNU_MWP_DRC` 读取已保存规则、剥离该单参数 report，将当前内存 layout 写入临时 GDS，并注入当前正在编辑的 `active_cell` 作为 source top cell 与临时报告路径，因此只检查该 cell 及其子层级。所有规则的注释、`output()` 描述和数值阈值必须一致；临时 GDS、宏和 `.lyrdb` 在报告载入当前 Marker Browser 后删除。DRC 执行回归必须使用确定违规版图，连续执行原生规则至少两次，并断言每次报告 marker 数量非零，不能只检查报告文件是否存在。
 - `pymacros/JNU_MWP_gds` 是 23 个固定白盒 GDS 的唯一规范目录；`JNULib.py` 只从该目录注册稳定白盒库 `JNULib`。库注册名属于 PCell 身份，白盒与黑盒必须分别固定为 `JNULib` 和 `JNULib_BlackBox`，不得将发行版本号写入库名或新生成器件的库身份；发行版本应写入 `Library.description`，使 Library 面板显示为“稳定库名 — vX.Y, 组件说明”，与 EBeam 的显示语义一致。旧的 `*_v1.x` 名称只用于载入时清理兼容。已删除的顶层 `gds` 目录是旧副本，不得重新创建或引用。
 - EBeam PDK 已安装且已加载时，`JNULib` 启动阶段调用 `core/ebeam_library_bridge.py`，把 EBeam、EBeam_Beta、EBeam-Dream、EBeam-SiN、EBeam-ANT 以同名 Library 注册到 `JNU_MWP_PDK` Technology，使当前技术选择为 JNU 时 Library 面板仍可显示 EBeam 器件库。桥接必须复用已安装 EBeam 的 GDS、PCell 源码和版本说明；不得修改、删除或将原 `EBeam` Technology 的 Library 改绑为 JNU。EBeam 未安装或未加载时静默跳过，JNU PDK 仍应独立工作。
 - Waveguide PCell 与 Path to Waveguide 共用 `draw_waveguide_geometry()`；Si 与 DevRec 都把中心线扫掠结果规范化为 Polygon，DevRec 总宽度为 `wg_width + 2 µm`，即 Si 两侧各保留 1 µm 器件识别净空。PCell TypeShape `path` 和恢复属性继续保存可编辑 Manhattan 中心线，但不得在物理层或 `1/99` 生成恢复 Path。
@@ -35,7 +35,8 @@ description: Use when developing, verifying, or packaging the JNU_MWP_PDK KLayou
 - `JNULib` 注册的每个公开 PCell 都必须生成 `68/0` DevRec。普通器件使用单一矩形识别边界：先取实际波导层 bbox，具有外向 PinRec 端口的边保持器件原边界，其他边在 Si 外增加 1 µm 净空；不得让 Text 或 PinRec 自身扩大器件 bbox。内部 `Waveguide` / `Composite_Waveguide` 继续按各自中心线和局部宽度规则生成 DevRec。
 - `Make Pins for Cell` 对无 DevRec 的普通 cell 使用与 SiEPIC Component 转换一致的规则：由 Si、JNU SiN、EBeam SiN、Rib 与 M1 的递归器件 bbox 生成单一 `68/0` Box；选中的 L/R/T/B 端口边与物理器件边严格对齐，所有未选端口边外扩 0.5 µm。旧版工具写入的单一小 DevRec Box 在下一次执行时可安全升级；包含文字或其他形状的自定义 DevRec 不得覆盖。PinRec 始终在与选中端口对应的物理器件边生成。
 - 公开 `Straight_Waveguide` 默认宽度 0.5 µm、长度 50 µm；沿 +X 生成单一 Si 矩形，opt1/opt2 分别朝 180°/0°，PinRec 宽度等于波导宽度。DevRec 左右端面与 Si 端面齐平，上下各扩展 1 µm，并固定写入 68/0。
-- 公开 PCell 名称仅为 `S_Bend`，不得继续注册 `S_Bend_Waveguide` 别名。其 Bezier 参数 `B` 直接定义第二控制点的归一化水平坐标，必须满足 `P2.x=B*L`、`P1.x=(1-B)*L`，不得使用 `1-B` 作为界面实际值，也不得按端点欧氏距离再次缩放；独立PCell默认 `B=0.35`。`SBend connect` 固定以 Bezier、`B=0.3`、`R=30 µm` 创建初始PCell参数。S_Bend 的 Si 和 DevRec 只写 Polygon，`1/99` 保持为空，PinRec 保留有方向短 Path。
+- 公开 PCell 名称仅为 `S_Bend`，不得继续注册 `S_Bend_Waveguide` 别名。其 Bezier 参数 `B` 直接定义第二控制点的归一化水平坐标，必须满足 `P2.x=B*L`、`P1.x=(1-B)*L`，不得使用 `1-B` 作为界面实际值，也不得按端点欧氏距离再次缩放；独立PCell默认 `B=0.35`。S_Bend 的 Si 和 DevRec 只写 Polygon，`1/99` 保持为空，PinRec 保留有方向短 Path。
+- `Cell Connect by Waveguide` 取两个选中 Cell Instance 中距离最近且方向相向的 PinRec 端口对，仅支持 `0°↔180°` 与 `270°↔90°`。两个端口中心严格共线时，必须复用 Path to Waveguide 的单宽度参数与本地内部 `Waveguide` PCell 创建流程，保存原始两点 Manhattan Path 和实例恢复属性，保证 GDS 重启后可执行 Waveguide to Path；存在侧向偏移时创建可编辑 `S_Bend`，并固定使用 Bezier、`B=0.3`、`R=30 µm` 初始参数。水平和垂直连接都必须把 PCell 两端准确放到端口中心，旧 `SBend connect` 菜单标题不再保留。
 - 波导实体层统一使用 Polygon：`Bend_90deg`、内部 `Waveguide`、`S_Bend`、`Paperclip_Spiral` 与 `Paperclip_Spiral_with_Composite_Waveguide` 不得在 Si 或路径式 DevRec 图层写入 Path；PinRec 是方向识别载体，必须继续使用短 Path。Paperclip 长中心线仍只在安全直段分块，各块转换为 Polygon；Composite Paperclip 合并直段、taper 和弯曲 Polygon，并闭合 DBU 舍入产生的微小拼接缝。
 - `Taper` 的 `length` 仅表示线性渐变段长度；`port1_extension_length` 和 `port2_extension_length` 默认为 0 µm且不得为负。opt1 固定在 x=0，几何依次为 width1 直段、渐变段、width2 直段，opt2 位于三段总长度末端；Si 是单一连续 Polygon，DevRec 覆盖完整长度，PinRec 随端部延伸移动。
 - Path to Waveguide 支持单宽度与复合宽度两类生成模式。复合模式创建 `Composite_Waveguide`，默认直宽2 µm、起始端/终端下拉均选择直宽、弯宽0.5 µm、taper 20 µm、直/弯 transition 2 µm、Bezier B=0.3、R=30 µm；端部下拉只允许选择当前直宽或弯宽。端部PinRec分别使用起始端/终端实际宽度，Waveguide to Path恢复为直宽Path。选择弯宽的起始端到第一个弯曲入口、选择弯宽的最后一个弯曲出口到终端都保持弯宽；其余弯宽到直宽的局部过渡完全位于相邻直段，顺序为弯宽直段 transition → taper → 直宽直段 transition，保证taper两端曲率为0。DevRec按局部宽度两侧各扩1 µm。半径或直段长度不足时先列出问题线段并Yes/Cancel确认，继续后每条Path采用统一最大可行半径；固定 taper/transition 仍无法容纳的Path不得转换。

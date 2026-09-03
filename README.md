@@ -39,6 +39,8 @@ C:\Users\<用户名>\KLayout\tech\JNU_MWP_PDK
 
 ### 重要说明
 
+本项目基于 Lukas Chrostowski 及贡献者的原始项目开发。原始 MIT 许可证及版权声明已被保留，详见根目录的 `LICENSE.md`。
+
 本仓库没有上传固定白盒器件 GDS 目录：
 
 ```text
@@ -89,6 +91,8 @@ Then restart KLayout, or reload macros from Macro Development. After successful 
 - Libraries: `JNULib`, `JNULib_BlackBox`
 
 ### Notes
+
+This project is based on the original project by Lukas Chrostowski and contributors. The original MIT license and copyright notices have been retained. See `LICENSE.md` in the repository root.
 
 The fixed whitebox GDS directory is intentionally not committed:
 

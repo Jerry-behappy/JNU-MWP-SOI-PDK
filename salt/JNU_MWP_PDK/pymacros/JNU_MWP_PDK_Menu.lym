@@ -23,12 +23,11 @@
 # pya.Action 注册功能项，确保 autorun 宏结束后回调仍然有效：
 #   Waveguides -> Path to Waveguide
 #   Waveguides -> Waveguide to Path
-#   Waveguides -> SBend connect
+#   Waveguides -> Cell Connect by Waveguide
 #   Layout     -> Make Pins for Cell
 #   Layout     -> Layer Exclude
 #   Layout     -> Numerical text array
 #   Layout     -> Snap components
-#   DRC        -> JNU_MWP_DRC / Run JNU_MWP_DRC
 #   Reload JNU PDK
 #
 # 注意事项：
@@ -49,6 +48,11 @@ _PYMACROS_DIR = os.path.dirname(os.path.abspath(__file__))
 if _PYMACROS_DIR not in sys.path:
     sys.path.insert(0, _PYMACROS_DIR)
 _PDK_ROOT = os.path.dirname(_PYMACROS_DIR)
+
+# JNU DRC 已恢复；打开原生编辑器时仍由 actions/drc.py 关闭调试模式，
+# 并同步当前宏与活动运行宏，避免再次出现 Run 目标错位。
+_JNU_DRC_ENABLED = True
+_JNU_DRC_MACRO_NAMES = ("jnu mwp drc.lydrc", "jnu_mwp_drc.lydrc")
 
 # 早期恢复宏之外，菜单 autorun 再执行一次幂等安装，覆盖热重载与旧版
 # KLayout 没有运行 early macro 的环境；该调用不会注册到公开 JNULib。
@@ -81,12 +85,12 @@ from JNU_MWP_tools.actions.waveguide_to_path import waveguide_to_path as _fn
 _fn()
 """ % {"pymacros_dir": _PYMACROS_DIR.replace("\\", "\\\\")}
 
-_SBEND_CONNECT_CODE = r"""
+_CELL_CONNECT_CODE = r"""
 import sys
 _PD = r'%(pymacros_dir)s'
 if _PD not in sys.path:
     sys.path.insert(0, _PD)
-from JNU_MWP_tools.actions.sbend_connect import sbend_connect as _fn
+from JNU_MWP_tools.actions.cell_connect_by_waveguide import cell_connect_by_waveguide as _fn
 _fn()
 """ % {"pymacros_dir": _PYMACROS_DIR.replace("\\", "\\\\")}
 
@@ -194,6 +198,37 @@ def _decode_config_shortcut(value):
     return text
 
 
+def _is_jnu_drc_macro_path(value):
+    """判断 Macro Development 配置项是否指向已禁用的 JNU DRC。"""
+    normalized = str(value or "").replace("\\", "/").strip(" '\";").lower()
+    return any(normalized.endswith("/drc/" + name) for name in _JNU_DRC_MACRO_NAMES)
+
+
+def _remove_jnu_drc_open_macros(value):
+    """仅移除已禁用的 JNU DRC 标签，保留用户打开的其他宏。"""
+    entries = [entry.strip() for entry in str(value or "").split(";") if entry.strip()]
+    return ";".join(entry for entry in entries if not _is_jnu_drc_macro_path(entry))
+
+
+def _disable_jnu_drc_macro_editor_state(app):
+    """关闭宏调试模式，并清理 JNU DRC 遗留的活动运行目标。"""
+    app.set_config("macro-editor-debugging-enabled", "false")
+    for key in ("macro-editor-active-macro", "macro-editor-current-macro"):
+        try:
+            value = app.get_config(key)
+        except Exception:
+            value = ""
+        if _is_jnu_drc_macro_path(value):
+            app.set_config(key, "")
+    try:
+        open_macros = app.get_config("macro-editor-open-macros")
+    except Exception:
+        open_macros = ""
+    cleaned = _remove_jnu_drc_open_macros(open_macros)
+    if cleaned != str(open_macros or ""):
+        app.set_config("macro-editor-open-macros", cleaned)
+
+
 def _configured_shortcuts(app, action_specs):
     """按稳定菜单路径读取 KLayout 已保存的快捷键，不改写用户配置。"""
     path_to_id = {
@@ -222,6 +257,10 @@ def register_jnu_menu_items():
     if main_window is None:
         return
 
+    # JNU DRC 诊断性禁用期间，不让旧活动宏或调试模式继续占用原生 Run。
+    if not _JNU_DRC_ENABLED:
+        _disable_jnu_drc_macro_editor_state(app)
+
     menu = main_window.menu()
 
     # ---- 顶层菜单 ----
@@ -239,29 +278,34 @@ def register_jnu_menu_items():
     if not menu.is_menu(layout_parent):
         menu.insert_menu(root_menu + ".waveguides+", "layout", "Layout")
 
-    # ---- DRC 子菜单（保留给 JNU_MWP_DRC） ----
+    # ---- DRC 子菜单 ----
     drc_parent = root_menu + ".drc"
-    if not menu.is_menu(drc_parent):
+    if _JNU_DRC_ENABLED and not menu.is_menu(drc_parent):
         menu.insert_menu(root_menu + ".layout+", "drc", "DRC")
 
-    action_specs = (
+    action_specs = [
         (waveguide_parent, "jnu_action_path_to_waveguide", "Path to Waveguide", _PATH_TO_WAVEGUIDE_CODE),
         (waveguide_parent, "jnu_action_waveguide_to_path", "Waveguide to Path", _WAVEGUIDE_TO_PATH_CODE),
-        (waveguide_parent, "jnu_action_sbend_connect_between_two_cells", "SBend connect", _SBEND_CONNECT_CODE),
+        # 保留旧 Action ID，使已经保存的 SBend connect 快捷键自动迁移到新功能。
+        (waveguide_parent, "jnu_action_sbend_connect_between_two_cells", "Cell Connect by Waveguide", _CELL_CONNECT_CODE),
         (layout_parent, "jnu_action_make_pins_for_cell", "Make Pins for Cell", _MAKE_PINS_CODE),
         (layout_parent, "jnu_action_layer_exclude", "Layer Exclude", _LAYER_EXCLUDE_CODE),
         (layout_parent, "jnu_action_numerical_text_array", "Numerical text array", _NUMERICAL_TEXT_ARRAY_CODE),
         (layout_parent, "jnu_action_snap_components", "Snap components", _SNAP_COMPONENTS_CODE),
-        (drc_parent, "jnu_action_jnu_mwp_drc", "JNU_MWP_DRC", _JNU_DRC_CODE),
-        (drc_parent, "jnu_action_run_jnu_mwp_drc", "Run JNU_MWP_DRC", _RUN_JNU_DRC_CODE),
         (root_menu, "jnu_action_reload_jnu_pdk", "Reload JNU PDK", _RELOAD_PDK_CODE),
-    )
+    ]
+    if _JNU_DRC_ENABLED:
+        action_specs.extend((
+            (drc_parent, "jnu_action_jnu_mwp_drc", "JNU_MWP_DRC", _JNU_DRC_CODE),
+            (drc_parent, "jnu_action_run_jnu_mwp_drc", "Run JNU_MWP_DRC", _RUN_JNU_DRC_CODE),
+        ))
 
     # 先按稳定 action ID 保存当前会话中的快捷键。第一次从旧版菜单升级时，
     # 旧代码尚无 ID 映射，因此再按唯一标题恢复一次。
     old_actions = list(getattr(main_window, "_jnu_menu_actions", []))
     old_actions_by_id = dict(getattr(main_window, "_jnu_menu_actions_by_id", {}))
     title_to_id = {title: item_id for _parent, item_id, title, _code in action_specs}
+    title_to_id["SBend connect"] = "jnu_action_sbend_connect_between_two_cells"
     shortcut_by_id = _configured_shortcuts(app, action_specs)
     for item_id, action in old_actions_by_id.items():
         shortcut = _action_property(action, "shortcut", "")
@@ -276,10 +320,20 @@ def register_jnu_menu_items():
 
     # 重载菜单宏时先移除旧入口和旧 Action 引用，保证菜单注册幂等。
     item_paths = [parent + "." + item_id for parent, item_id, _title, _code in action_specs]
+    # 即使当前处于禁用状态，也要清理本会话中旧菜单宏留下的两个 DRC Action。
+    item_paths.extend((
+        drc_parent + ".jnu_action_jnu_mwp_drc",
+        drc_parent + ".jnu_action_run_jnu_mwp_drc",
+    ))
     item_paths.append(layout_parent + ".jnu_action_snap_selected_components")
     for item_path in item_paths:
         try:
             menu.delete_item(item_path)
+        except Exception:
+            pass
+    if not _JNU_DRC_ENABLED:
+        try:
+            menu.delete_item(drc_parent)
         except Exception:
             pass
     actions = []

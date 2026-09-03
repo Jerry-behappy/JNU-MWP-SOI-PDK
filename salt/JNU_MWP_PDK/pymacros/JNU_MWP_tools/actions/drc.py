@@ -277,10 +277,16 @@ def _open_native_macro_editor(macro_path, application=None, main_window=None):
         existing = application.get_config("macro-editor-open-macros")
     except Exception:
         existing = ""
+    # KLayout 分别保存“当前文件”和“活动运行文件”。两者必须同步，否则界面
+    # 虽然显示 JNU 规则，绿色 Run 仍可能执行上一次选中的宏。
     application.set_config("macro-editor-current-macro", path_text)
+    application.set_config("macro-editor-active-macro", path_text)
     application.set_config(
         "macro-editor-open-macros", _append_open_macro(existing, path_text),
     )
+    # DRC 应使用普通运行模式；调试模式会显著降低几何规则执行速度，并可能
+    # 使连续运行停留在上一轮调试状态，从而让两个绿色 Run 暂时失效。
+    application.set_config("macro-editor-debugging-enabled", "false")
 
     action = main_window.menu().action(_MACRO_DEVELOPMENT_ACTION)
     if action is None:

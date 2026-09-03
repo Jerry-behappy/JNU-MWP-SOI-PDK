@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <klayout-macro>
- <description>JNU_MWP_DRC</description>
+ <description/>
  <version/>
  <category>drc</category>
  <prolog/>
@@ -42,7 +42,7 @@ LayerDeepTrench = input(40, 0)    # 深槽隔离层
 # 非物理规则检查（功能检查）
 #################
 
-# 检查器件是否重叠（已注释）
+# 检查器件是否重叠
 # overlaps = DevRec.merged(2)
 # output(overlaps, "器件重叠", "器件不能相互重叠")
 
@@ -92,7 +92,7 @@ LayerM2.overlap(LayerM1, 3.0 - tol).output("M2 与 M1 重叠违规", "M2 与 M1 
 # 波导端口检查
 #################
 # PinRec 以 Si 端面为中心，外侧一半按端口识别规范露出，因此只要求与 Si 相交。
-PinRec.not_interacting(LayerSi).output("波导断开警告", "端口必须与硅材料相交")
+PinRec.not_inside(LayerSi).output("波导断开警告", "端口必须与硅材料相交")
 
 # 深槽与金属的最小间距：M1 为 12 um，M2 为 12 um。
 LayerDeepTrench.separation(LayerM1, 12.0 - tol).output("深槽与 M1 间距违规", "深槽与 M1 最小间距违规，最小要求 12 um")

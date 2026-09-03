@@ -110,12 +110,17 @@ def _verify_native_macro_editor_launch(macro_path):
     assert drc._open_native_macro_editor(macro_path, application, MainWindow(action))
     path_text = str(Path(macro_path).resolve()).replace("\\", "/")
     assert application.config["macro-editor-current-macro"] == path_text
+    assert application.config["macro-editor-active-macro"] == path_text
+    assert application.config["macro-editor-debugging-enabled"] == "false"
     assert "'C:/existing/example.lym'" in application.config["macro-editor-open-macros"]
     assert "'%s'" % path_text in application.config["macro-editor-open-macros"]
     assert action.trigger_count == 1
 
 
 def main():
+    drc_files = sorted(drc.drc_macro_path().parent.glob("*.lydrc"))
+    assert drc_files == [drc.drc_macro_path()], "Technology DRC 目录只能保留唯一 JNU 规则文件。"
+
     default_code = drc.load_persisted_drc_code()
     assert "LayerM1.space(6.0 - tol)" in default_code
     assert "M1 最小间距违规，最小要求 6 um" in default_code

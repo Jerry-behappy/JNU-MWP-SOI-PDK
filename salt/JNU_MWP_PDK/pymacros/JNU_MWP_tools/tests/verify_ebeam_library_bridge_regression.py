@@ -12,9 +12,8 @@ import pya
 
 
 PYMACROS_DIR = Path(__file__).resolve().parents[2]
-KLAYOUT_HOME = Path.home() / "KLayout"
-EBEAM_ROOT = KLAYOUT_HOME / "salt" / "siepic_ebeam_pdk" / "EBeam"
-SIEPIC_PYTHON_DIR = KLAYOUT_HOME / "salt" / "siepic_tools" / "python"
+EBEAM_ROOT = Path(r"C:\Users\zjy\KLayout\salt\siepic_ebeam_pdk\EBeam")
+SIEPIC_PYTHON_DIR = Path(r"C:\Users\zjy\KLayout\salt\siepic_tools\python")
 
 for module_path in (PYMACROS_DIR, SIEPIC_PYTHON_DIR):
     if str(module_path) not in sys.path:

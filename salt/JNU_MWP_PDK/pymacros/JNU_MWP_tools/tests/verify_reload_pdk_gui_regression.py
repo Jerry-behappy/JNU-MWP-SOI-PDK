@@ -29,6 +29,13 @@ EXPECTED_SHORTCUTS = {
     "jnu_action_run_jnu_mwp_drc": "",
     "jnu_action_reload_jnu_pdk": "Ctrl+Alt+R",
 }
+_PERSISTENT_CONFIG_KEYS = (
+    "key-bindings",
+    "macro-editor-debugging-enabled",
+    "macro-editor-active-macro",
+    "macro-editor-current-macro",
+    "macro-editor-open-macros",
+)
 
 
 def _assert(condition, message):
@@ -41,6 +48,8 @@ def _check_menu(main_window):
     _assert(len(actions) == EXPECTED_ACTION_COUNT, "JNU 菜单 Action 数量错误：%d。" % len(actions))
     titles = sorted(str(action.title) for action in actions)
     _assert("Reload JNU PDK" in titles, "根菜单缺少 Reload JNU PDK。")
+    _assert("Cell Connect by Waveguide" in titles, "Waveguides 菜单缺少自动连接功能。")
+    _assert("SBend connect" not in titles, "旧 SBend connect 菜单标题仍然存在。")
     _assert(len(titles) == len(set(titles)), "JNU 菜单存在重复 Action。")
 
 
@@ -148,11 +157,8 @@ def _verify_reload_timer_lifecycle(reload_pdk):
         reload_pdk._PENDING_RELOAD_TIMER = original_timer
 
 
-def main():
-    app = pya.Application.instance()
-    main_window = app.main_window() if app is not None else None
-    _assert(main_window is not None, "该测试需要 KLayout -z -e 隐藏 GUI。")
-
+def _run_regression(app, main_window):
+    """执行菜单和重载回归；持久配置由外层负责恢复。"""
     pya.Macro(str(MENU_MACRO)).run()
     _check_menu(main_window)
     _set_test_shortcuts(main_window)
@@ -203,6 +209,22 @@ def main():
     _assert(library_count == 1, "GUI 重载后存在重复 JNULib。")
     print("OK: menu, shortcuts and Reload JNU PDK remained stable after repeated GUI reloads.")
     return 0
+
+
+def main():
+    """隔离测试期间的 KLayout 配置修改，避免污染用户 Macro Development。"""
+    app = pya.Application.instance()
+    main_window = app.main_window() if app is not None else None
+    _assert(main_window is not None, "该测试需要 KLayout -z -e 隐藏 GUI。")
+    original_config = {
+        key: str(app.get_config(key) or "")
+        for key in _PERSISTENT_CONFIG_KEYS
+    }
+    try:
+        return _run_regression(app, main_window)
+    finally:
+        for key, value in original_config.items():
+            app.set_config(key, value)
 
 
 if __name__ == "__main__":

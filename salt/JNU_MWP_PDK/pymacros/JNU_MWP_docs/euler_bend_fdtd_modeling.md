@@ -4,10 +4,10 @@
 适用对象：`Bend_90deg`、`Waveguide` 中的 90° Manhattan 圆角、使用公共 `corner_points()` 的 Spiral/Paperclip 局部 90° 弯曲。  
 主要源码依据：
 
-- `%USERPROFILE%\KLayout\salt\JNU_MWP_PDK\pymacros\JNU_MWP_pcells\bend_90deg.py`
-- `%USERPROFILE%\KLayout\salt\JNU_MWP_PDK\pymacros\JNU_MWP_tools\core\bend_curvature.py`
-- `%USERPROFILE%\KLayout\salt\JNU_MWP_PDK\pymacros\JNU_MWP_tools\core\bend_sampling.py`
-- `%USERPROFILE%\KLayout\salt\JNU_MWP_PDK\d25\d25.lyd25`
+- `C:\Users\zjy\KLayout\salt\JNU_MWP_PDK\pymacros\JNU_MWP_pcells\bend_90deg.py`
+- `C:\Users\zjy\KLayout\salt\JNU_MWP_PDK\pymacros\JNU_MWP_tools\core\bend_curvature.py`
+- `C:\Users\zjy\KLayout\salt\JNU_MWP_PDK\pymacros\JNU_MWP_tools\core\bend_sampling.py`
+- `C:\Users\zjy\KLayout\salt\JNU_MWP_PDK\d25\d25.lyd25`
 
 ## 1. 结论先行
 
@@ -136,11 +136,11 @@ FDTD 里常用的最小材料设置：
 如果 FDTD 环境更适合脚本生成，可以使用本目录附带脚本导出中心线：
 
 ```powershell
-python %USERPROFILE%\KLayout\salt\JNU_MWP_PDK\pymacros\JNU_MWP_docs\export_euler_bend_points.py `
+python C:\Users\zjy\KLayout\salt\JNU_MWP_PDK\pymacros\JNU_MWP_docs\export_euler_bend_points.py `
   --rmax 30 `
   --rmin 10 `
   --width 0.5 `
-  --output %USERPROFILE%\Desktop\jnu_euler_bend_Rmax30_Rmin10.csv
+  --output C:\Users\zjy\Desktop\jnu_euler_bend_Rmax30_Rmin10.csv
 ```
 
 CSV 中的 `x_um, y_um` 是中心线坐标。FDTD 中需要以 `width` 对中心线做等距外扩，或者按中心线采样点生成多段圆滑波导。若 FDTD 工具支持直接导入路径并指定宽度，建议保持单位为 µm。
