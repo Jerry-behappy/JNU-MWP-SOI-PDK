@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<klayout-macro>
+ <description>Path to Waveguide</description>
+ <version/>
+ <category>pymacros</category>
+ <prolog/>
+ <epilog/>
+ <doc/>
+ <autorun>false</autorun>
+ <autorun-early>false</autorun-early>
+ <shortcut/>
+  <show-in-menu>false</show-in-menu>
+ <group-name/>
+ <menu-path>jnu_mwp_pdk_menu.waveguides.begin</menu-path>
+ <interpreter>python</interpreter>
+ <dsl-interpreter-name/>
+ <text># -*- coding: utf-8 -*-
+# 创建者: Junyi Zhang
+# 时间: 2026-09
+
+# JNU_MWP_PDK 菜单动作：把 Path 转换为 JNU Waveguide PCell。
+# 这里调用 JNU 本地 GUI，可直接设置 width、radius 和 bend_type，不依赖 WAVEGUIDES.xml。
+import os
+import sys
+
+import pya
+
+# 由宏文件位置反推 pymacros，安装在任意用户目录均可运行。
+PYMACROS_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if PYMACROS_DIR not in sys.path:
+    # KLayout 菜单动作宏有时不会继承 pymacros 路径，这里显式加入以保证工具模块可导入。
+    sys.path.insert(0, PYMACROS_DIR)
+
+try:
+    from JNU_MWP_tools.actions.path_to_waveguide import path_to_waveguide
+
+
+    path_to_waveguide()
+except Exception as error:
+    pya.MessageBox.warning("JNU_MWP_PDK", "Path to Waveguide 失败：\n%s" % error, pya.MessageBox.Ok)
+</text>
+</klayout-macro>

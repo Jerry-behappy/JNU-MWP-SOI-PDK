@@ -66,6 +66,27 @@
 
 ## Fixed GDS and Naming
 
+### Public Package and Authorized GDS
+
+- 推荐分发方式为公开 `JNU-MWP-SOI-PDK` Package，私有 `JNU-MWP-SOI-Library` 单独授权；不要修改后者的可见性。
+- `release/package_lab_pdk.py --public --blackbox-source <已验证黑盒目录> --output <新目录>` 只复制运行时代码、公开 PCell、黑盒 GDS、相对路径技术文件和授权安装器，不携带 skill、测试、构建工具或白盒 GDS。
+- 将构建结果同步到 Git 仓库的 `packages/`，`grain.xml` URL 指向 `packages/JNU_MWP_PDK[main]`。更新代码时提高版本号并同步重新生成包及 `packages/repository.xml`，再直接推送 main。
+- 用户执行一次 `Enable_JNU_Packages.ps1` 配置包含官方源及既有自定义源的索引；不自动登记官方 Salt.Mine。后续使用 Manage Packages 更新公开代码。
+- `Install_Private_GDS.ps1` 支持已授权下载并解压后的 `-Source` 目录，以及当前用户 `gh auth login` 后的私有仓库下载。只把 `.gds` 写入 `<KLayout home>/jnu_private/JNU_MWP_gds`，先验证输入再备份/替换；不将私有数据放回 Salt 管理目录。
+- `core/fixed_gds.py` 先使用独立私有目录，缺失时兼容开发目录及完整离线包。公开代码更新/卸载不得删除独立 GDS；撤销远端授权不会删除本地已下载数据。
+- 验证 `verify_lab_package_installation.py --public --package <构建结果> --klayout <exe> --private-gds-source <授权GDS>`；发布后加 `--index-url <真实公开索引>` 验证匿名 Salt 下载。还需测试 SiEPIC/EBeam 共存。禁止以本机已登录 GitHub 的克隆成功替代匿名 Package 安装验收。
+
+### Optional Offline Laboratory Package
+
+- 公开代码仓库为 `Jerry-behappy/JNU-MWP-SOI-PDK`，私有固定器件仓库为 `Jerry-behappy/JNU-MWP-SOI-Library`。运行时继续从安装包内 `pymacros/JNU_MWP_gds` 加载；独立器件仓库不直接作为未经认证的公共 Salt 依赖。
+- 完整内部交付使用 `release/package_lab_pdk.py --gds-source <checkout/JNU_MWP_gds> --output <新目录> --zip`；源码、私有 GDS checkout、本机正在使用的 PDK 都不因构建而修改。GDS 数量以所选器件版本为准，不硬编码为本机开发目录数量。
+- 交付使用 `grain.xml` 和 `JNU_MWP_PDK_Startup.lym`；接收方运行 `Open_Lab_Package_Manager.ps1` 生成本地 Salt 索引，再通过 Manage Packages 安装、更新和卸载。更新提高 grain 版本号，库名和 Technology 名保持稳定。
+- 早期启动宏不能导入 `JNULib` 或 SiEPIC；公开库保留 `pymacros/__init__.py` 普通 autorun 入口，主窗口建立后才允许桥接 EBeam。SiEPIC 的 `_globals.Python_Env` 在首次导入时缓存，提前导入会跳过 `setup` 并导致 EBeam 宏菜单挂到错误位置。
+- 用 `tests/verify_lab_package_installation.py --package <交付目录> --klayout <exe>` 验证实际 Salt 安装、无外部 tech、两次冷启动、菜单快捷键、全部固定器件和公开 PCell 几何；另传两个 `--peer-package`，分别指向已安装的 `siepic_tools` 和 `siepic_ebeam_pdk`，验证共存时环境为 GUI、EBeam DRC/示例宏位于 SiEPIC 子菜单。探针在事件循环和菜单挂载完成后执行，共存时创建 EBeam Technology 视图。仅有进程退出码不算通过，必须读取 probe 成功报告。测试在临时 KLAYOUT_HOME 中执行，不修改用户正在使用的安装。
+- 完整包包含白盒器件和 PCell，仅内部发送；公开 GitHub 只提交代码、模板和说明。禁止交付 Git 元数据、账户凭据、维护 skill、测试工具、klayoutrc 或作者机器的绝对安装路径。
+
+### Runtime Naming
+
 - 固定白盒器件只从 `pymacros/JNU_MWP_gds/` 加载；该目录应包含 23 个 `.gds` 文件。不要创建顶层 `gds/` 镜像目录。
 - 移动或清理固定 GDS 后，用 `rg` 检查 loader、打包脚本、README 和辅助脚本，确保不存在指向旧 `gds/` 的路径；同时验证 `JNULib.py` 仍指向 `pymacros/JNU_MWP_gds/`。
 - 黑盒生成以 `pymacros/JNU_MWP_gds/` 为白盒输入，但发布包必须排除该目录和 `JNULib.py`。

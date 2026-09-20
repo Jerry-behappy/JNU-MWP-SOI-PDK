@@ -1,6 +1,15 @@
 # JNU 白盒固定器件 GDS 不推送到远端仓库。
 salt/JNU_MWP_PDK/pymacros/JNU_MWP_gds/
 pymacros/JNU_MWP_gds/
+**/JNU_MWP_gds/
+
+# 完整实验室交付物含私有白盒 GDS，不进入公开仓库。
+JNU_MWP_PDK_lab_package*/
+JNU_MWP_PDK_lab_package*.zip
+repository.local.xml
+jnu_private/
+**/jnu_private/
+JNU_MWP_PDK_public_package*.zip
 
 # 本机维护的 KLayout 版图操作 skill 不纳入 PDK 源码仓库。
 salt/JNU_MWP_PDK/pymacros/JNU_MWP_skill/klayout-sip-skill/

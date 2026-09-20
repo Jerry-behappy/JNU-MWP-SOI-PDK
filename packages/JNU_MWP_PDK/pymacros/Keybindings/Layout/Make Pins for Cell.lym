@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<klayout-macro>
+ <description>Make Pins for Cell</description>
+ <version/>
+ <category>pymacros</category>
+ <prolog/>
+ <epilog/>
+ <doc/>
+ <autorun>false</autorun>
+ <autorun-early>false</autorun-early>
+ <shortcut/>
+  <show-in-menu>false</show-in-menu>
+ <group-name/>
+ <menu-path>jnu_mwp_pdk_menu.layout.begin</menu-path>
+ <interpreter>python</interpreter>
+ <dsl-interpreter-name/>
+ <text># -*- coding: utf-8 -*-
+# 创建者: Junyi Zhang
+# 时间: 2026-09
+
+# JNU_MWP_PDK 菜单动作：为当前活动 cell 自动生成 DevRec/PinRec。
+import os
+import sys
+
+import pya
+
+# 由宏文件位置反推 pymacros，安装在任意用户目录均可运行。
+PYMACROS_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if PYMACROS_DIR not in sys.path:
+    # KLayout 菜单动作宏有时不会继承 pymacros 路径，这里显式加入以保证工具模块可导入。
+    sys.path.insert(0, PYMACROS_DIR)
+
+try:
+    from JNU_MWP_tools.actions.make_pins_for_cell import make_pins_for_cell
+
+
+    make_pins_for_cell()
+except Exception as error:
+    pya.MessageBox.warning("JNU_MWP_PDK", "Make Pins for Cell 失败：\n%s" % error, pya.MessageBox.Ok)
+</text>
+</klayout-macro>

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<klayout-macro>
+ <description>JNU MWP PDK early technology registration</description>
+ <category>pymacros</category>
+ <autorun>true</autorun>
+ <autorun-early>true</autorun-early>
+ <show-in-menu>false</show-in-menu>
+ <interpreter>python</interpreter>
+ <text># -*- coding: utf-8 -*-
+# 创建者: Junyi Zhang
+# 时间: 2026-09
+
+# 早期仅注册技术和内部波导接口，不导入公开库或触发第三方 GUI 初始化。
+from pathlib import Path
+import sys
+
+import pya
+
+_pymacros = Path(__file__).resolve().parent
+_pdk_root = _pymacros.parent
+_tech_name = "JNU_MWP_PDK"
+if pya.Technology.has_technology(_tech_name):
+    _technology = pya.Technology.technology_by_name(_tech_name)
+else:
+    _technology = pya.Technology.create_technology(_tech_name)
+_technology.load(str(_pdk_root / "JNU_MWP_PDK.lyt"))
+
+if str(_pymacros) not in sys.path:
+    sys.path.insert(0, str(_pymacros))
+
+# 公开库由 pymacros/__init__.py 在普通 autorun 阶段导入；过早触发 EBeam
+# 桥接会让 SiEPIC 缓存为 batch 环境，从而跳过其菜单和 GUI 初始化。
+
+from JNU_MWP_tools.core.internal_waveguide_registry import install_internal_waveguide_registration
+install_internal_waveguide_registration()
+</text>
+</klayout-macro>

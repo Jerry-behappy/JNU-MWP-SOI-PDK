@@ -56,6 +56,7 @@ description: Use when developing, verifying, or packaging the JNU_MWP_PDK KLayou
 - Paperclip（含 Composite）的 20 nm PinRec 以 Si 端面为中心：内侧 10 nm 与 Si 重叠，外侧 10 nm 露出。Si 端面必须严格位于 pin 中心并与端口主体合并，DRC 只检查 PinRec 是否与 LayerSi 相交，不要求完整包覆。
 - 修改 Bend 后必须回归 Waveguide、Path to Waveguide、Archimedean_Spiral、Paperclip 和 Composite Paperclip。
 - 黑盒包不得包含 `JNU_MWP_skill`、`JNU_MWP_pcells`、`JNU_MWP_gds`、`JNULib.py`、`JNU_MWP_tools/release`、`JNU_MWP_tools/tests` 或 `klayoutrc*`；只携带工具包入口及 `core/actions` 运行时代码。
+- 完整实验室 Salt Package 与黑盒包分开构建：`release/package_lab_pdk.py --gds-source <私有器件 checkout/JNU_MWP_gds>` 从 `Jerry-behappy/JNU-MWP-SOI-Library` 获取的本地 checkout 复制固定 GDS，并包含公开 PCell。完整 ZIP 仅内部交付，不上传公开 PDK 仓库；安装索引只在接收方本地生成，不嵌入凭据。`JNU_MWP_PDK_Startup.lym` 早期只注册技术和内部波导接口，公开库及 EBeam 桥接必须由 `pymacros/__init__.py` 在普通 autorun 阶段加载，避免 SiEPIC 在主窗口建立前被缓存成 batch 环境而丢失菜单。Package 不依赖额外 `tech` 副本；发布前验证独立安装及 SiEPIC/EBeam 共存冷启动。
 - `JNU_MWP_SOI_PDK` 当前仅作为产品文档展示名；Technology、Salt、菜单、安装目录、canonical skill 和黑盒发布包继续使用工程名 `JNU_MWP_PDK`，除非用户明确启动整体迁移。
 - `salt/JNU_MWP_PDK/JNU_MWP_PDK.lyt` 与 `tech/JNU_MWP_PDK/JNU_MWP_PDK.lyt` 必须保持可搬运：`base-path` 与 `original-base-path` 为空，`layer-properties_file` 为同目录相对路径 `layers.lyp`。运行时代码只可由 `__file__` 推导安装位置，禁止写入 `C:/Users/zjy/...` 等作者机器绝对路径；黑盒打包的两份 `.lyt` 同样遵守此规则。
 - `pymacros/README.md` 先完整写完中文，再完整写英文；不要交错排列双语段落。
@@ -63,6 +64,8 @@ description: Use when developing, verifying, or packaging the JNU_MWP_PDK KLayou
 - 涉及较为重要的 PDK 开发规则的更新或增加，才修改本 skill 的 `SKILL.md` 与 `references/`；个别 PCell 参数微调、单次回归脚本、一次性维护工具或与 PDK 主线无关的临时修缮，不进入 skill，避免噪声污染共享规范源。
 
 ## Workflow
+
+公开 Package 从 `packages/JNU_MWP_PDK` 发布，索引为 `packages/repository.xml`；构建使用 `release/package_lab_pdk.py --public`。白盒 GDS 仓库保持私有，授权安装器只写用户 KLayout 目录下的 `jnu_private/JNU_MWP_gds` 并在替换前备份；`core/fixed_gds.py` 优先读取该目录，再兼容源码或完整离线包内的 GDS。公开包及 Git 历史不得包含白盒数据或凭据。版本更新须同步重建包和索引，不能只改 `salt/` 源码。详见 references/workflows.md 的 Public Package 段。
 
 1. 修改前阅读 `references/project-map.md` 和 `references/workflows.md`；不自动读取项目根 `JNU_PDK_CONTEXT_BACKUP.md`。
 2. 用 `rg` / `Get-Content` 检查现状，用 `apply_patch` 做聚焦修改。

@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='utf-8'?>
+<salt-mine><include>https://sami.klayout.org/repository.xml</include><salt-grain>
+ <name>JNU_MWP_PDK</name>
+ <version>1.1.3</version>
+ <api-version>0.30</api-version>
+ <title>JNU MWP PDK</title>
+ <doc>JNU photonic PCells, waveguide tools, menus and DRC. Fixed whitebox GDS files are distributed separately inside the laboratory.</doc>
+ <doc-url>https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK</doc-url>
+ <url>git+https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK.git+packages/JNU_MWP_PDK[main]</url>
+ <license>MIT</license>
+ <author>Junyi Zhang and contributors</author>
+ <author-contact>https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK/issues</author-contact>
+</salt-grain></salt-mine>

@@ -1,4 +1,3 @@
-# $autorun
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
 # 时间: 2026-09
