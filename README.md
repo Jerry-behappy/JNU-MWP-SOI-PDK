@@ -11,7 +11,9 @@
 
 该 PDK 支持在 KLayout 中进行硅光器件放置与参数化设计，包括直波导、90° 弯曲、S 弯、Taper、双总线微环和多种螺旋延迟线；提供 Circular、Bezier、Euler 弯曲，以及单宽度和复合宽度波导的路径转换。借助 PinRec 端口识别，可自动连接两个器件或进行端口吸附，并完成端口生成、编号文字阵列、图层筛选与展平、当前 Cell 及其子层级的 DRC 检查。功能菜单还支持自定义波导预设和 PDK 热重载；固定黑盒器件可用于布局与连线，实际器件内部结构需另行取得授权白盒 GDS。
 
-**[点击查看详细使用说明](docs/USER_GUIDE.md)**：包含入门步骤、PCell 功能、波导绘制与连接、菜单快捷键、DRC 和常见问题。
+### [点击查看详细使用说明](docs/USER_GUIDE.md)
+
+包含入门步骤、PCell 功能、波导绘制与连接、菜单快捷键、DRC 和常见问题。
 
 ### 推荐安装与更新方式
 
@@ -112,7 +114,9 @@ salt/JNU_MWP_PDK/pymacros/JNU_MWP_gds/
 
 The PDK supports silicon-photonic layout and parametric device design in KLayout, including straight waveguides, 90-degree bends, S-bends, tapers, double-bus microrings, and spiral delay lines. It provides Circular, Bezier, and Euler bends, reversible path conversion for single-width and composite-width waveguides, PinRec-based device connections and snapping, pin creation, numbered text arrays, layer filtering and flattening, and DRC of the active cell and its descendants. Saved waveguide presets and PDK hot reload support repeated design work. Bundled blackboxes provide placement and connectivity references; actual internal device geometry requires separately authorized whitebox GDS.
 
-**[Read the detailed user guide](docs/USER_GUIDE.md#english-user-guide)** for getting started, PCells, waveguide routing, menu shortcuts, DRC, and troubleshooting.
+### [Read the detailed user guide](docs/USER_GUIDE.md#english-user-guide)
+
+Covers getting started, PCells, waveguide routing, menu shortcuts, DRC, and troubleshooting.
 
 ### Recommended Installation and Updates
 
