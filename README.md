@@ -91,13 +91,16 @@ git -C "$env:USERPROFILE\JNU-MWP-SOI-PDK" pull --ff-only origin main
 
 本项目基于 Lukas Chrostowski 及贡献者的原始项目开发。原始 MIT 许可证及版权声明已被保留，详见根目录的 `LICENSE.md`。
 
-本仓库没有上传固定白盒器件 GDS 目录：
+> [!IMPORTANT]
+> **本项目用于存放固定白盒器件 GDS 的本地源码目录为：**
+>
+> ```text
+> salt/JNU_MWP_PDK/pymacros/JNU_MWP_gds/
+> ```
+>
+> **该目录已通过 `.gitignore` 排除，白盒 GDS 不随本仓库公开上传。**
 
-```text
-salt/JNU_MWP_PDK/pymacros/JNU_MWP_gds/
-```
-
-该白盒目录已在 `.gitignore` 中排除。仓库中的黑盒 GDS 可独立加载，PCell 源码继续保留。维护者可运行 `salt/JNU_MWP_PDK/pymacros/JNU_MWP_tools/release/export_blackbox_gds.py --source <本地白盒目录> --output <新的黑盒目录>` 更新黑盒数据。若只需分发黑盒器件而不携带 PCell 源码，请使用独立黑盒打包流程。
+仓库中的黑盒 GDS 可独立加载，PCell 源码继续保留。维护者可运行 `salt/JNU_MWP_PDK/pymacros/JNU_MWP_tools/release/export_blackbox_gds.py --source <本地白盒目录> --output <新的黑盒目录>` 更新黑盒数据。若只需分发黑盒器件而不携带 PCell 源码，请使用独立黑盒打包流程。
 
 运行过程中生成的 `klayoutrc*`、`__pycache__`、`.pyc`、`.pyo`、日志文件等不会纳入版本控制。
 
@@ -198,12 +201,15 @@ updates do not update private GDS. Never commit whitebox GDS to this repository.
 
 This project is based on the original project by Lukas Chrostowski and contributors. The original MIT license and copyright notices have been retained. See `LICENSE.md` in the repository root.
 
-The fixed whitebox GDS directory is intentionally not committed:
+> [!IMPORTANT]
+> **The local source directory for fixed whitebox device GDS is:**
+>
+> ```text
+> salt/JNU_MWP_PDK/pymacros/JNU_MWP_gds/
+> ```
+>
+> **This directory is excluded by `.gitignore`; whitebox GDS is not published in this repository.**
 
-```text
-salt/JNU_MWP_PDK/pymacros/JNU_MWP_gds/
-```
-
-The whitebox directory is excluded by `.gitignore`. Bundled blackbox GDS loads independently, and PCell source code remains included. Maintainers can run `salt/JNU_MWP_PDK/pymacros/JNU_MWP_tools/release/export_blackbox_gds.py --source <local-whitebox-directory> --output <new-blackbox-directory>` to refresh the blackbox data. To distribute blackboxes without PCell source code, use the separate blackbox packaging workflow.
+Bundled blackbox GDS loads independently, and PCell source code remains included. Maintainers can run `salt/JNU_MWP_PDK/pymacros/JNU_MWP_tools/release/export_blackbox_gds.py --source <local-whitebox-directory> --output <new-blackbox-directory>` to refresh the blackbox data. To distribute blackboxes without PCell source code, use the separate blackbox packaging workflow.
 
 Generated files such as `klayoutrc*`, `__pycache__`, `.pyc`, `.pyo`, and log files are not tracked by version control.
