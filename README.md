@@ -89,7 +89,7 @@ git -C "$env:USERPROFILE\JNU-MWP-SOI-PDK" pull --ff-only origin main
 
 ### 重要说明
 
-本项目基于 Lukas Chrostowski 及贡献者的原始项目开发。原始 MIT 许可证及版权声明已被保留，详见根目录的 `LICENSE.md`。
+本项目基于 Lukas Chrostowski 及贡献者的原始项目开发。推荐同时安装 [SiEPIC EBeam PDK](https://github.com/SiEPIC/SiEPIC_EBeam_PDK) 搭配使用。原始 MIT 许可证及版权声明已被保留，详见根目录的 `LICENSE.md`。
 
 > [!IMPORTANT]
 > **本项目用于存放固定白盒器件 GDS 的本地源码目录为：**
@@ -199,7 +199,7 @@ updates do not update private GDS. Never commit whitebox GDS to this repository.
 
 ### Notes
 
-This project is based on the original project by Lukas Chrostowski and contributors. The original MIT license and copyright notices have been retained. See `LICENSE.md` in the repository root.
+This project is based on the original project by Lukas Chrostowski and contributors. We recommend also installing the [SiEPIC EBeam PDK](https://github.com/SiEPIC/SiEPIC_EBeam_PDK) for use alongside this project. The original MIT license and copyright notices have been retained. See `LICENSE.md` in the repository root.
 
 > [!IMPORTANT]
 > **The local source directory for fixed whitebox device GDS is:**
