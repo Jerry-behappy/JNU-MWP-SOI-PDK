@@ -2,7 +2,19 @@
 
 ## 中文说明
 
-`JNU-MWP-SOI-PDK` 是暨南大学光电混合集成实验室使用的 KLayout 光子 PDK 工程。当前仓库以开发源码形式发布，包含 `JNU_MWP_PDK` technology、KLayout 菜单、DRC、PCell、固定黑盒器件和图层配置。白盒 GDS 保持私有，仅在实验室内授权分发。
+`JNU-MWP-SOI-PDK` 是暨南大学光电混合集成实验室使用的硅光 PDK 项目。当前仓库以开发源码形式发布，包含 `JNU_MWP_PDK` technology、KLayout 菜单、DRC、PCell、固定黑盒器件和图层配置。白盒 GDS 保持私有，仅在实验室内授权分发。
+
+### 推荐安装与更新方式
+
+使用能够访问本机文件并执行命令的 AI agent，按下文的克隆仓库流程完成安装或更新。
+
+**推荐安装方式**：在 AI agent 中输入：
+
+> 请在本机的 KLayout 中安装该项目：https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK
+
+**推荐更新方式**：在 AI agent 中输入：
+
+> 请在本机的 KLayout 中更新该项目：https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK
 
 ### 仓库内容
 
@@ -82,7 +94,19 @@ salt/JNU_MWP_PDK/pymacros/JNU_MWP_gds/
 
 ## English Description
 
-`JNU-MWP-SOI-PDK` is a KLayout photonic PDK for the Optoelectronic Hybrid Integration Laboratory at Jinan University. This repository provides the development source, technology, menus, DRC, PCells, fixed blackbox devices and layer configuration. Whitebox GDS remains private and is distributed only to authorized laboratory users.
+`JNU-MWP-SOI-PDK` is a silicon photonics PDK project used by the Optoelectronic Hybrid Integration Laboratory at Jinan University. This repository provides the development source, technology, menus, DRC, PCells, fixed blackbox devices and layer configuration. Whitebox GDS remains private and is distributed only to authorized laboratory users.
+
+### Recommended Installation and Updates
+
+Use an AI agent that can access local files and run commands, following the Git clone workflow below.
+
+**Recommended installation**: enter this prompt in the AI agent:
+
+> Please install this project in KLayout on this computer: https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK
+
+**Recommended update**: enter this prompt in the AI agent:
+
+> Please update this project in KLayout on this computer: https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK
 
 ### Repository Contents
 
