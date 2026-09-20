@@ -6,7 +6,7 @@
  <title>JNU MWP PDK</title>
  <doc>JNU photonic PCells, waveguide tools, menus and DRC. Fixed whitebox GDS files are distributed separately inside the laboratory.</doc>
  <doc-url>https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK</doc-url>
- <url>git+https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK.git+packages/JNU_MWP_PDK[main]</url>
+ <url></url>
  <license>MIT</license>
  <author>Junyi Zhang and contributors</author>
  <author-contact>https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK/issues</author-contact>

@@ -66,17 +66,14 @@
 
 ## Fixed GDS and Naming
 
-### Public Package and Authorized GDS
+### Git Clone Installation
 
-- 推荐分发方式为公开 `JNU-MWP-SOI-PDK` Package，私有 `JNU-MWP-SOI-Library` 单独授权；不要修改后者的可见性。
-- `release/package_lab_pdk.py --public --blackbox-source <已验证黑盒目录> --output <新目录>` 只复制运行时代码、公开 PCell、黑盒 GDS、相对路径技术文件和授权安装器，不携带 skill、测试、构建工具或白盒 GDS。
-- 将构建结果同步到 Git 仓库的 `packages/`，`grain.xml` URL 指向 `packages/JNU_MWP_PDK[main]`。更新代码时提高版本号并同步重新生成包及 `packages/repository.xml`，再直接推送 main。
-- 用户执行一次 `Enable_JNU_Packages.ps1` 配置包含官方源及既有自定义源的索引；不自动登记官方 Salt.Mine。后续使用 Manage Packages 更新公开代码。
-- `Install_Private_GDS.ps1` 支持已授权下载并解压后的 `-Source` 目录，以及当前用户 `gh auth login` 后的私有仓库下载。只把 `.gds` 写入 `<KLayout home>/jnu_private/JNU_MWP_gds`，先验证输入再备份/替换；不将私有数据放回 Salt 管理目录。
-- `core/fixed_gds.py` 先使用独立私有目录，缺失时兼容开发目录及完整离线包。公开代码更新/卸载不得删除独立 GDS；撤销远端授权不会删除本地已下载数据。
-- 验证 `verify_lab_package_installation.py --public --package <构建结果> --klayout <exe> --private-gds-source <授权GDS>`；发布后加 `--index-url <真实公开索引>` 验证匿名 Salt 下载。还需测试 SiEPIC/EBeam 共存。禁止以本机已登录 GitHub 的克隆成功替代匿名 Package 安装验收。
+- 默认使用 Git 克隆源码，仓库根的 `Install_Cloned_PDK.ps1` 创建用户 KLayout `salt/JNU_MWP_PDK` 到克隆目录内相应源码的目录联接；不得静默覆盖已有安装或用户私有 GDS。
+- 无需复制 `tech/`；遇到旧技术副本或独立 loader，先由用户备份到 KLayout 外再安装。仓库应位于 salt 扫描目录之外。
+- 更新在克隆的 main 上执行 `git pull --ff-only origin main`，然后重启；不自动注册在线安装索引，也不重新生成重复运行时代码树。
+- 维护者本机的 canonical 开发目录不因安装文档变更而自动迁移。私有 GDS、其他 PDK 与 GitHub 可见性保持独立管理。
 
-### Optional Offline Laboratory Package
+### Offline Laboratory Package
 
 - 公开代码仓库为 `Jerry-behappy/JNU-MWP-SOI-PDK`，私有固定器件仓库为 `Jerry-behappy/JNU-MWP-SOI-Library`。运行时继续从安装包内 `pymacros/JNU_MWP_gds` 加载；独立器件仓库不直接作为未经认证的公共 Salt 依赖。
 - 完整内部交付使用 `release/package_lab_pdk.py --gds-source <checkout/JNU_MWP_gds> --output <新目录> --zip`；源码、私有 GDS checkout、本机正在使用的 PDK 都不因构建而修改。GDS 数量以所选器件版本为准，不硬编码为本机开发目录数量。
@@ -87,6 +84,7 @@
 
 ### Runtime Naming
 
+- `core/fixed_gds.py` 保留对用户目录 `jnu_private/JNU_MWP_gds` 的读取兼容，避免既有授权数据失效；缺失时使用源码或完整离线包内的固定 GDS。维护代码时不删除用户已安装的数据。
 - 固定白盒器件只从 `pymacros/JNU_MWP_gds/` 加载；该目录应包含 23 个 `.gds` 文件。不要创建顶层 `gds/` 镜像目录。
 - 移动或清理固定 GDS 后，用 `rg` 检查 loader、打包脚本、README 和辅助脚本，确保不存在指向旧 `gds/` 的路径；同时验证 `JNULib.py` 仍指向 `pymacros/JNU_MWP_gds/`。
 - 黑盒生成以 `pymacros/JNU_MWP_gds/` 为白盒输入，但发布包必须排除该目录和 `JNULib.py`。

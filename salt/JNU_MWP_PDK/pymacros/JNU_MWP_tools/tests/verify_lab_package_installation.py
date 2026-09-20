@@ -13,7 +13,6 @@ import subprocess
 import sys
 import tempfile
 import traceback
-import xml.etree.ElementTree as ET
 
 
 def probe():
@@ -37,40 +36,14 @@ def probe():
     }
     assert set(white.layout().pcell_names()) == expected_pcells
     assert not black.layout().pcell_names(), "黑盒库不应注册 PCell"
-    is_public = os.environ.get("JNU_EXPECT_PUBLIC") == "1"
-    private = home / "jnu_private" / "JNU_MWP_gds"
-    directory = private if os.environ.get("JNU_EXPECT_PRIVATE") == "1" else package / "pymacros" / "JNU_MWP_gds"
-    gdss = sorted(directory.glob("*.gds"))
-    if is_public:
-        assert not (package / "pymacros" / "JNU_MWP_gds").exists(), "公开包包含白盒 GDS"
-        assert not (package / "pymacros" / "JNU_MWP_skill").exists()
-        for relative in ("JNU_MWP_tools/release", "JNU_MWP_tools/tests"):
-            assert not (package / "pymacros" / relative).exists()
-        import JNULib
-        if os.environ.get("JNU_EXPECT_PRIVATE") == "1":
-            assert Path(JNULib.GDS_DIR).resolve() == private.resolve()
-            assert gdss, "私有 GDS 未安装"
-        else:
-            assert not gdss and not white.layout().top_cells(), "公开安装意外加载白盒器件"
-        blackboxes = sorted((package / "pymacros" / "JNU_MWP_blackbox_gds").glob("*.gds"))
-        assert blackboxes, "公开黑盒数据缺失"
-        for path in blackboxes:
-            source = pya.Layout()
-            source.read(str(path))
-            for cell in source.top_cells():
-                si = list(cell.shapes(source.layer(1, 0)).each())
-                assert len(si) == 1 and si[0].is_box(), "黑盒泄露内部几何"
-                assert black.layout().cell(cell.name), "黑盒器件未加载"
-    else:
-        assert gdss, "固定 GDS 缺失"
+    gdss = sorted((package / "pymacros" / "JNU_MWP_gds").glob("*.gds"))
+    assert gdss, "固定 GDS 缺失"
     for path in gdss:
         source = pya.Layout()
         source.read(str(path))
         for cell in source.top_cells():
             assert white.layout().cell(cell.name), "固定器件未加载：" + cell.name
-            # 公开黑盒与授权 GDS 独立发布，不能假定两个版本的顶层名称一致。
-            if not is_public:
-                assert black.layout().cell(cell.name), "黑盒器件未加载：" + cell.name
+            assert black.layout().cell(cell.name), "黑盒器件未加载：" + cell.name
 
     app = pya.Application.instance()
     window = app.main_window()
@@ -140,16 +113,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--package", type=Path, required=True, help="含入口脚本的交付目录")
     parser.add_argument("--klayout", type=Path, required=True)
-    parser.add_argument("--public", action="store_true")
-    parser.add_argument("--index-url", help="验收已发布的真实 GitHub 索引")
-    parser.add_argument("--private-gds-source", type=Path, help="测试授权白盒 GDS 独立安装")
     parser.add_argument("--peer-package", type=Path, action="append", default=[],
                         help="复制到隔离环境的已安装包；共存测试须同时提供 siepic_tools 和 siepic_ebeam_pdk")
     args = parser.parse_args()
     release = args.package.resolve()
-    if not args.public:
-        run_checked(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File",
-                     str(release / "Open_Lab_Package_Manager.ps1"), "-PrepareOnly"], os.environ.copy(), str(release))
+    run_checked(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File",
+                 str(release / "Open_Lab_Package_Manager.ps1"), "-PrepareOnly"], os.environ.copy(), str(release))
     # 临时用户目录不读取开发机配置，测试后自动清理，不触碰已打开的版图。
     with tempfile.TemporaryDirectory(prefix="jnu-lab-install-") as directory:
         home = Path(directory)
@@ -157,17 +126,7 @@ def main():
         env["KLAYOUT_HOME"] = str(home)
         env["KLAYOUT_PATH"] = str(home)
         env.pop("KLAYOUT_PYTHONPATH", None)
-        if args.public:
-            grain = ET.parse(release / "JNU_MWP_PDK" / "grain.xml").getroot()
-            grain.find("url").text = (release / "JNU_MWP_PDK").as_uri() + "/"
-            index = ET.Element("salt-mine")
-            index.append(grain)
-            index_file = home / "repository.xml"
-            ET.ElementTree(index).write(index_file, encoding="utf-8")
-            env["KLAYOUT_SALT_MINE"] = args.index_url or index_file.as_uri()
-            env["JNU_EXPECT_PUBLIC"] = "1"
-        else:
-            env["KLAYOUT_SALT_MINE"] = (release / "repository.local.xml").as_uri()
+        env["KLAYOUT_SALT_MINE"] = (release / "repository.local.xml").as_uri()
         env["PYTHONIOENCODING"] = "utf-8"
         for peer in args.peer_package:
             if not (peer / "grain.xml").is_file():
@@ -192,33 +151,6 @@ def main():
             reports.append(json.loads(report.read_text(encoding="utf-8")))
         assert reports[0] == reports[1], "两次启动结果不一致"
         print(json.dumps(reports[0], indent=2))
-        if args.public and args.private_gds_source:
-            installer = home / "salt" / "JNU_MWP_PDK" / "Install_Private_GDS.ps1"
-            command = ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File",
-                       str(installer), "-Source", str(args.private_gds_source), "-KLayoutHome", str(home)]
-            run_checked(command, env, directory)
-            private = home / "jnu_private" / "JNU_MWP_gds"
-            before = {path.name: path.read_bytes() for path in private.glob("*.gds")}
-            assert before
-            run_checked(command, env, directory)
-            assert list(private.parent.glob("JNU_MWP_gds.backup-*")), "更新前没有保留备份"
-            # 无效输入必须在替换前失败，已安装 GDS 内容不变。
-            invalid = home / "invalid"
-            invalid.mkdir()
-            (invalid / "invalid.gds").write_bytes(b"not a GDS")
-            rejected = subprocess.run(command[:-4] + ["-Source", str(invalid), "-KLayoutHome", str(home)],
-                                      env=env, capture_output=True, timeout=30)
-            assert rejected.returncode != 0
-            assert before == {path.name: path.read_bytes() for path in private.glob("*.gds")}
-            # Package 安装器再次运行不应修改独立私有数据目录。
-            run_checked([str(args.klayout), "-z", "-t", "-y", "JNU_MWP_PDK"], env, directory)
-            assert before == {path.name: path.read_bytes() for path in private.glob("*.gds")}
-            env["JNU_EXPECT_PRIVATE"] = "1"
-            report = home / "private-probe.json"
-            env["JNU_LAB_PROBE_REPORT"] = str(report)
-            run_checked([str(args.klayout), "-z", "-e", "-rr", str(Path(__file__).resolve())], env, directory)
-            assert report.is_file() and json.loads(report.read_text())["fixed_gds"] == len(before)
-            print("PRIVATE_GDS_OK: install, backup, invalid input rollback, independent data and cold start")
         print("LAB_PACKAGE_INSTALLATION_OK: install + 2 cold starts")
 
 

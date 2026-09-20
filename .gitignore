@@ -9,7 +9,9 @@ JNU_MWP_PDK_lab_package*.zip
 repository.local.xml
 jnu_private/
 **/jnu_private/
-JNU_MWP_PDK_public_package*.zip
+
+# 已停用的本地生成目录不再作为源码跟踪。
+/packages/
 
 # 本机维护的 KLayout 版图操作 skill 不纳入 PDK 源码仓库。
 salt/JNU_MWP_PDK/pymacros/JNU_MWP_skill/klayout-sip-skill/

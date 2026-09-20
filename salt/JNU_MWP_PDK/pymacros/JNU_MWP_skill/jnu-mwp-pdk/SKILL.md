@@ -65,7 +65,7 @@ description: Use when developing, verifying, or packaging the JNU_MWP_PDK KLayou
 
 ## Workflow
 
-公开 Package 从 `packages/JNU_MWP_PDK` 发布，索引为 `packages/repository.xml`；构建使用 `release/package_lab_pdk.py --public`。白盒 GDS 仓库保持私有，授权安装器只写用户 KLayout 目录下的 `jnu_private/JNU_MWP_gds` 并在替换前备份；`core/fixed_gds.py` 优先读取该目录，再兼容源码或完整离线包内的 GDS。公开包及 Git 历史不得包含白盒数据或凭据。版本更新须同步重建包和索引，不能只改 `salt/` 源码。详见 references/workflows.md 的 Public Package 段。
+当前用户安装采用 Git 克隆及目录联接：仓库根 `Install_Cloned_PDK.ps1` 将克隆内 `salt/JNU_MWP_PDK` 联接到 KLayout 的 salt 目录，不覆盖已有安装，不配置在线索引。更新使用 `git pull --ff-only origin main` 后重启。私有 GDS 单独授权并保留独立目录读取兼容；离线实验室和黑盒构建工具仅作为备用分发方式。
 
 1. 修改前阅读 `references/project-map.md` 和 `references/workflows.md`；不自动读取项目根 `JNU_PDK_CONTEXT_BACKUP.md`。
 2. 用 `rg` / `Get-Content` 检查现状，用 `apply_patch` 做聚焦修改。

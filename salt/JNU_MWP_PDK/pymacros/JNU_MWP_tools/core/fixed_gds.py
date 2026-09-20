@@ -2,7 +2,7 @@
 # 创建者: Junyi Zhang
 # 时间: 2026-09
 
-"""分离私有固定器件数据与可公开更新的 Salt Package。"""
+"""读取独立授权器件目录，并兼容开发目录及离线实验室包。"""
 
 import os
 from pathlib import Path
