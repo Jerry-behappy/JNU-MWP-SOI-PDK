@@ -16,21 +16,23 @@
  <dsl-interpreter-name/>
  <text># -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-07
+# 时间: 2026-09
 
 # JNU_MWP_PDK 菜单动作：把 JNU Waveguide PCell 反转换为 Waveguide 层 Path。
 # 该操作只读取 PCell 的 path 参数，不依赖 WAVEGUIDES.xml。
+import os
 import sys
 
 import pya
 
-PYMACROS_DIR = r"C:\Users\zjy\KLayout\salt\JNU_MWP_PDK\pymacros"
+# 由宏文件位置反推 pymacros，安装在任意用户目录均可运行。
+PYMACROS_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if PYMACROS_DIR not in sys.path:
     # KLayout 菜单动作宏有时不会继承 pymacros 路径，这里显式加入以保证工具模块可导入。
     sys.path.insert(0, PYMACROS_DIR)
 
 try:
-    from JNU_MWP_tools.actions.waveguide_tools import waveguide_to_path
+    from JNU_MWP_tools.actions.waveguide_to_path import waveguide_to_path
 
 
     waveguide_to_path()

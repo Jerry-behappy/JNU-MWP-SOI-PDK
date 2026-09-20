@@ -57,6 +57,7 @@ description: Use when developing, verifying, or packaging the JNU_MWP_PDK KLayou
 - 修改 Bend 后必须回归 Waveguide、Path to Waveguide、Archimedean_Spiral、Paperclip 和 Composite Paperclip。
 - 黑盒包不得包含 `JNU_MWP_skill`、`JNU_MWP_pcells`、`JNU_MWP_gds`、`JNULib.py`、`JNU_MWP_tools/release`、`JNU_MWP_tools/tests` 或 `klayoutrc*`；只携带工具包入口及 `core/actions` 运行时代码。
 - `JNU_MWP_SOI_PDK` 当前仅作为产品文档展示名；Technology、Salt、菜单、安装目录、canonical skill 和黑盒发布包继续使用工程名 `JNU_MWP_PDK`，除非用户明确启动整体迁移。
+- `salt/JNU_MWP_PDK/JNU_MWP_PDK.lyt` 与 `tech/JNU_MWP_PDK/JNU_MWP_PDK.lyt` 必须保持可搬运：`base-path` 与 `original-base-path` 为空，`layer-properties_file` 为同目录相对路径 `layers.lyp`。运行时代码只可由 `__file__` 推导安装位置，禁止写入 `C:/Users/zjy/...` 等作者机器绝对路径；黑盒打包的两份 `.lyt` 同样遵守此规则。
 - `pymacros/README.md` 先完整写完中文，再完整写英文；不要交错排列双语段落。
 - 只有执行 `package_blackbox_pdk.py` 打包黑盒器件库时，才同步修改 `pymacros/README.md` 和 PDK 使用说明文档；普通代码开发、PCell/菜单/图层修改、规则更新、维护性脚本和单独文档请求都不得改写这两类文档。
 - 涉及较为重要的 PDK 开发规则的更新或增加，才修改本 skill 的 `SKILL.md` 与 `references/`；个别 PCell 参数微调、单次回归脚本、一次性维护工具或与 PDK 主线无关的临时修缮，不进入 skill，避免噪声污染共享规范源。

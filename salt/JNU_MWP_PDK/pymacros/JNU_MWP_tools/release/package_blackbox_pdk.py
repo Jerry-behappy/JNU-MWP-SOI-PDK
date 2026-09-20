@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-07
+# 时间: 2026-09
 
 # 生成可分发的 JNU_MWP_PDK 黑盒版本。
 # 输出目录默认在桌面：JNU_MWP_PDK_blackbox_v1.1。
@@ -63,54 +63,29 @@ def _write_blackbox_pymacros_init(pymacros_dst):
         "# $autorun\n"
         "# -*- coding: utf-8 -*-\n"
         "# 创建者: Junyi Zhang\n"
-        "# 时间: 2026-06\n\n"
+        "# 时间: 2026-09\n\n"
         "# 初始化 JNU MWP 黑盒器件库。Technology 主要由 tech/JNU_MWP_PDK 注册，"
         "这里保留 Salt 场景下的辅助加载逻辑。\n"
         "print(\"JNU MWP BlackBox PDK: load JNULib_BlackBox\")\n\n"
         "import os\n\n"
-        "import xml.etree.ElementTree as ET\n\n"
         "import pya\n\n\n"
         "TECH_NAME = \"JNU_MWP_PDK\"\n"
         "SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__)) if \"__file__\" in globals() else os.getcwd()\n"
         "PDK_ROOT = os.path.dirname(SCRIPT_DIR)\n"
-        "KLAYOUT_ROOT = os.path.dirname(os.path.dirname(PDK_ROOT))\n"
-        "TECH_ROOT = os.path.join(KLAYOUT_ROOT, \"tech\", \"JNU_MWP_PDK\")\n"
         "TECH_FILE = os.path.join(PDK_ROOT, \"JNU_MWP_PDK.lyt\")\n"
-        "TECH_COPY = os.path.join(TECH_ROOT, \"JNU_MWP_PDK.lyt\")\n\n\n"
-        "def _rewrite_technology_file(path, layer_path):\n"
-        "    \"\"\"启动时把 .lyt 路径改成本机真实安装路径，减少手动安装出错。\"\"\"\n"
-        "    if not os.path.isfile(path):\n"
-        "        return\n"
-        "    try:\n"
-        "        tree = ET.parse(path)\n"
-        "        root = tree.getroot()\n"
-        "        for tag, value in (\n"
-        "            (\"name\", TECH_NAME),\n"
-        "            (\"base-path\", PDK_ROOT.replace(os.sep, \"/\")),\n"
-        "            (\"original-base-path\", TECH_ROOT.replace(os.sep, \"/\")),\n"
-        "            (\"layer-properties_file\", layer_path.replace(os.sep, \"/\")),\n"
-        "        ):\n"
-        "            node = root.find(tag)\n"
-        "            if node is not None:\n"
-        "                node.text = value\n"
-        "        tree.write(path, encoding=\"utf-8\", xml_declaration=True)\n"
-        "    except Exception as error:\n"
-        "        print(\"JNU MWP BlackBox PDK: technology path rewrite failed:\", error)\n\n\n"
+        "\n"
         "def _load_jnu_technology():\n"
-        "    \"\"\"从 Salt 包目录辅助加载 Technology，避免只安装 salt 时完全不可用。\"\"\"\n"
-        "    load_file = TECH_COPY if os.path.isfile(TECH_COPY) else TECH_FILE\n"
-        "    if not os.path.isfile(load_file):\n"
-        "        print(\"JNU MWP BlackBox PDK: technology file not found:\", load_file)\n"
+        "    \"\"\"加载相对路径 Technology，支持直接复制发布包到任意用户目录。\"\"\"\n"
+        "    if not os.path.isfile(TECH_FILE):\n"
+        "        print(\"JNU MWP BlackBox PDK: technology file not found:\", TECH_FILE)\n"
         "        return\n"
         "    try:\n"
-        "        _rewrite_technology_file(TECH_FILE, os.path.join(PDK_ROOT, \"layers.lyp\"))\n"
-        "        _rewrite_technology_file(TECH_COPY, os.path.join(TECH_ROOT, \"layers.lyp\"))\n"
         "        if not pya.Technology().has_technology(TECH_NAME):\n"
         "            tech = pya.Technology().create_technology(TECH_NAME)\n"
         "        else:\n"
         "            tech = pya.Technology.technology_by_name(TECH_NAME)\n"
-        "        tech.load(load_file)\n"
-        "        print(\"JNU MWP BlackBox PDK: technology loaded from\", load_file)\n"
+        "        tech.load(TECH_FILE)\n"
+        "        print(\"JNU MWP BlackBox PDK: technology loaded from\", TECH_FILE)\n"
         "    except Exception as error:\n"
         "        print(\"JNU MWP BlackBox PDK: technology load failed:\", error)\n\n\n"
         "_load_jnu_technology()\n\n"
@@ -442,18 +417,32 @@ def _rewrite_technology_file(lyt_root, base_path, original_base_path, layer_path
     tree.write(str(lyt_path), encoding="utf-8", xml_declaration=True)
 
 
+def _write_portable_technology_file(lyt_root):
+    """写入不含作者电脑路径的 Technology 配置。"""
+    lyt_path = lyt_root / "JNU_MWP_PDK.lyt"
+    tree = ET.parse(str(lyt_path))
+    root = tree.getroot()
+
+    for tag, value in (
+        ("name", TECH_NAME),
+        ("base-path", ""),
+        ("original-base-path", ""),
+        ("layer-properties_file", "layers.lyp"),
+    ):
+        node = root.find(tag)
+        if node is not None:
+            node.text = value
+
+    tree.write(str(lyt_path), encoding="utf-8", xml_declaration=True)
+
+
 def _copy_technology_folder(tech_root, package_root):
     """生成发布包中的 tech/JNU_MWP_PDK，用于 KLayout 原生注册 Technology。"""
     tech_root.mkdir(parents=True, exist_ok=True)
     shutil.copy2(str(PDK_ROOT / "JNU_MWP_PDK.lyt"), str(tech_root / "JNU_MWP_PDK.lyt"))
     shutil.copy2(str(PDK_ROOT / "layers.lyp"), str(tech_root / "layers.lyp"))
 
-    _rewrite_technology_file(
-        tech_root,
-        base_path=package_root,
-        original_base_path=tech_root,
-        layer_path=tech_root / "layers.lyp",
-    )
+    _write_portable_technology_file(tech_root)
 
 
 def _installer_source():
@@ -612,13 +601,8 @@ def package_blackbox_pdk(output_root):
     _copy_technology_folder(tech_root, package_root)
     _write_root_loader(release_root)
 
-    # Salt 包内也保留一份 .lyt，供辅助加载和开发调试使用。
-    _rewrite_technology_file(
-        package_root,
-        base_path=package_root,
-        original_base_path=tech_root,
-        layer_path=package_root / "layers.lyp",
-    )
+    # Salt 包内也保留相对路径 .lyt，支持直接复制发布包而无需先运行安装脚本。
+    _write_portable_technology_file(package_root)
 
     _write_install_note(release_root, package_root, tech_root)
     _verify_blackbox_exclusions(release_root, package_root)

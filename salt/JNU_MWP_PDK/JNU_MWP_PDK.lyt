@@ -4,9 +4,9 @@
  <description />
  <group />
  <dbu>0.001</dbu>
- <base-path>C:/Users/zjy/KLayout/salt/JNU_MWP_PDK</base-path>
- <original-base-path>C:/Users/zjy/KLayout/tech/JNU_MWP_PDK</original-base-path>
- <layer-properties_file>C:/Users/zjy/KLayout/salt/JNU_MWP_PDK/layers.lyp</layer-properties_file>
+ <base-path/>
+ <original-base-path/>
+ <layer-properties_file>layers.lyp</layer-properties_file>
  <add-other-layers>true</add-other-layers>
  <reader-options>
   <gds2>

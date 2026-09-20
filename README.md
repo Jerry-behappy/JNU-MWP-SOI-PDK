@@ -31,6 +31,8 @@ C:\Users\<用户名>\KLayout\salt\JNU_MWP_PDK
 C:\Users\<用户名>\KLayout\tech\JNU_MWP_PDK
 ```
 
+请复制仓库内的 `salt/` 与 `tech/` 内容，不要把最外层 `JNU-MWP-SOI-PDK` 文件夹再嵌套为 `KLayout\JNU-MWP-SOI-PDK\`。KLayout 只会扫描 `KLayout\salt`、`KLayout\tech` 与 `KLayout\pymacros`。两份 `JNU_MWP_PDK.lyt` 均使用相对路径，不依赖作者电脑的 `C:\Users\zjy\...` 目录。
+
 然后重启 KLayout，或在 Macro Development 中重新加载宏。正常加载后，KLayout 中应能看到：
 
 - Technology：`JNU_MWP_PDK`
@@ -83,6 +85,8 @@ After copying, the directory structure should include:
 C:\Users\<username>\KLayout\salt\JNU_MWP_PDK
 C:\Users\<username>\KLayout\tech\JNU_MWP_PDK
 ```
+
+Copy the repository's `salt/` and `tech/` contents; do not nest the outer `JNU-MWP-SOI-PDK` folder as `KLayout\JNU-MWP-SOI-PDK\`. KLayout scans `KLayout\salt`, `KLayout\tech`, and `KLayout\pymacros`. Both `JNU_MWP_PDK.lyt` files use relative paths and do not depend on the author's `C:\Users\zjy\...` directory.
 
 Then restart KLayout, or reload macros from Macro Development. After successful loading, KLayout should show:
 

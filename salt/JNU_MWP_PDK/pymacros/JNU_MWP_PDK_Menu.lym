@@ -16,7 +16,7 @@
  <dsl-interpreter-name/>
  <text># -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-08
+# 时间: 2026-09
 
 # JNU_MWP_PDK GUI 菜单初始化宏。
 # 该宏在 KLayout 顶部菜单创建 JNU_MWP_PDK 入口，并使用持久化的
@@ -53,6 +53,15 @@ _PDK_ROOT = os.path.dirname(_PYMACROS_DIR)
 # 并同步当前宏与活动运行宏，避免再次出现 Run 目标错位。
 _JNU_DRC_ENABLED = True
 _JNU_DRC_MACRO_NAMES = ("jnu mwp drc.lydrc", "jnu_mwp_drc.lydrc")
+
+# PDK 随菜单交付的默认快捷键。它们不写入用户 klayoutrc：首次安装时由
+# Action 直接采用；用户随后在 KLayout 中修改的 key-bindings 配置优先。
+_DEFAULT_SHORTCUTS = {
+    "jnu_action_path_to_waveguide": "9",
+    "jnu_action_waveguide_to_path": "8",
+    "jnu_action_sbend_connect_between_two_cells": "6",
+    "jnu_action_snap_components": "7",
+}
 
 # 早期恢复宏之外，菜单 autorun 再执行一次幂等安装，覆盖热重载与旧版
 # KLayout 没有运行 early macro 的环境；该调用不会注册到公开 JNULib。
@@ -306,7 +315,10 @@ def register_jnu_menu_items():
     old_actions_by_id = dict(getattr(main_window, "_jnu_menu_actions_by_id", {}))
     title_to_id = {title: item_id for _parent, item_id, title, _code in action_specs}
     title_to_id["SBend connect"] = "jnu_action_sbend_connect_between_two_cells"
-    shortcut_by_id = _configured_shortcuts(app, action_specs)
+    # 先采用 PDK 内置默认值，再以当前用户配置和当前会话中的设置覆盖。
+    # 这样发布包无需携带 klayoutrc，且不会覆盖用户后续自定义的快捷键。
+    shortcut_by_id = dict(_DEFAULT_SHORTCUTS)
+    shortcut_by_id.update(_configured_shortcuts(app, action_specs))
     for item_id, action in old_actions_by_id.items():
         shortcut = _action_property(action, "shortcut", "")
         if shortcut or item_id not in shortcut_by_id:
