@@ -271,13 +271,18 @@ def _copy_pin_layer(src_cell, dst_cell, src_layout, dst_layout):
         return
 
     dst_pin_index = dst_layout.layer(PIN_LAYER)
-    for shape in src_cell.each_shape(src_pin_index):
+    # 固定器件可能把端口放在子单元中，先变换到顶层坐标再转换数据库单位。
+    iterator = src_cell.begin_shapes_rec(src_pin_index)
+    while not iterator.at_end():
+        shape = iterator.shape()
+        transform = iterator.itrans()
         if shape.is_text():
-            dst_cell.shapes(dst_pin_index).insert(_scale_text(shape.text, src_layout.dbu, dst_layout.dbu))
+            dst_cell.shapes(dst_pin_index).insert(_scale_text(shape.text.transformed(transform), src_layout.dbu, dst_layout.dbu))
         elif shape.is_path():
-            dst_cell.shapes(dst_pin_index).insert(_scale_path(shape.path, src_layout.dbu, dst_layout.dbu))
+            dst_cell.shapes(dst_pin_index).insert(_scale_path(shape.path.transformed(transform), src_layout.dbu, dst_layout.dbu))
         elif shape.is_box():
-            dst_cell.shapes(dst_pin_index).insert(_scale_box(shape.box, src_layout.dbu, dst_layout.dbu))
+            dst_cell.shapes(dst_pin_index).insert(_scale_box(shape.box.transformed(transform), src_layout.dbu, dst_layout.dbu))
+        iterator.next()
 
 
 def _draw_blackbox_cell(src_cell, src_layout, dst_layout):
