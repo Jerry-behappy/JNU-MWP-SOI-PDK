@@ -121,6 +121,12 @@
 - **保存重开后无法还原波导路径**：先确认 JNU PDK 已正常加载，再检查是否展平或经其他软件移除了 PCell/恢复属性；保留原始可编辑文件。
 - **更新后界面未变化**：执行 `Reload JNU PDK` 可更新 Python 功能；涉及启动宏、技术或安装路径时请完全重启。升级前备份重要版图。
 
+### 10. 安装与维护
+
+首次安装请按 [README 克隆安装说明](../README.md#克隆仓库安装windows)，先查询 KLayout 实际用户配置目录，再运行安装脚本。程序、用户目录和源码可以在不同盘符，不要将 PDK 安装目标误设为程序目录。
+
+更新时按 [README 更新说明](../README.md#更新与白盒-gds)，在已安装克隆的 `main` 分支执行 `git pull --ff-only origin main`，保留本地修改和私有 GDS。纯 Python 功能更新后可执行 `Reload JNU PDK`；涉及启动宏、Technology 或安装路径时应完全重启。选择 `JNU_MWP_PDK` Technology 后检查菜单、器件库和图层是否正常。
+
 ---
 
 ## English User Guide
@@ -191,6 +197,8 @@ For **Cell Connect by Waveguide**, select exactly two non-array cell instances a
 
 For **Snap components**, select the moving objects, hover over an unselected reference object, and press `7`. Facing PinRec ports determine the translation. The whole selected group moves without rotation or mirroring, and no connecting waveguide is added. Successful snapping is silent and requires a valid transient selection under the cursor.
 
+### Layout Utilities
+
 For **Make Pins for Cell**, enter the target cell and choose its port sides. Inspect the generated pin positions, widths, directions, and DevRec. For **Numerical text array**, set numbering, direction, layer, spacing, and magnification, then place the array. Labels remain `Basic.TEXT` instances; spacing is between their bounding-box centers.
 
 Use **Layer Exclude** on a copy. It prefers a cell named `TOP` when present, otherwise the active cell. Checked layers are retained; unchecked layers are deleted from the entire current layout. Optional operations remove other cells, merge shapes, or convert Si Paths to polygons. The tool does not save GDS automatically: inspect and save a separate output.
@@ -209,3 +217,9 @@ Enter the cell to check, open `DRC → JNU_MWP_DRC`, edit and save rules in Macr
 - Stale code after updates: use Reload for Python changes and restart for startup macros, technology, or path changes.
 
 A clean DRC report is not a fabrication guarantee. Verify the intended process, enabled rules, layer mapping, device geometry, and optical design requirements before delivery.
+
+### Installation and Maintenance
+
+Follow the [README installation instructions](../README.md#git-clone-installation-windows). Query KLayout's actual user directory before running the installer. The executable, user directory, and source clone may be on different drives; the executable directory is not the PDK installation target.
+
+For updates, follow [Updates and Whitebox GDS](../README.md#updates-and-whitebox-gds). Run `git pull --ff-only origin main` on the installed clone's `main` branch, preserving local changes and private GDS. Use `Reload JNU PDK` for Python-only changes; restart KLayout for startup macros, technology, or installation-path changes. Select the `JNU_MWP_PDK` technology and check the menus, libraries, and layers.

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="236" viewBox="0 0 520 236" role="img" aria-labelledby="title desc">
+  <title id="title">Layout Utilities</title>
+  <desc id="desc">Make Pins for Cell: PinRec and DevRec; Numerical text array: numbered labels; Labels remain Basic.TEXT instances; Layer Exclude: flatten and retain chosen layers; Optional shape merging and cell removal; Use a copy for flattening or layer deletion</desc>
+  <rect x="1" y="1" width="518" height="234" rx="6" fill="#ffffff" stroke="#ced6da"/>
+  <path d="M7 1H513Q519 1 519 7V62H1V7Q1 1 7 1Z" fill="#a66924"/>
+  <g font-family="Arial, Microsoft YaHei, Noto Sans CJK SC, sans-serif">
+    <text x="22" y="40" fill="#ffffff" font-size="23" font-weight="600">Layout Utilities</text>
+    <text x="488" y="39" text-anchor="end" fill="#ffffff" font-size="16">04</text>
+    <text x="22" y="91" fill="#25333c" font-size="17">Make Pins for Cell: PinRec and DevRec</text>
+    <text x="22" y="114" fill="#25333c" font-size="17">Numerical text array: numbered labels</text>
+    <text x="22" y="137" fill="#25333c" font-size="17">Labels remain Basic.TEXT instances</text>
+    <text x="22" y="160" fill="#25333c" font-size="17">Layer Exclude: flatten and retain chosen layers</text>
+    <text x="22" y="183" fill="#25333c" font-size="17">Optional shape merging and cell removal</text>
+    <text x="22" y="206" fill="#25333c" font-size="17">Use a copy for flattening or layer deletion</text>
+  </g>
+</svg>

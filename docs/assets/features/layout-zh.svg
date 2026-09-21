@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="236" viewBox="0 0 520 236" role="img" aria-labelledby="title desc">
+  <title id="title">版图辅助</title>
+  <desc id="desc">Make Pins for Cell：生成 PinRec 与 DevRec; Numerical text array：编号文字阵列; 文字保持为 Basic.TEXT 实例; Layer Exclude：展平与图层筛选; 可选合并图形、删除其他 Cell; 建议对副本进行展平和删层操作</desc>
+  <rect x="1" y="1" width="518" height="234" rx="6" fill="#ffffff" stroke="#ced6da"/>
+  <path d="M7 1H513Q519 1 519 7V62H1V7Q1 1 7 1Z" fill="#a66924"/>
+  <g font-family="Arial, Microsoft YaHei, Noto Sans CJK SC, sans-serif">
+    <text x="22" y="40" fill="#ffffff" font-size="23" font-weight="600">版图辅助</text>
+    <text x="488" y="39" text-anchor="end" fill="#ffffff" font-size="16">04</text>
+    <text x="22" y="91" fill="#25333c" font-size="17">Make Pins for Cell：生成 PinRec 与 DevRec</text>
+    <text x="22" y="114" fill="#25333c" font-size="17">Numerical text array：编号文字阵列</text>
+    <text x="22" y="137" fill="#25333c" font-size="17">文字保持为 Basic.TEXT 实例</text>
+    <text x="22" y="160" fill="#25333c" font-size="17">Layer Exclude：展平与图层筛选</text>
+    <text x="22" y="183" fill="#25333c" font-size="17">可选合并图形、删除其他 Cell</text>
+    <text x="22" y="206" fill="#25333c" font-size="17">建议对副本进行展平和删层操作</text>
+  </g>
+</svg>

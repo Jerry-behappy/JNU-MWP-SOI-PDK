@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="236" viewBox="0 0 520 236" role="img" aria-labelledby="title desc">
+  <title id="title">器件库与参数化设计</title>
+  <desc id="desc">8 类可编辑 PCell; 直波导 / 90° 弯曲 / S 弯 / Taper; 双总线微环 / 阿基米德螺旋; Paperclip / 复合宽度 Paperclip; 25 个固定黑盒器件，可用于布局与连接; 白盒内部结构：另行授权安装</desc>
+  <rect x="1" y="1" width="518" height="234" rx="6" fill="#ffffff" stroke="#ced6da"/>
+  <path d="M7 1H513Q519 1 519 7V62H1V7Q1 1 7 1Z" fill="#187463"/>
+  <g font-family="Arial, Microsoft YaHei, Noto Sans CJK SC, sans-serif">
+    <text x="22" y="40" fill="#ffffff" font-size="23" font-weight="600">器件库与参数化设计</text>
+    <text x="488" y="39" text-anchor="end" fill="#ffffff" font-size="16">01</text>
+    <text x="22" y="91" fill="#25333c" font-size="17">8 类可编辑 PCell</text>
+    <text x="22" y="114" fill="#25333c" font-size="17">直波导 / 90° 弯曲 / S 弯 / Taper</text>
+    <text x="22" y="137" fill="#25333c" font-size="17">双总线微环 / 阿基米德螺旋</text>
+    <text x="22" y="160" fill="#25333c" font-size="17">Paperclip / 复合宽度 Paperclip</text>
+    <text x="22" y="183" fill="#25333c" font-size="17">25 个固定黑盒器件，可用于布局与连接</text>
+    <text x="22" y="206" fill="#25333c" font-size="17">白盒内部结构：另行授权安装</text>
+  </g>
+</svg>

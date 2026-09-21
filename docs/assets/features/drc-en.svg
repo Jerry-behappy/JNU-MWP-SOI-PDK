@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="236" viewBox="0 0 520 236" role="img" aria-labelledby="title desc">
+  <title id="title">Design Rule Checking</title>
+  <desc id="desc">JNU_MWP_DRC; Edit and save rules in Macro Development; Run JNU_MWP_DRC; Check the active cell and its descendants; Locate violations in Marker Browser; Save customized rules and recheck after fixes</desc>
+  <rect x="1" y="1" width="518" height="234" rx="6" fill="#ffffff" stroke="#ced6da"/>
+  <path d="M7 1H513Q519 1 519 7V62H1V7Q1 1 7 1Z" fill="#aa4d60"/>
+  <g font-family="Arial, Microsoft YaHei, Noto Sans CJK SC, sans-serif">
+    <text x="22" y="40" fill="#ffffff" font-size="23" font-weight="600">Design Rule Checking</text>
+    <text x="488" y="39" text-anchor="end" fill="#ffffff" font-size="16">05</text>
+    <text x="22" y="91" fill="#25333c" font-size="17">JNU_MWP_DRC</text>
+    <text x="22" y="114" fill="#25333c" font-size="17">Edit and save rules in Macro Development</text>
+    <text x="22" y="137" fill="#25333c" font-size="17">Run JNU_MWP_DRC</text>
+    <text x="22" y="160" fill="#25333c" font-size="17">Check the active cell and its descendants</text>
+    <text x="22" y="183" fill="#25333c" font-size="17">Locate violations in Marker Browser</text>
+    <text x="22" y="206" fill="#25333c" font-size="17">Save customized rules and recheck after fixes</text>
+  </g>
+</svg>

@@ -11,6 +11,24 @@
 
 该 PDK 支持在 KLayout 中进行硅光器件放置与参数化设计，包括直波导、90° 弯曲、S 弯、Taper、双总线微环和多种螺旋延迟线；提供 Circular、Bezier、Euler 弯曲，以及单宽度和复合宽度波导的路径转换。借助 PinRec 端口识别，可自动连接两个器件或进行端口吸附，并完成端口生成、编号文字阵列、图层筛选与展平、当前 Cell 及其子层级的 DRC 检查。功能菜单还支持自定义波导预设和 PDK 热重载；固定黑盒器件可用于布局与连线，实际器件内部结构需另行取得授权白盒 GDS。
 
+**点击下方任意功能框，直接跳转到对应的使用说明章节。**
+
+<table>
+  <tr><th colspan="2"><a href="docs/USER_GUIDE.md#中文使用说明">JNU-MWP-SOI-PDK · 功能框图</a></th></tr>
+  <tr>
+    <td width="50%"><a href="docs/USER_GUIDE.md#2-器件与参数" title="器件库与参数化设计"><img src="docs/assets/features/devices-zh.svg" width="520" alt="器件库与参数化设计: 8 类可编辑 PCell; 直波导 / 90° 弯曲 / S 弯 / Taper; 双总线微环 / 阿基米德螺旋; Paperclip / 复合宽度 Paperclip; 25 个固定黑盒器件，可用于布局与连接; 白盒内部结构：另行授权安装"></a></td>
+    <td width="50%"><a href="docs/USER_GUIDE.md#5-绘制与修改波导" title="波导设计"><img src="docs/assets/features/waveguides-zh.svg" width="520" alt="波导设计: Path to Waveguide / Waveguide to Path; 单宽度波导 / 复合宽度波导; Circular / Bezier / Euler 弯曲; Taper 渐变与 transition 过渡; 自动采样与只读曲率计算; User-Defined 参数预设与 Note"></a></td>
+  </tr>
+  <tr>
+    <td width="50%"><a href="docs/USER_GUIDE.md#6-连接与吸附器件" title="器件连接与对齐"><img src="docs/assets/features/connections-zh.svg" width="520" alt="器件连接与对齐: Cell Connect by Waveguide; 识别两个实例最近的可用相向 PinRec; 共线：Path to Waveguide 流程; 侧向偏移：可编辑 S_Bend; Snap components; 端口吸附：整体平移，不旋转或镜像"></a></td>
+    <td width="50%"><a href="docs/USER_GUIDE.md#7-端口文字与图层处理" title="版图辅助"><img src="docs/assets/features/layout-zh.svg" width="520" alt="版图辅助: Make Pins for Cell：生成 PinRec 与 DevRec; Numerical text array：编号文字阵列; 文字保持为 Basic.TEXT 实例; Layer Exclude：展平与图层筛选; 可选合并图形、删除其他 Cell; 建议对副本进行展平和删层操作"></a></td>
+  </tr>
+  <tr>
+    <td width="50%"><a href="docs/USER_GUIDE.md#8-drc-检查" title="设计规则检查"><img src="docs/assets/features/drc-zh.svg" width="520" alt="设计规则检查: JNU_MWP_DRC; 在原生 Macro Development 编辑并保存规则; Run JNU_MWP_DRC; 检查当前编辑 Cell 及其子层级; Marker Browser 定位违规位置; 保存自定义规则，修复后再次检查"></a></td>
+    <td width="50%"><a href="docs/USER_GUIDE.md#10-安装与维护" title="安装与维护"><img src="docs/assets/features/setup-zh.svg" width="520" alt="安装与维护: Git 克隆安装与更新; 通过目录联接加载源码，支持不同盘符; JNU_MWP_PDK Technology 与图层配置; JNULib / JNULib_BlackBox 器件库; Reload JNU PDK：功能与器件库热重载; 菜单快捷键与常见问题排查"></a></td>
+  </tr>
+</table>
+
 ### [点击查看详细使用说明](docs/USER_GUIDE.md)
 
 包含入门步骤、PCell 功能、波导绘制与连接、菜单快捷键、DRC 和常见问题。
@@ -150,6 +168,24 @@ git -C "$env:USERPROFILE\JNU-MWP-SOI-PDK" pull --ff-only origin main
 ### Capabilities
 
 The PDK supports silicon-photonic layout and parametric device design in KLayout, including straight waveguides, 90-degree bends, S-bends, tapers, double-bus microrings, and spiral delay lines. It provides Circular, Bezier, and Euler bends, reversible path conversion for single-width and composite-width waveguides, PinRec-based device connections and snapping, pin creation, numbered text arrays, layer filtering and flattening, and DRC of the active cell and its descendants. Saved waveguide presets and PDK hot reload support repeated design work. Bundled blackboxes provide placement and connectivity references; actual internal device geometry requires separately authorized whitebox GDS.
+
+**Click any functional block to open its corresponding user-guide section.**
+
+<table>
+  <tr><th colspan="2"><a href="docs/USER_GUIDE.md#english-user-guide">JNU-MWP-SOI-PDK · Feature Map</a></th></tr>
+  <tr>
+    <td width="50%"><a href="docs/USER_GUIDE.md#device-libraries" title="Libraries and PCells"><img src="docs/assets/features/devices-en.svg" width="520" alt="Libraries and PCells: 8 editable PCell types; Straight / 90-degree bend / S-bend / Taper; Microring / Archimedean / Paperclip spirals; Composite-width Paperclip spiral; 25 fixed blackboxes for placement and routing; Whitebox geometry: separate authorization"></a></td>
+    <td width="50%"><a href="docs/USER_GUIDE.md#waveguide-workflow" title="Waveguide Design"><img src="docs/assets/features/waveguides-en.svg" width="520" alt="Waveguide Design: Path to Waveguide / Waveguide to Path; Single-width / Composite-width waveguides; Circular / Bezier / Euler bends; Tapers and constant-width transitions; Automatic sampling and calculated curvature; User-Defined presets and Notes"></a></td>
+  </tr>
+  <tr>
+    <td width="50%"><a href="docs/USER_GUIDE.md#connecting-and-arranging-devices" title="Connection and Alignment"><img src="docs/assets/features/connections-en.svg" width="520" alt="Connection and Alignment: Cell Connect by Waveguide; Nearest eligible facing pins of two instances; Collinear: Path to Waveguide workflow; Lateral offset: editable S_Bend; Snap components; Port alignment by translation, without rotation"></a></td>
+    <td width="50%"><a href="docs/USER_GUIDE.md#layout-utilities" title="Layout Utilities"><img src="docs/assets/features/layout-en.svg" width="520" alt="Layout Utilities: Make Pins for Cell: PinRec and DevRec; Numerical text array: numbered labels; Labels remain Basic.TEXT instances; Layer Exclude: flatten and retain chosen layers; Optional shape merging and cell removal; Use a copy for flattening or layer deletion"></a></td>
+  </tr>
+  <tr>
+    <td width="50%"><a href="docs/USER_GUIDE.md#drc-and-troubleshooting" title="Design Rule Checking"><img src="docs/assets/features/drc-en.svg" width="520" alt="Design Rule Checking: JNU_MWP_DRC; Edit and save rules in Macro Development; Run JNU_MWP_DRC; Check the active cell and its descendants; Locate violations in Marker Browser; Save customized rules and recheck after fixes"></a></td>
+    <td width="50%"><a href="docs/USER_GUIDE.md#installation-and-maintenance" title="Installation and Maintenance"><img src="docs/assets/features/setup-en.svg" width="520" alt="Installation and Maintenance: Install and update a Git clone; Directory junctions support different drives; JNU_MWP_PDK technology and layer setup; JNULib / JNULib_BlackBox libraries; Reload JNU PDK: hot reload tools and libraries; Menu shortcuts and troubleshooting"></a></td>
+  </tr>
+</table>
 
 ### [Read the detailed user guide](docs/USER_GUIDE.md#english-user-guide)
 
