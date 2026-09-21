@@ -58,17 +58,18 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo", type=Path, required=True)
     parser.add_argument("--klayout", type=Path, required=True)
+    parser.add_argument("--temp-root", type=Path, help="临时测试目录的父目录，可指定非 C 盘验证跨盘安装")
     args = parser.parse_args()
     installer = args.repo.resolve() / "Install_Cloned_PDK.ps1"
-    with tempfile.TemporaryDirectory(prefix="jnu-clone-check-") as directory:
-        home = Path(directory) / "home"
+    with tempfile.TemporaryDirectory(prefix="jnu-clone-check-", dir=args.temp_root) as directory:
+        home = Path(directory) / "KLayout 用户目录 with spaces"
         env = os.environ.copy()
         env.update(KLAYOUT_HOME=str(home), KLAYOUT_PATH=str(home), JNU_CLONE_PROBE="1")
         env.pop("KLAYOUT_PYTHONPATH", None)
         command = ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(installer)]
 
-        def run(command, success=True):
-            result = subprocess.run(command, env=env, capture_output=True, text=True,
+        def run(command, success=True, environment=None):
+            result = subprocess.run(command, env=environment or env, capture_output=True, text=True,
                                     encoding="utf-8", errors="replace", timeout=120)
             if success:
                 print(result.stdout, result.stderr)
@@ -77,10 +78,25 @@ def main():
                 assert result.returncode != 0, "没有阻止覆盖现有安装"
             return result.stdout
 
+        preview = run(command + ["-WhatIf"])
+        assert "CLONE_INSTALLED" not in preview
+        assert not home.exists(), "预览不得创建目标目录"
         assert "CLONE_INSTALLED" in run(command)
         assert "ALREADY_LINKED" in run(command)
         target = home / "salt" / "JNU_MWP_PDK"
         assert target.resolve() == (args.repo / "salt" / "JNU_MWP_PDK").resolve()
+        # 显式路径优先于环境变量；默认目录从用户配置文件路径推导，不固定盘符。
+        explicit = Path(directory) / "explicit user home"
+        assert "CLONE_INSTALLED" in run(command + ["-KLayoutHome", str(explicit)])
+        assert (explicit / "salt" / "JNU_MWP_PDK").resolve() == target.resolve()
+        profile = Path(directory) / "test-profile"
+        default_env = env.copy()
+        default_env.pop("KLAYOUT_HOME", None)
+        default_env.pop("KLAYOUT_PATH", None)
+        default_env["USERPROFILE"] = str(profile)
+        assert "CLONE_INSTALLED" in run(command, environment=default_env)
+        assert (profile / "KLayout" / "salt" / "JNU_MWP_PDK").resolve() == target.resolve()
+        run(command + ["-KLayoutHome", str(args.klayout)], success=False)
         blocked = Path(directory) / "existing"
         old = blocked / "salt" / "JNU_MWP_PDK"
         old.mkdir(parents=True)
@@ -91,7 +107,7 @@ def main():
         (home / "klayoutrc").write_text("<config><edit-mode>true</edit-mode></config>", encoding="utf-8")
         run([str(args.klayout), "-z", "-e", "-t", "-rr", str(Path(__file__).resolve())])
         assert (home / "probe.json").is_file(), "冷启动未完成，不能用退出码替代验收"
-        print("CLONE_INSTALLATION_OK: junction, repeat install, existing data protection, GUI cold start")
+        print("CLONE_INSTALLATION_OK: preview, path precedence, spaced/unicode home, junction, existing data protection, GUI cold start")
 
 
 if os.environ.get("JNU_CLONE_PROBE") == "1":

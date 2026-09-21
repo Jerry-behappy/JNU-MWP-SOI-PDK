@@ -21,11 +21,11 @@
 
 **推荐安装方式**：在 AI agent 中输入：
 
-> 请在本机的 KLayout 中安装该项目：https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK
+> 请在本机的 KLayout 中安装该项目：https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK 。先确认 KLayout 实际使用的用户配置目录，不要根据程序所在盘符猜测安装位置，并保留已有 PDK 和私有 GDS。
 
 **推荐更新方式**：在 AI agent 中输入：
 
-> 请在本机的 KLayout 中更新该项目：https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK
+> 请在本机的 KLayout 中更新该项目：https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK 。先定位当前安装联接指向的 Git 克隆目录，并保留本地修改和私有 GDS。
 
 ### 仓库内容
 
@@ -40,21 +40,52 @@
 
 ### 克隆仓库安装（Windows）
 
-本项目仅支持 Git 克隆及目录联接安装。先安装 Git 和 KLayout，关闭 KLayout，在 PowerShell 执行：
+本项目仅支持 Git 克隆及目录联接安装。KLayout 程序、源码克隆目录和用户配置目录可以位于不同盘符。
+
+> [!IMPORTANT]
+> **不要求 KLayout 安装在 C 盘。PDK 应安装到 KLayout 实际使用的用户配置目录，不是 `klayout_app.exe` 所在目录。**
+> 程序位于 D/E 盘，不代表用户配置目录也在该盘；用户目录也不一定在 C 盘。
+
+#### 确认用户配置目录
+
+在本机实际使用的 KLayout 中，打开 Macro Development 的 Python 控制台，执行：
+
+```python
+print(pya.Application.instance().application_data_path())
+```
+
+记下输出目录，再关闭 KLayout。安装脚本按以下优先级确定目标：`-KLayoutHome` 显式参数 → `KLAYOUT_HOME` 环境变量 → `%USERPROFILE%\KLayout`。如使用便携版、定制启动脚本或 `KLAYOUT_PATH`，请以刚才查询的实际目录为准，不要猜测。
+
+#### 默认用户目录安装
+
+安装 Git，并确认查询结果与脚本默认用户目录一致后，在 PowerShell 执行。源码可以克隆到任意可写的本地盘，下面仅以当前用户目录为例：
 
 ```powershell
 git clone https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK.git "$env:USERPROFILE\JNU-MWP-SOI-PDK"
+powershell -NoProfile -ExecutionPolicy Bypass -File "$env:USERPROFILE\JNU-MWP-SOI-PDK\Install_Cloned_PDK.ps1" -WhatIf
 powershell -NoProfile -ExecutionPolicy Bypass -File "$env:USERPROFILE\JNU-MWP-SOI-PDK\Install_Cloned_PDK.ps1"
 ```
 
 安装脚本创建目录联接，直接加载克隆目录中的源码，而不是再复制一份：
 
 ```text
-C:\Users\<用户名>\KLayout\salt\JNU_MWP_PDK
-  -> C:\Users\<用户名>\JNU-MWP-SOI-PDK\salt\JNU_MWP_PDK
+<KLayout 实际用户配置目录>\salt\JNU_MWP_PDK
+  -> <Git 克隆目录>\salt\JNU_MWP_PDK
 ```
 
-已克隆过仓库时，只需从该仓库运行 `Install_Cloned_PDK.ps1`。自定义 KLayout 用户目录可用 `-KLayoutHome` 指定，或使用已有的 `KLAYOUT_HOME`。
+`-WhatIf` 只预览，不创建目录。核对输出中的 `KLAYOUT_USER_HOME` 后，再运行不带 `-WhatIf` 的命令。
+
+#### 自定义用户目录或 D/E 盘安装
+
+例如源码克隆在 `E:\Photonics\JNU-MWP-SOI-PDK`，且 KLayout 查询结果是 `D:\KLayoutUser`，执行以下命令；请把两处路径替换为自己机器上的实际值：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File "E:\Photonics\JNU-MWP-SOI-PDK\Install_Cloned_PDK.ps1" -KLayoutHome "D:\KLayoutUser" -WhatIf
+powershell -NoProfile -ExecutionPolicy Bypass -File "E:\Photonics\JNU-MWP-SOI-PDK\Install_Cloned_PDK.ps1" -KLayoutHome "D:\KLayoutUser"
+```
+
+**`-KLayoutHome` 只指定 PDK 安装目标，不会修改 KLayout 使用的用户目录，也不会设置环境变量。填写不存在于当前 KLayout 配置中的新目录，不会让 KLayout 自动加载它。** 已克隆过仓库时只需运行其安装脚本，不必重复克隆。
+
 启动宏自动加载 `salt/JNU_MWP_PDK/JNU_MWP_PDK.lyt` 及同目录的 `layers.lyp`，完成技术注册和图层配置。仓库根目录不再维护重复的 `tech/`。
 请勿把整个仓库放入 `KLayout/salt/`，否则可能重复扫描源码。
 若已有其他 `salt/JNU_MWP_PDK` 安装、旧版 `tech/JNU_MWP_PDK` 副本或独立 JNU loader，脚本会停止并保留现有文件；指向同一克隆目录的联接可重复运行安装脚本。
@@ -78,6 +109,8 @@ GitHub 更新不会自动同步到本机。在克隆目录的 `main` 分支运�
 ```powershell
 git -C "$env:USERPROFILE\JNU-MWP-SOI-PDK" pull --ff-only origin main
 ```
+
+如果源码克隆在 D/E 盘，把 `-C` 后的路径换成实际克隆目录；不要在 KLayout 程序目录或其他安装副本中执行更新。
 
 随后重启 KLayout；仅修改 Python 功能时也可使用 `Reload JNU PDK`。目录联接使更新直接作用于实际安装，无需重复复制。
 遇到本地修改或分支分歧时先处理并保留自己的修改，不要使用强制重置。重要版图在升级 PCell 代码前应备份。
@@ -128,11 +161,11 @@ Use an AI agent that can access local files and run commands, following the Git 
 
 **Recommended installation**: enter this prompt in the AI agent:
 
-> Please install this project in KLayout on this computer: https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK
+> Please install this project in KLayout on this computer: https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK . First determine the actual KLayout user directory; do not infer it from the executable location. Preserve existing PDKs and private GDS.
 
 **Recommended update**: enter this prompt in the AI agent:
 
-> Please update this project in KLayout on this computer: https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK
+> Please update this project in KLayout on this computer: https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK . First locate the Git clone targeted by the current installation junction. Preserve local changes and private GDS.
 
 ### Repository Contents
 
@@ -148,22 +181,53 @@ Use an AI agent that can access local files and run commands, following the Git 
 ### Git Clone Installation (Windows)
 
 This project supports installation only through a Git clone and a directory junction.
-Install Git and KLayout, close KLayout, then run in PowerShell:
+The executable, Git clone, and KLayout user directory may be on different drives.
+
+> [!IMPORTANT]
+> **KLayout does not need to be installed on C:. Install the PDK in KLayout's actual user directory, not the directory containing `klayout_app.exe`.**
+> An executable on D: or E: does not imply the same drive for user data, and the user directory is not necessarily on C:.
+
+#### Find the User Directory
+
+In the KLayout installation you actually use, open the Python console in Macro Development and run:
+
+```python
+print(pya.Application.instance().application_data_path())
+```
+
+Record the output and close KLayout. The installer resolves its target in this order: explicit `-KLayoutHome`, the `KLAYOUT_HOME` environment variable, then `%USERPROFILE%\KLayout`. For portable installations, custom launch scripts, or `KLAYOUT_PATH`, use the queried directory rather than guessing.
+
+#### Default User Directory
+
+Install Git and confirm that the queried path matches the installer's default user directory. Then run in PowerShell. The clone can be on any writable local drive; this example uses the current user's directory:
 
 ```powershell
 git clone https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK.git "$env:USERPROFILE\JNU-MWP-SOI-PDK"
+powershell -NoProfile -ExecutionPolicy Bypass -File "$env:USERPROFILE\JNU-MWP-SOI-PDK\Install_Cloned_PDK.ps1" -WhatIf
 powershell -NoProfile -ExecutionPolicy Bypass -File "$env:USERPROFILE\JNU-MWP-SOI-PDK\Install_Cloned_PDK.ps1"
 ```
 
 The installer creates a directory junction so KLayout loads the clone directly:
 
 ```text
-C:\Users\<username>\KLayout\salt\JNU_MWP_PDK
-  -> C:\Users\<username>\JNU-MWP-SOI-PDK\salt\JNU_MWP_PDK
+<actual KLayout user directory>\salt\JNU_MWP_PDK
+  -> <Git clone directory>\salt\JNU_MWP_PDK
 ```
 
-For an existing clone, only run its installer. Use `-KLayoutHome` or `KLAYOUT_HOME`
-for a custom user directory. The startup macro loads
+`-WhatIf` previews the operation without creating directories. Check `KLAYOUT_USER_HOME` before running the command without `-WhatIf`.
+
+#### Custom User Directory or D:/E: Installation
+
+For example, with a clone at `E:\Photonics\JNU-MWP-SOI-PDK` and a queried KLayout user directory of `D:\KLayoutUser`, run the following. Replace both paths with the actual locations on your machine:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File "E:\Photonics\JNU-MWP-SOI-PDK\Install_Cloned_PDK.ps1" -KLayoutHome "D:\KLayoutUser" -WhatIf
+powershell -NoProfile -ExecutionPolicy Bypass -File "E:\Photonics\JNU-MWP-SOI-PDK\Install_Cloned_PDK.ps1" -KLayoutHome "D:\KLayoutUser"
+```
+
+**`-KLayoutHome` only selects the PDK installation target. It does not reconfigure KLayout's user directory or change environment variables. Choosing an arbitrary new directory does not make KLayout load it.** For an existing clone, only run its installer; do not clone again.
+
+The startup macro loads
 `salt/JNU_MWP_PDK/JNU_MWP_PDK.lyt` and the adjacent `layers.lyp` to register the
 technology and configure layers. The repository no longer maintains a duplicate
 root `tech/` directory.
@@ -191,6 +255,8 @@ GitHub changes are not applied automatically. On the clone's `main` branch, run:
 ```powershell
 git -C "$env:USERPROFILE\JNU-MWP-SOI-PDK" pull --ff-only origin main
 ```
+
+For a clone on D: or E:, replace the argument after `-C` with its actual location. Do not update an unrelated copy or run this command in the KLayout executable directory.
 
 Restart KLayout; Python-only changes may also use Reload JNU PDK. The junction
 removes the need to copy updated files. Preserve local changes and resolve branch

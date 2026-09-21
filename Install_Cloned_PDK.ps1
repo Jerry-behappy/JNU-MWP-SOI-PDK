@@ -1,6 +1,7 @@
 ﻿# 创建者: Junyi Zhang
 # 时间: 2026-09
 # 将克隆目录联接到 KLayout；不复制源码，不覆盖现有安装或用户器件。
+[CmdletBinding(SupportsShouldProcess = $true)]
 param([string]$KLayoutHome)
 $ErrorActionPreference = 'Stop'
 $source = Join-Path $PSScriptRoot 'salt\JNU_MWP_PDK'
@@ -9,9 +10,24 @@ if (-not (Test-Path -LiteralPath (Join-Path $PSScriptRoot '.git')) -or
     throw 'Run this script from a Git clone of JNU-MWP-SOI-PDK.'
 }
 $source = (Resolve-Path -LiteralPath $source).Path
-if (-not $KLayoutHome) { $KLayoutHome = $env:KLAYOUT_HOME }
-if (-not $KLayoutHome) { $KLayoutHome = Join-Path $env:USERPROFILE 'KLayout' }
+$homeOrigin = '-KLayoutHome'
+if (-not $KLayoutHome) {
+    $KLayoutHome = $env:KLAYOUT_HOME
+    $homeOrigin = 'KLAYOUT_HOME environment variable'
+}
+if (-not $KLayoutHome) {
+    $KLayoutHome = Join-Path $env:USERPROFILE 'KLayout'
+    $homeOrigin = 'default user directory'
+}
 $homePath = [IO.Path]::GetFullPath($KLayoutHome)
+if (Test-Path -LiteralPath $homePath -PathType Leaf) {
+    throw '-KLayoutHome must be the KLayout user directory, not klayout_app.exe or a configuration file.'
+}
+# 程序安装目录和用户配置目录独立；显示实际目标，便于跨盘安装前核对。
+Write-Output "CLONE_SOURCE: $source"
+Write-Output "KLAYOUT_USER_HOME: $homePath ($homeOrigin)"
+Write-Output 'This does not change the user directory used by KLayout.'
+Write-Output 'Check it in the KLayout Python console: print(pya.Application.instance().application_data_path())'
 $salt = Join-Path $homePath 'salt'
 $target = Join-Path $salt 'JNU_MWP_PDK'
 if ($source.StartsWith($salt.TrimEnd('\') + '\', [StringComparison]::OrdinalIgnoreCase)) {
@@ -32,9 +48,12 @@ if ($existing) {
     }
     throw "Existing installation preserved: $target. Back it up outside KLayout; this installer never replaces existing data."
 }
-[void][IO.Directory]::CreateDirectory($salt)
-New-Item -ItemType Junction -Path $target -Target $source | Out-Null
-Write-Output "CLONE_INSTALLED: $target -> $source"
-Write-Output 'Restart KLayout. No separate tech folder or package index is needed.'
-Write-Output "Updates: git -C `"$PSScriptRoot`" pull --ff-only origin main"
-Write-Output 'Then restart KLayout. Whitebox GDS remains separately authorized.'
+# -WhatIf 只预览目录联接，不创建目录，也不修改环境变量或 KLayout 配置。
+if ($PSCmdlet.ShouldProcess($target, "Create directory junction to $source")) {
+    [void][IO.Directory]::CreateDirectory($salt)
+    New-Item -ItemType Junction -Path $target -Target $source | Out-Null
+    Write-Output "CLONE_INSTALLED: $target -> $source"
+    Write-Output 'Restart KLayout. No separate tech folder or package index is needed.'
+    Write-Output "Updates: git -C `"$PSScriptRoot`" pull --ff-only origin main"
+    Write-Output 'Then restart KLayout. Whitebox GDS remains separately authorized.'
+}
