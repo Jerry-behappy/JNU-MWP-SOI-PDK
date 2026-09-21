@@ -30,9 +30,7 @@
 ### 仓库内容
 
 - `salt/JNU_MWP_PDK/`：KLayout salt 包主体，包含菜单、PCell、工具、DRC 和图层配置。
-- `tech/JNU_MWP_PDK/`：KLayout technology 注册目录，用于让 KLayout 识别 `JNU_MWP_PDK` 技术。
-- `salt/JNU_MWP_PDK/JNU_MWP_PDK.lyt`：salt 包内的 technology 配置。
-- `tech/JNU_MWP_PDK/JNU_MWP_PDK.lyt`：用户 technology 目录中的 technology 配置。
+- `salt/JNU_MWP_PDK/JNU_MWP_PDK.lyt`：唯一维护的 technology 配置，由包内启动宏自动注册。
 - `salt/JNU_MWP_PDK/layers.lyp`：JNU PDK 图层显示配置。
 - `salt/JNU_MWP_PDK/drc/JNU_MWP_DRC.lydrc`：JNU DRC 规则入口。
 - `salt/JNU_MWP_PDK/pymacros/JNU_MWP_pcells/`：JNU PCell 源码。
@@ -42,7 +40,7 @@
 
 ### 克隆仓库安装（Windows）
 
-当前采用 Git 克隆安装，不需要配置在线 Package 索引。先安装 Git 和 KLayout，关闭 KLayout，在 PowerShell 执行：
+本项目仅支持 Git 克隆及目录联接安装。先安装 Git 和 KLayout，关闭 KLayout，在 PowerShell 执行：
 
 ```powershell
 git clone https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK.git "$env:USERPROFILE\JNU-MWP-SOI-PDK"
@@ -57,8 +55,9 @@ C:\Users\<用户名>\KLayout\salt\JNU_MWP_PDK
 ```
 
 已克隆过仓库时，只需从该仓库运行 `Install_Cloned_PDK.ps1`。自定义 KLayout 用户目录可用 `-KLayoutHome` 指定，或使用已有的 `KLAYOUT_HOME`。
-不需要额外复制 `tech/`。请勿把整个仓库放入 `KLayout/salt/`，否则可能重复扫描源码。
-若已有 `salt/JNU_MWP_PDK`、`tech/JNU_MWP_PDK` 或独立 JNU loader，脚本会停止并保留现有文件。
+启动宏自动加载 `salt/JNU_MWP_PDK/JNU_MWP_PDK.lyt` 及同目录的 `layers.lyp`，完成技术注册和图层配置。仓库根目录不再维护重复的 `tech/`。
+请勿把整个仓库放入 `KLayout/salt/`，否则可能重复扫描源码。
+若已有其他 `salt/JNU_MWP_PDK` 安装、旧版 `tech/JNU_MWP_PDK` 副本或独立 JNU loader，脚本会停止并保留现有文件；指向同一克隆目录的联接可重复运行安装脚本。
 请关闭 KLayout，先把旧安装移至 KLayout 目录以外备份，再重试；不要删除白盒 GDS 或修改其他 PDK。
 克隆目录需要长期保留，移动或删除它会使目录联接失效。
 
@@ -99,6 +98,8 @@ git -C "$env:USERPROFILE\JNU-MWP-SOI-PDK" pull --ff-only origin main
 > ```
 >
 > **该目录已通过 `.gitignore` 排除，白盒 GDS 不随本仓库公开上传。**
+>
+> **如需白盒 GDS，请与实验室联系。**
 
 仓库中的黑盒 GDS 可独立加载，PCell 源码继续保留。维护者可运行 `salt/JNU_MWP_PDK/pymacros/JNU_MWP_tools/release/export_blackbox_gds.py --source <本地白盒目录> --output <新的黑盒目录>` 更新黑盒数据。若只需分发黑盒器件而不携带 PCell 源码，请使用独立黑盒打包流程。
 
@@ -136,9 +137,7 @@ Use an AI agent that can access local files and run commands, following the Git 
 ### Repository Contents
 
 - `salt/JNU_MWP_PDK/`: main KLayout salt package, including menus, PCells, tools, DRC, and layer configuration.
-- `tech/JNU_MWP_PDK/`: KLayout technology registration directory for the `JNU_MWP_PDK` technology.
-- `salt/JNU_MWP_PDK/JNU_MWP_PDK.lyt`: technology configuration inside the salt package.
-- `tech/JNU_MWP_PDK/JNU_MWP_PDK.lyt`: technology configuration under the user technology directory.
+- `salt/JNU_MWP_PDK/JNU_MWP_PDK.lyt`: the single maintained technology configuration, registered automatically by the package startup macro.
 - `salt/JNU_MWP_PDK/layers.lyp`: JNU PDK layer display configuration.
 - `salt/JNU_MWP_PDK/drc/JNU_MWP_DRC.lydrc`: JNU DRC entry script.
 - `salt/JNU_MWP_PDK/pymacros/JNU_MWP_pcells/`: JNU PCell source code.
@@ -148,7 +147,7 @@ Use an AI agent that can access local files and run commands, following the Git 
 
 ### Git Clone Installation (Windows)
 
-The current installation method uses a Git clone, without an online package index.
+This project supports installation only through a Git clone and a directory junction.
 Install Git and KLayout, close KLayout, then run in PowerShell:
 
 ```powershell
@@ -164,9 +163,14 @@ C:\Users\<username>\KLayout\salt\JNU_MWP_PDK
 ```
 
 For an existing clone, only run its installer. Use `-KLayoutHome` or `KLAYOUT_HOME`
-for a custom user directory. No separate `tech/` copy is needed. Do not clone the
-whole repository under `KLayout/salt/`. Existing PDK folders or legacy loaders are
-never overwritten: close KLayout and back them up outside KLayout before retrying.
+for a custom user directory. The startup macro loads
+`salt/JNU_MWP_PDK/JNU_MWP_PDK.lyt` and the adjacent `layers.lyp` to register the
+technology and configure layers. The repository no longer maintains a duplicate
+root `tech/` directory.
+Do not clone the whole repository under `KLayout/salt/`. Other existing PDK
+installations, legacy `tech/JNU_MWP_PDK` copies, and standalone JNU loaders are
+preserved: close KLayout and back them up outside KLayout before retrying.
+Rerunning the installer for a junction to the same clone is supported.
 Preserve private GDS and other PDKs. Keep the clone at its installed location;
 moving or deleting it breaks the junction.
 
@@ -209,6 +213,8 @@ This project is based on the original project by Lukas Chrostowski and contribut
 > ```
 >
 > **This directory is excluded by `.gitignore`; whitebox GDS is not published in this repository.**
+>
+> **Please contact the laboratory if you need whitebox GDS.**
 
 Bundled blackbox GDS loads independently, and PCell source code remains included. Maintainers can run `salt/JNU_MWP_PDK/pymacros/JNU_MWP_tools/release/export_blackbox_gds.py --source <local-whitebox-directory> --output <new-blackbox-directory>` to refresh the blackbox data. To distribute blackboxes without PCell source code, use the separate blackbox packaging workflow.
 

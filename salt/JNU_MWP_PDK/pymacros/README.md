@@ -18,31 +18,12 @@
 
 ### 安装
 
-#### 推荐方式：安装为 Salt 包
+本项目仅支持 Git 克隆及目录联接安装，具体命令见[仓库根目录的安装与更新说明](../../../README.md)。
+关闭 KLayout 后，从克隆目录运行 `Install_Cloned_PDK.ps1`，将其中的 `salt/JNU_MWP_PDK` 联接到 `%USERPROFILE%\KLayout\salt\JNU_MWP_PDK`。
+启动宏会自动注册包内的 `JNU_MWP_PDK.lyt` 并读取同目录的 `layers.lyp`；无需单独安装技术文件。
 
-将完整的 `JNU_MWP_PDK` 文件夹放入：
-
-```text
-%USERPROFILE%\KLayout\salt\
-```
-
-确认安装后的主目录为：
-
-```text
-%USERPROFILE%\KLayout\salt\JNU_MWP_PDK
-```
-
-随后重启 KLayout，并将当前版图的技术切换为 `JNU_MWP_PDK`。正常加载后，Library 面板中应出现 `JNULib_v1.1` 和 `JNULib_BlackBox_v1.1`，顶部菜单中应出现 `JNU_MWP_PDK`。
-
-#### 仅安装技术文件
-
-如果只需要图层名称、颜色和显示样式，可将 `JNU_MWP_PDK.lyt` 与 `layers.lyp` 复制到：
-
-```text
-%USERPROFILE%\KLayout\tech\JNU_MWP_PDK\
-```
-
-这种方式不会单独安装 PCell、器件库和菜单工具；完整功能仍建议使用 Salt 包安装方式。
+重启 KLayout 后，Library 面板中应出现 `JNULib` 和 `JNULib_BlackBox`，顶部菜单中应出现 `JNU_MWP_PDK`。
+更新时在克隆目录执行 `git pull --ff-only origin main`，再重启 KLayout。克隆目录需要长期保留。
 
 ### 目录结构
 
@@ -169,31 +150,12 @@ The package includes fixed GDS cells, parameterized cells (PCells), waveguide co
 
 ### Installation
 
-#### Recommended: install as a Salt package
+This project supports installation only through a Git clone and a directory junction. See the [root installation and update instructions](../../../README.md) for commands.
+Close KLayout, then run `Install_Cloned_PDK.ps1` from the clone to link its `salt/JNU_MWP_PDK` directory to `%USERPROFILE%\KLayout\salt\JNU_MWP_PDK`.
+The startup macro registers the package's `JNU_MWP_PDK.lyt` and reads the adjacent `layers.lyp`; technology files do not require a separate installation.
 
-Place the complete `JNU_MWP_PDK` directory under:
-
-```text
-%USERPROFILE%\KLayout\salt\
-```
-
-The resulting package path should be:
-
-```text
-%USERPROFILE%\KLayout\salt\JNU_MWP_PDK
-```
-
-Restart KLayout and assign the `JNU_MWP_PDK` technology to the active layout. After a successful load, the Library panel should contain `JNULib_v1.1` and `JNULib_BlackBox_v1.1`, and the top menu bar should contain `JNU_MWP_PDK`.
-
-#### Install only the technology files
-
-If only the layer names, colors, and display styles are required, copy `JNU_MWP_PDK.lyt` and `layers.lyp` to:
-
-```text
-%USERPROFILE%\KLayout\tech\JNU_MWP_PDK\
-```
-
-This method alone does not install the PCells, device libraries, or menu tools. Use the Salt-package method for the complete feature set.
+After restarting KLayout, the Library panel should contain `JNULib` and `JNULib_BlackBox`, and the top menu bar should contain `JNU_MWP_PDK`.
+To update, run `git pull --ff-only origin main` in the clone and restart KLayout. Keep the clone at its installed location.
 
 ### Directory Structure
 

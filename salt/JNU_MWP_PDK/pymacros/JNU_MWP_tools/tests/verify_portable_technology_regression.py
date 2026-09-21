@@ -2,7 +2,7 @@
 # 创建者: Junyi Zhang
 # 时间: 2026-09
 
-"""验证 JNU Technology 配置可复制到任意用户目录后直接加载。"""
+"""验证包内唯一的 JNU Technology 配置搬迁后仍可独立加载。"""
 
 from pathlib import Path
 import shutil
@@ -12,9 +12,7 @@ import xml.etree.ElementTree as ET
 import pya
 
 
-PDK_ROOT = Path(__file__).resolve().parents[2]
-KLAYOUT_ROOT = PDK_ROOT.parents[1]
-TECH_ROOT = KLAYOUT_ROOT / "tech" / "JNU_MWP_PDK"
+PDK_ROOT = Path(__file__).resolve().parents[3]
 LYT_NAME = "JNU_MWP_PDK.lyt"
 TECH_NAME = "JNU_MWP_PDK_PortabilityRegression"
 
@@ -44,19 +42,19 @@ def _verify_portable_fields(lyt_path):
 
 
 def main():
-    """复制 salt/tech 配置到临时安装根并用 KLayout API 加载。"""
+    """将包内配置搬迁到另一用户目录，验证技术及相对图层路径。"""
     with tempfile.TemporaryDirectory(prefix="jnu_pdk_portable_") as temporary_directory:
         install_root = Path(temporary_directory) / "another-user" / "KLayout"
         salt_copy = install_root / "salt" / "JNU_MWP_PDK"
-        tech_copy = install_root / "tech" / "JNU_MWP_PDK"
         _copy_technology(PDK_ROOT, salt_copy)
-        _copy_technology(TECH_ROOT, tech_copy)
-
-        for lyt_path in (salt_copy / LYT_NAME, tech_copy / LYT_NAME):
-            _verify_portable_fields(lyt_path)
+        _verify_portable_fields(salt_copy / LYT_NAME)
+        _assert(not (install_root / "tech").exists(), "不应依赖额外的 tech 目录。")
 
         tech = pya.Technology().create_technology(TECH_NAME)
-        tech.load(str(tech_copy / LYT_NAME))
+        tech.load(str(salt_copy / LYT_NAME))
+        layer_path = Path(tech.eff_layer_properties_file())
+        _assert(layer_path.is_file(), "搬迁后的图层配置无法解析。")
+        _assert(layer_path.resolve() == (salt_copy / "layers.lyp").resolve(), "图层配置未使用包内副本。")
 
     print("OK: portable JNU_MWP_PDK technology loads after relocation.")
     return 0
