@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-07
+# 时间: 2026-09
 
 # JNU_MWP_PDK Make Pins for Cell 功能。
 # 从选中的 cell instance 器件边界生成 DevRec 与 PinRec。
@@ -159,7 +159,7 @@ def make_pins_for_cell_impl(cell, ports=None):
         return 0
 
     pin_layer = layout.layer(PIN_LAYER)
-    devrec_bbox = _existing_or_device_devrec(cell, device_bbox, ports)
+    _existing_or_device_devrec(cell, device_bbox, ports)
 
     def make_from_bbox(bbox):
         pin_count = 0
@@ -189,10 +189,8 @@ def make_pins_for_cell_impl(cell, ports=None):
                 make_pin(cell, "opt%d" % pin_count, center, w, pin_layer, direction)
         return pin_count
 
-    count = make_from_bbox(devrec_bbox)
-    if count == 0 and devrec_bbox != device_bbox:
-        count = make_from_bbox(device_bbox)
-    return count
+    # DevRec 只用于器件识别，已有框的偏移或净空不得改变实体端面上的端口。
+    return make_from_bbox(device_bbox)
 
 
 def make_pins_for_cell():

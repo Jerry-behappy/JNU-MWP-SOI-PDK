@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-07
+# 时间: 2026-09
 
 """验证 Make Pins for Cell 的 DevRec 外扩与端口边界规则。"""
 
 from pathlib import Path
 import sys
+import tempfile
 
 import pya
 
@@ -50,6 +51,72 @@ def _pin_paths(cell):
     ]
 
 
+def _check_physical_pins(cell, ports, bbox):
+    expected = {
+        "L": (bbox.left, bbox.center().y, bbox.height(), -20, 0),
+        "R": (bbox.right, bbox.center().y, bbox.height(), 20, 0),
+        "T": (bbox.center().x, bbox.top, bbox.width(), 0, 20),
+        "B": (bbox.center().x, bbox.bottom, bbox.width(), 0, -20),
+    }
+    actual = []
+    silicon = pya.Region(cell.begin_shapes_rec(cell.layout().layer(SI_LAYER)))
+    for path in _pin_paths(cell):
+        points = list(path.each_point())
+        center = path.bbox().center()
+        actual.append((center.x, center.y, path.width,
+                       points[-1].x - points[0].x, points[-1].y - points[0].y))
+        pin = pya.Region(path.polygon())
+        _assert((pin & silicon).area() * 2 == pin.area(),
+                "PinRec 必须以物理端面为中心，一半露在 Si 外。")
+    _assert(sorted(actual) == sorted(expected[side] for side in ports),
+            "端口位置、宽度或方向受 DevRec 影响：%s" % (actual,))
+
+
+def _check_devrec_independence():
+    bbox = _box(0, 0, 100000, 10000)
+    cases = [
+        ("partial", _box(-5000, -5000, 100000, 15000), ["L", "R"]),
+        ("oversized", _box(-5000, -5000, 105000, 15000), ["L", "R", "T", "B"]),
+        ("inset", pya.Polygon(_box(1000, 1000, 99000, 9000)), ["L", "R", "T", "B"]),
+    ]
+    with tempfile.TemporaryDirectory(prefix="jnu-make-pins-") as directory:
+        for name, devrec, ports in cases:
+            layout, cell = _new_cell(name)
+            cell.shapes(layout.layer(SI_LAYER)).insert(bbox)
+            shapes = cell.shapes(layout.layer(DEVREC_LAYER))
+            shapes.insert(devrec)
+            before = [str(shape) for shape in shapes.each()]
+            _assert(make_pins_for_cell_impl(cell, ports) == len(ports),
+                    "已有 DevRec 时遗漏物理端口：%s" % name)
+            _assert([str(shape) for shape in shapes.each()] == before,
+                    "不应改写已有的较大或自定义 DevRec。")
+            _check_physical_pins(cell, ports, bbox)
+            filename = str(Path(directory) / (name + ".gds"))
+            layout.write(filename)
+            restored = pya.Layout()
+            restored.read(filename)
+            _check_physical_pins(restored.cell(name), ports, bbox)
+
+    # 实体与 DevRec 均可来自子层级，实例变换后仍应使用实体端面。
+    layout, cell = _new_cell("hierarchy")
+    child = layout.create_cell("device")
+    child.shapes(layout.layer(SI_LAYER)).insert(bbox)
+    child.shapes(layout.layer(DEVREC_LAYER)).insert(
+        pya.Polygon(_box(1000, 1000, 99000, 9000)))
+    transform = pya.Trans(pya.Trans.R90, 200000, 300000)
+    cell.insert(pya.CellInstArray(child.cell_index(), transform))
+    ports = ["L", "R", "T", "B"]
+    _assert(make_pins_for_cell_impl(cell, ports) == 4, "子层级端口数量错误。")
+    _check_physical_pins(cell, ports, bbox.transformed(transform))
+
+    # 只有器件识别层而没有物理图形时，不得凭 DevRec 生成 PinRec。
+    layout, cell = _new_cell("devrec_only")
+    cell.shapes(layout.layer(DEVREC_LAYER)).insert(bbox)
+    _assert(make_pins_for_cell_impl(cell, ["L", "R"]) == 0,
+            "无实体层时不应生成端口。")
+    _assert(not _pin_paths(cell), "DevRec 不应被当作器件实体。")
+
+
 def main():
     offset = int(round(DEVREC_NON_PORT_OFFSET_UM / 0.001))
 
@@ -92,7 +159,8 @@ def main():
         "旧版小 DevRec 未升级。",
     )
 
-    print("OK: Make Pins DevRec follows SiEPIC non-port 0.5 um clearance.")
+    _check_devrec_independence()
+    print("OK: Make Pins uses physical boundaries independently of DevRec; GDS roundtrip passed.")
 
 
 if __name__ == "__main__":
