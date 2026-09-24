@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-06
+# 时间: 2026-09
 
 # SiEPIC 兼容光学端口生成函数。
 # 在指定 Cell 的 PinRec 图层上创建文字标签和短路径，
@@ -30,9 +30,9 @@ def make_pin(cell, name, center, w, layer, direction, debug=False):
 
     # 将微米值按当前 dbu 量化为数据库整数单位。
     to_itype = lambda v, dbu: int(round(float(v) / dbu))
-    # PinRec 短路径总长固定为 20 DBU，中心点位于路径中点。
-    PIN_LENGTH = 20.0  # 数据库单位，pin 路径总长（约 20 nm @ 1nm dbu）
-    pin_length = PIN_LENGTH
+    # PinRec 短路径总长固定为 20 nm，中心点位于路径中点。
+    # 使用物理长度换算，避免 dbu 为 0.1 nm 时错误退化成 2 nm。
+    PIN_LENGTH_UM = 0.02
 
     try:
         import numpy
@@ -42,6 +42,7 @@ def make_pin(cell, name, center, w, layer, direction, debug=False):
         float_types = (float,)
 
     dbu = cell.layout().dbu
+    pin_length = max(1, int(round(PIN_LENGTH_UM / dbu)))
 
     # 宽度为浮点数时表示微米，需要转换为数据库整数单位。
     if isinstance(w, float_types):

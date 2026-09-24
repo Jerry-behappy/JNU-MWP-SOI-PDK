@@ -7,6 +7,16 @@
 
 import pya
 
+
+# GUI 中的端口方向按用户在版图视图中的全局方向选择；生成前需要把该方向
+# 反映射到实例所属 cell 的本地坐标，否则旋转后的实例会把 T 生成到右侧。
+_PORT_VECTORS = {
+    "L": (-1, 0),
+    "R": (1, 0),
+    "T": (0, 1),
+    "B": (0, -1),
+}
+
 from JNU_MWP_tools.core.common import (
     DEVICE_LAYERS,
     DEVREC_LAYER,
@@ -147,10 +157,30 @@ def _existing_or_device_devrec(cell, device_bbox, ports):
     return devrec_bbox
 
 
-def make_pins_for_cell_impl(cell, ports=None):
+def _instance_local_ports(ports, instance_transform):
+    """把全局端口方向映射为实例所属 cell 的本地端口方向。"""
+
+    if instance_transform is None:
+        return list(ports)
+
+    local_ports = []
+    for global_side in ports:
+        global_vector = _PORT_VECTORS[global_side]
+
+        def score(local_side):
+            local_vector = _PORT_VECTORS[local_side]
+            transformed = instance_transform * pya.Vector(local_vector[0], local_vector[1])
+            return transformed.x * global_vector[0] + transformed.y * global_vector[1]
+
+        local_ports.append(max(_PORT_VECTORS, key=score))
+    return local_ports
+
+
+def make_pins_for_cell_impl(cell, ports=None, instance_transform=None):
     from JNU_MWP_tools.core.make_pin import make_pin
 
     ports = ports or ["L", "R"]
+    ports = _instance_local_ports(ports, instance_transform)
     layout = cell.layout()
     device_layers = _device_layers(layout)
     region = _device_region(cell, device_layers)
@@ -223,7 +253,11 @@ def make_pins_for_cell():
             return
 
         view.transaction("JNU Make Pins for Cell")
-        count = make_pins_for_cell_impl(target_cell, ports=ports)
+        count = make_pins_for_cell_impl(
+            target_cell,
+            ports=ports,
+            instance_transform=inst.trans,
+        )
         view.commit()
         _main_window().redraw()
         if count == 0:
@@ -240,6 +274,7 @@ def make_pins_for_cell():
 __all__ = [
     "DEVREC_NON_PORT_OFFSET_UM",
     "_expanded_devrec_bbox",
+    "_instance_local_ports",
     "make_pins_for_cell",
     "make_pins_for_cell_impl",
 ]

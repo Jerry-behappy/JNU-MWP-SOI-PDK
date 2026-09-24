@@ -17,9 +17,11 @@ if str(PYMACROS_DIR) not in sys.path:
 
 from JNU_MWP_tools.actions.make_pins_for_cell import (
     DEVREC_NON_PORT_OFFSET_UM,
+    _instance_local_ports,
     make_pins_for_cell_impl,
 )
 from JNU_MWP_tools.core.common import DEVREC_LAYER, M1_LAYER, PIN_LAYER, SI_LAYER
+from JNU_MWP_tools.core.make_pin import make_pin
 
 
 def _assert(condition, message):
@@ -27,9 +29,9 @@ def _assert(condition, message):
         raise RuntimeError(message)
 
 
-def _new_cell(name):
+def _new_cell(name, dbu=0.001):
     layout = pya.Layout()
-    layout.dbu = 0.001
+    layout.dbu = dbu
     return layout, layout.create_cell(name)
 
 
@@ -117,6 +119,54 @@ def _check_devrec_independence():
     _assert(not _pin_paths(cell), "DevRec 不应被当作器件实体。")
 
 
+def _check_pin_length_independent_of_dbu():
+    """PinRec 短路径在任何 dbu 下都必须保持 20 nm。"""
+
+    for dbu in (0.001, 0.0001):
+        layout, cell = _new_cell("pin_length_%s" % dbu, dbu=dbu)
+        width_dbu = int(round(0.5 / dbu))
+        make_pin(cell, "opt1", pya.Point(0, 0), width_dbu, layout.layer(PIN_LAYER), 0)
+        path = _pin_paths(cell)[0]
+        points = list(path.each_point())
+        expected_length = int(round(0.02 / dbu))
+        _assert(
+            abs(points[-1].x - points[0].x) == expected_length,
+            "PinRec 短路径在 dbu=%s 时不是 20 nm。" % dbu,
+        )
+
+
+def _check_rotated_instance_port_mapping():
+    """旋转实例时，GUI 选择的全局端口方向应映射到正确的 cell 本地边。"""
+
+    cases = (
+        (pya.Trans.R90, "T", "R"),
+        (pya.Trans.R180, "T", "B"),
+        (pya.Trans.R270, "T", "L"),
+        (pya.Trans.M0, "T", "B"),
+    )
+    for rotation, requested, expected in cases:
+        actual = _instance_local_ports([requested], pya.Trans(rotation))
+        _assert(
+            actual == [expected],
+            "实例变换 %s 下全局 %s 端口被映射为 %s。" % (rotation, requested, actual),
+        )
+
+    layout, cell = _new_cell("rotated_instance")
+    child = layout.create_cell("rotated_child")
+    child.shapes(layout.layer(SI_LAYER)).insert(_box(0, 0, 100000, 10000))
+    instance = cell.insert(pya.CellInstArray(child.cell_index(), pya.Trans(pya.Trans.R90)))
+    local_ports = _instance_local_ports(["T"], instance.trans)
+    _assert(make_pins_for_cell_impl(child, ports=local_ports) == 1,
+            "旋转实例的全局顶边没有生成端口。")
+    path = _pin_paths(child)[0]
+    points = list(path.each_point())
+    _assert(path.bbox().center().x == 100000 and points[1].x > points[0].x,
+            "全局顶边端口没有映射到 cell 本地右边。")
+    transformed_center = instance.trans * path.bbox().center()
+    _assert(transformed_center.y == 100000,
+            "旋转后端口没有落在实例顶层物理顶边上。")
+
+
 def main():
     offset = int(round(DEVREC_NON_PORT_OFFSET_UM / 0.001))
 
@@ -160,6 +210,8 @@ def main():
     )
 
     _check_devrec_independence()
+    _check_pin_length_independent_of_dbu()
+    _check_rotated_instance_port_mapping()
     print("OK: Make Pins uses physical boundaries independently of DevRec; GDS roundtrip passed.")
 
 
