@@ -16,7 +16,7 @@ if str(PYMACROS_DIR) not in sys.path:
 
 
 MENU_MACRO = PYMACROS_DIR / "JNU_MWP_PDK_Menu.lym"
-EXPECTED_ACTION_COUNT = 10
+EXPECTED_ACTION_COUNT = 12
 EXPECTED_SHORTCUTS = {
     "jnu_action_path_to_waveguide": "9",
     "jnu_action_waveguide_to_path": "8",
@@ -28,6 +28,8 @@ EXPECTED_SHORTCUTS = {
     "jnu_action_jnu_mwp_drc": "Ctrl+Alt+D",
     "jnu_action_run_jnu_mwp_drc": "",
     "jnu_action_reload_jnu_pdk": "Ctrl+Alt+R",
+    "jnu_action_update_pdk": "",
+    "jnu_action_install_private": "",
 }
 _PERSISTENT_CONFIG_KEYS = (
     "key-bindings",
@@ -84,6 +86,8 @@ def _set_configured_shortcuts(app):
         "jnu_action_jnu_mwp_drc": "jnu_mwp_pdk_menu.drc",
         "jnu_action_run_jnu_mwp_drc": "jnu_mwp_pdk_menu.drc",
         "jnu_action_reload_jnu_pdk": "jnu_mwp_pdk_menu",
+        "jnu_action_update_pdk": "jnu_mwp_pdk_menu",
+        "jnu_action_install_private": "jnu_mwp_pdk_menu",
     }
     for item_id, shortcut in EXPECTED_SHORTCUTS.items():
         mapping[parent_by_id[item_id] + "." + item_id] = "'%s'" % shortcut

@@ -302,6 +302,8 @@ def register_jnu_menu_items():
         (layout_parent, "jnu_action_numerical_text_array", "Numerical text array", _NUMERICAL_TEXT_ARRAY_CODE),
         (layout_parent, "jnu_action_snap_components", "Snap components", _SNAP_COMPONENTS_CODE),
         (root_menu, "jnu_action_reload_jnu_pdk", "Reload JNU PDK", _RELOAD_PDK_CODE),
+        (root_menu, "jnu_action_update_pdk", "Check for PDK Updates", "from JNU_MWP_tools.actions.install_pdk import show_installer; show_installer('update')"),
+        (root_menu, "jnu_action_install_private", "Install / Update Whitebox Library", "from JNU_MWP_tools.actions.install_pdk import show_installer; show_installer('private')"),
     ]
     if _JNU_DRC_ENABLED:
         action_specs.extend((

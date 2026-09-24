@@ -65,6 +65,8 @@ description: Use when developing, verifying, or packaging the JNU_MWP_PDK KLayou
 
 ## Workflow
 
+推荐用户运行根目录 `Install_JNU_PDK.lym`：从运行中的 KLayout 读取 `application_data_path()`，无需用户寻找程序或配置目录。唯一逻辑源为 `actions/install_pdk.py`，修改后运行 `tools/build_install_macro.py` 生成独立宏并核验 XML 内源码一致。Git 克隆、更新和认证在后台线程执行，Qt 更新仅通过主线程 timer；只更新干净且无本地超前提交的 main，保留旧目录和修改。菜单提供 `Check for PDK Updates` 与 `Install / Update Whitebox Library`，私有库只克隆到用户目录 `jnu_private`，不接收或保存凭据。安装回归使用临时 Git 仓库和隔离 KLayout GUI，不操作用户实际安装。
+
 当前用户安装仅支持 Git 克隆及目录联接：仓库根 `Install_Cloned_PDK.ps1` 将克隆内 `salt/JNU_MWP_PDK` 联接到 KLayout 的 salt 目录，不覆盖已有安装，不配置在线索引。更新使用 `git pull --ff-only origin main` 后重启。私有 GDS 单独授权并保留独立目录读取兼容；离线实验室和黑盒构建工具仅作为维护者备用工具，不作为当前用户安装流程。
 
 1. 修改前阅读 `references/project-map.md` 和 `references/workflows.md`；不自动读取项目根 `JNU_PDK_CONTEXT_BACKUP.md`。

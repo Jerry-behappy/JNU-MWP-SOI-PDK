@@ -56,7 +56,22 @@
 - `salt/JNU_MWP_PDK/pymacros/JNU_MWP_tools/`：JNU 菜单功能和公共工具源码。
 - `salt/JNU_MWP_PDK/pymacros/JNU_MWP_skill/`：项目内部维护用 skill，不用于黑盒发布包。
 
-### 克隆仓库安装（Windows）
+### 推荐：拖入 KLayout 安装（Windows）
+
+**[下载安装宏 Install_JNU_PDK.lym](https://raw.githubusercontent.com/Jerry-behappy/JNU-MWP-SOI-PDK/main/Install_JNU_PDK.lym)**（浏览器若显示源码，请右键链接“另存为”，保留 `.lym` 扩展名）。
+
+1. 打开平时使用的 KLayout，将下载的 `.lym` 文件拖入主窗口。
+2. 在 Macro Development 中选中 **Install JNU PDK**，点击绿色 Run，再点击“安装”。
+3. 等待提示完成，保存版图并重启 KLayout；选择 `JNU_MWP_PDK` Technology。
+
+**无需查找 KLayout 程序或用户配置目录，也不需要输入 PowerShell 命令。** 安装宏从正在运行的 KLayout 自动读取实际目录，后台克隆 GitHub `main`，并建立目录联接。首次安装需要 [Git](https://git-scm.com/downloads)；未安装时可点击窗口中的 **Install Git**，安装后重新打开 KLayout。
+
+默认源码保存在 `<实际用户配置目录>/jnu_repositories/JNU-MWP-SOI-PDK`，请保留此目录。已有正确的克隆联接会被复用；检测到旧手动安装、旧 loader、本地修改或非 `main` 分支时会保留现有数据并提示处理原因。网络失败时可以重试；若 Git 留下不完整克隆，先将该目录移至配置目录外保留，再重新安装。
+
+后续更新点击 **JNU_MWP_PDK → Check for PDK Updates**。授权白盒器件使用 **Install / Update Whitebox Library**，具体授权说明见下方。
+
+<details>
+<summary>高级安装：手动克隆与 PowerShell（已有自定义目录时使用）</summary>
 
 本项目仅支持 Git 克隆及目录联接安装。KLayout 程序、源码克隆目录和用户配置目录可以位于不同盘符。
 
@@ -110,7 +125,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "E:\Photonics\JNU-MWP-SOI-PD
 请关闭 KLayout，先把旧安装移至 KLayout 目录以外备份，再重试；不要删除白盒 GDS 或修改其他 PDK。
 克隆目录需要长期保留，移动或删除它会使目录联接失效。
 
-重启 KLayout 后，应能看到：
+</details>
+
+安装完成并重启后，应能看到：
 
 - Technology：`JNU_MWP_PDK`
 - 顶部功能菜单：`JNU_MWP_PDK`
@@ -122,7 +139,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "E:\Photonics\JNU-MWP-SOI-PD
 
 ### 更新与白盒 GDS
 
-GitHub 更新不会自动同步到本机。在克隆目录的 `main` 分支运行：
+推荐点击 **JNU_MWP_PDK → Check for PDK Updates**，工具会定位当前安装联接对应的克隆，检查干净的 `main` 并只执行快进更新。完成后保存版图并重启 KLayout。旧版没有该菜单时可使用安装宏更新 Git 克隆版，或在克隆目录执行以下备用命令：
 
 ```powershell
 git -C "$env:USERPROFILE\JNU-MWP-SOI-PDK" pull --ff-only origin main
@@ -134,7 +151,8 @@ git -C "$env:USERPROFILE\JNU-MWP-SOI-PDK" pull --ff-only origin main
 遇到本地修改或分支分歧时先处理并保留自己的修改，不要使用强制重置。重要版图在升级 PCell 代码前应备份。
 
 白盒 GDS 来自私有仓库 `Jerry-behappy/JNU-MWP-SOI-Library`，需单独授权获取；不会随本仓库克隆或更新。
-获授权后，将解压得到的 `JNU_MWP_gds` 内容放入 KLayout 用户目录的 `jnu_private/JNU_MWP_gds`，重启或重载即可在 `JNULib` 中使用。
+获授权后点击 **JNU_MWP_PDK → Install / Update Whitebox Library**。Git 使用本机已有凭据，或由 Git Credential Manager 弹出 GitHub 登录；安装器不收集密码或 token。若认证失败，请先在 Git Credential Manager 中完成 GitHub 登录并确认账户已被授予私有仓库访问权，再重试。
+私有库会单独克隆到 `<实际用户配置目录>/jnu_private`，之后再次点击同一菜单即可更新。已有手动放置的 `jnu_private` 不会被覆盖；此时可继续手动维护，或先备份后迁移。也可将获授权的 `JNU_MWP_gds` 内容手动放入用户目录 `jnu_private/JNU_MWP_gds`，重启后在 `JNULib` 中使用。
 既有源码目录中的 `pymacros/JNU_MWP_gds` 仍兼容加载。不要将任何白盒 GDS 提交到本仓库。
 
 ### 重要说明
@@ -214,7 +232,22 @@ Use an AI agent that can access local files and run commands, following the Git 
 - `salt/JNU_MWP_PDK/pymacros/JNU_MWP_tools/`: JNU menu actions and shared utility code.
 - `salt/JNU_MWP_PDK/pymacros/JNU_MWP_skill/`: internal project skill used for maintenance, not included in blackbox release packages.
 
-### Git Clone Installation (Windows)
+### Recommended: Drag-and-Drop Installer (Windows)
+
+**[Download Install_JNU_PDK.lym](https://raw.githubusercontent.com/Jerry-behappy/JNU-MWP-SOI-PDK/main/Install_JNU_PDK.lym)**. If the browser displays source code, use **Save link as** and keep the `.lym` extension.
+
+1. Open the KLayout you normally use and drop the downloaded macro onto its main window.
+2. Select **Install JNU PDK** in Macro Development, click the green Run button, then click **安装 (Install)**.
+3. Wait for completion, save your layouts, restart KLayout, and select the `JNU_MWP_PDK` technology.
+
+**No executable path, configuration-directory lookup, or PowerShell command is required.** The macro reads the running application's data directory, clones GitHub `main` in the background, and creates a directory junction. [Git](https://git-scm.com/downloads) is required; the installer provides an **Install Git** link. Restart KLayout after installing Git.
+
+The default checkout is `<actual user directory>/jnu_repositories/JNU-MWP-SOI-PDK`; keep it in place. An existing valid checkout junction is reused. Legacy installations, local edits, and non-main branches are preserved and reported. If a failed clone leaves an incomplete directory, move it outside the configuration directory before retrying.
+
+For later updates use **JNU_MWP_PDK → Check for PDK Updates**. Authorized whitebox devices have a separate **Install / Update Whitebox Library** entry.
+
+<details>
+<summary>Advanced: manual Git clone and PowerShell installation</summary>
 
 This project supports installation only through a Git clone and a directory junction.
 The executable, Git clone, and KLayout user directory may be on different drives.
@@ -274,6 +307,8 @@ Rerunning the installer for a junction to the same clone is supported.
 Preserve private GDS and other PDKs. Keep the clone at its installed location;
 moving or deleting it breaks the junction.
 
+</details>
+
 Restart KLayout. After successful loading, KLayout should show:
 
 - Technology: `JNU_MWP_PDK`
@@ -286,7 +321,7 @@ Blackboxes retain only a rectangular footprint, PinRec ports, DevRec bounds, and
 
 ### Updates and Whitebox GDS
 
-GitHub changes are not applied automatically. On the clone's `main` branch, run:
+Use **JNU_MWP_PDK → Check for PDK Updates**. It resolves the active checkout, requires a clean `main`, and applies only a fast-forward update. Save layouts and restart afterwards. Older installations can rerun the installer macro for an existing Git-based installation or use this fallback command:
 
 ```powershell
 git -C "$env:USERPROFILE\JNU-MWP-SOI-PDK" pull --ff-only origin main
@@ -299,7 +334,8 @@ removes the need to copy updated files. Preserve local changes and resolve branc
 divergence instead of forcing a reset. Back up important layouts before PCell upgrades.
 
 Whitebox GDS requires separate authorization to `Jerry-behappy/JNU-MWP-SOI-Library`.
-Put the authorized extracted GDS files in `<KLayout user home>/jnu_private/JNU_MWP_gds`
+Use **JNU_MWP_PDK → Install / Update Whitebox Library** after access is granted. Git uses your existing credentials or Git Credential Manager's GitHub login; the installer never collects passwords or tokens. If authentication fails, sign in with Git Credential Manager and verify repository access before retrying. The private checkout lives in `<actual user directory>/jnu_private`; the same menu updates it later. Existing manual private data is preserved and requires backup before migration.
+Alternatively put authorized extracted GDS in `<KLayout user home>/jnu_private/JNU_MWP_gds`
 and restart/reload. Legacy `pymacros/JNU_MWP_gds` remains supported. Public code
 updates do not update private GDS. Never commit whitebox GDS to this repository.
 
