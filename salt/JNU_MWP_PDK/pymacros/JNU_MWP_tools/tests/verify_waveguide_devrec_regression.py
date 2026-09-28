@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# 时间: 2026-09
 """验证 JNU Waveguide PCell 的几何与 Path 可逆数据。"""
 
 import json
@@ -25,6 +26,7 @@ from JNU_MWP_tools.core.common import (  # noqa: E402
     WG_LAYER,
 )
 import JNU_MWP_tools.actions.path_to_waveguide as path_tool  # noqa: E402
+import JNU_MWP_tools.actions.waveguide_to_path as reverse_tool  # noqa: E402
 from JNU_MWP_tools.actions.path_to_waveguide import (  # noqa: E402
     JNULIB_NAME,
     _create_waveguide_cell,
@@ -255,7 +257,7 @@ def _check_public_library_excludes_internal_pcells():
 
 
 def _check_gui_transaction_pre_registration():
-    """在隐藏 GUI 中执行两次完整 Path to Waveguide 转换。"""
+    """在隐藏 GUI 中验证 Si 和自定义图层的转换及返回 Si 层。"""
     main_window = pya.Application.instance().main_window()
     if main_window is None:
         raise RuntimeError("该检查需要使用 KLayout -z -e 隐藏 GUI 模式运行。")
@@ -300,8 +302,12 @@ def _check_gui_transaction_pre_registration():
     messages = []
     try:
         path_tool._message = lambda title, text: messages.append((title, text))
-        for y_dbu, params in ((0, single_params), (300000, composite_params)):
-            layer_index = layout.layer(SI_LAYER)
+        source_layers = (
+            (0, single_params, SI_LAYER),
+            (300000, composite_params, pya.LayerInfo(42, 7)),
+        )
+        for y_dbu, params, source_layer in source_layers:
+            layer_index = layout.layer(source_layer)
             shape = top.shapes(layer_index).insert(pya.Path(
                 [
                     pya.Point(0, y_dbu),
@@ -329,8 +335,33 @@ def _check_gui_transaction_pre_registration():
         raise RuntimeError("Path to Waveguide 未直接插入真实 PCell。")
     if not top.shapes(layout.layer(SI_LAYER)).is_empty():
         raise RuntimeError("Path to Waveguide 完成后仍残留输入 Path。")
+    if not top.shapes(layout.layer(pya.LayerInfo(42, 7))).is_empty():
+        raise RuntimeError("Path to Waveguide 完成后仍残留自定义图层输入 Path。")
     if view.is_transacting():
         raise RuntimeError("Path to Waveguide 完成后仍处于 Undo transaction。")
+
+    original_confirm = reverse_tool._confirm_current_cell_conversion
+    original_reverse_message = reverse_tool._message
+    try:
+        reverse_tool._confirm_current_cell_conversion = lambda _count: True
+        reverse_tool._message = lambda title, text: messages.append((title, text))
+        reverse_tool.waveguide_to_path()
+    finally:
+        reverse_tool._confirm_current_cell_conversion = original_confirm
+        reverse_tool._message = original_reverse_message
+
+    recovered = sorted(
+        (tuple((point.x, point.y) for point in shape.path.each_point()), shape.path.width)
+        for shape in top.shapes(layout.layer(SI_LAYER)) if shape.is_path()
+    )
+    expected = [
+        (((0, 0), (120000, 0), (120000, 120000)), 500),
+        (((0, 300000), (120000, 300000), (120000, 420000)), 2000),
+    ]
+    if recovered != expected or any(True for _inst in top.each_inst()):
+        raise RuntimeError("Waveguide to Path 未将两条波导恢复为 Si 层 Path：%s；%s" % (recovered, messages))
+    if not top.shapes(layout.layer(pya.LayerInfo(42, 7))).is_empty():
+        raise RuntimeError("Waveguide to Path 在原自定义图层生成了 Path。")
 
 
 def main():

@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-07
+# 时间: 2026-09
 
 # JNU_MWP_PDK Path to Waveguide 功能。
-# 读取选中的 Si/Waveguide 层 Path，完成参数设置、端点吸附和波导 cell 创建。
+# 读取选中图层中的 Path，完成参数设置、端点吸附和波导 cell 创建。
 
 import os
 import sys
@@ -29,8 +29,6 @@ except Exception:
 from JNU_MWP_tools.core.common import (
     RAW_PATH_GDS_PROPERTY,
     RAW_PATH_PROPERTY,
-    SI_LAYER,
-    WG_LAYER,
     WAVEGUIDE_CONTAINER_GDS_PROPERTY,
     WAVEGUIDE_CONTAINER_PREFIX,
     WAVEGUIDE_CONTAINER_PROPERTY,
@@ -1603,42 +1601,14 @@ def _show_waveguide_dialog(dbu=0.001):
     return result
 
 
-def _layer_value(layer_info, attr_name):
-    """兼容读取 LayerInfo 的 layer/datatype 属性或方法。"""
-    attr = getattr(layer_info, attr_name)
-    return attr() if callable(attr) else attr
-
-
-def _same_layer_info(left, right):
-    """判断两个 LayerInfo 是否指向同一个 layer/datatype。"""
-    return (
-        _layer_value(left, "layer") == _layer_value(right, "layer")
-        and _layer_value(left, "datatype") == _layer_value(right, "datatype")
-    )
-
-
-def _selected_path_on_allowed_layer(layout, obj):
-    """判断选中的 Path 是否位于 Si 层或 Waveguide 层。
-
-    某些 KLayout 版本或特殊选择对象可能读不到 obj.layer；此时保持宽松，
-    仍允许该 Path 进入后续流程，避免 GUI 选择属性差异导致工具失效。
-    """
-    try:
-        layer_index = obj.layer
-        layer_info = layout.get_info(layer_index)
-    except Exception:
-        return True
-    return _same_layer_info(layer_info, SI_LAYER) or _same_layer_info(layer_info, WG_LAYER)
-
-
-def _selected_paths(view, layout):
+def _selected_paths(view):
+    """读取任意图层中选中的 Path；几何校验由后续转换流程处理。"""
     selection = []
     for obj in view.object_selection:
         if (
             (not obj.is_cell_inst())
             and obj.shape is not None
             and obj.shape.is_path()
-            and _selected_path_on_allowed_layer(layout, obj)
         ):
             selection.append(obj)
     return selection
@@ -2103,7 +2073,7 @@ def path_to_waveguide():
         _debug_log("Path to Waveguide: start")
         view, layout, cell = _active_context()
 
-        selected_paths = _selected_paths(view, layout)
+        selected_paths = _selected_paths(view)
         _debug_log("selected paths: %d" % len(selected_paths))
         if not selected_paths:
             _message("JNU_MWP_PDK", "请先选中一个或多个 Path，再执行 Path to Waveguide。")
@@ -2256,7 +2226,7 @@ def path_to_waveguide():
             try:
                 layer_index = obj.layer
             except Exception:
-                layer_index = layout.layer(SI_LAYER)
+                layer_index = None
             if not _delete_selected_path_shape(obj, cell, layer_index, original_path):
                 raise RuntimeError("无法删除第 %d 条原始Path，已取消本次转换。" % index)
             created_count += 1
