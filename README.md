@@ -58,7 +58,7 @@
 
 ### 推荐：拖入 KLayout 安装（Windows）
 
-**[下载安装宏 Install_JNU_PDK.lym](https://raw.githubusercontent.com/Jerry-behappy/JNU-MWP-SOI-PDK/main/Install_JNU_PDK.lym)**（浏览器若显示源码，请右键链接“另存为”，保留 `.lym` 扩展名）。
+**[点击下载安装宏 Install_JNU_PDK.lym](https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK/releases/download/installer-macro/Install_JNU_PDK.lym)**。
 
 1. 打开平时使用的 KLayout，将下载的 `.lym` 文件拖入主窗口。
 2. 在 Macro Development 中选中 **Install JNU PDK**，点击绿色 Run，再点击“安装”。
@@ -234,7 +234,7 @@ Use an AI agent that can access local files and run commands, following the Git 
 
 ### Recommended: Drag-and-Drop Installer (Windows)
 
-**[Download Install_JNU_PDK.lym](https://raw.githubusercontent.com/Jerry-behappy/JNU-MWP-SOI-PDK/main/Install_JNU_PDK.lym)**. If the browser displays source code, use **Save link as** and keep the `.lym` extension.
+**[Download Install_JNU_PDK.lym](https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK/releases/download/installer-macro/Install_JNU_PDK.lym)**.
 
 1. Open the KLayout you normally use and drop the downloaded macro onto its main window.
 2. Select **Install JNU PDK** in Macro Development, click the green Run button, then click **安装 (Install)**.
