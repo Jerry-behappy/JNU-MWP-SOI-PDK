@@ -130,13 +130,28 @@ def main():
         sentinel.write_text("preserve user data", encoding="utf-8")
         run(command + ["-KLayoutHome", str(blocked)], success=False)
         assert sentinel.read_text(encoding="utf-8") == "preserve user data"
-        (home / "klayoutrc").write_text("<config><edit-mode>true</edit-mode></config>", encoding="utf-8")
+        # 旧版 KLayout 会为已注册但未设置快捷键的菜单项保存显式空值。
+        # 升级时需将这两个空值迁移为默认值，并在后续启动中保持稳定。
+        (home / "klayoutrc").write_text(
+            "<config><edit-mode>true</edit-mode><key-bindings>"
+            "jnu_mwp_pdk_menu.waveguides.jnu_action_path_to_waveguide:'9';"
+            "jnu_mwp_pdk_menu.waveguides.jnu_action_waveguide_to_path:'';"
+            "jnu_mwp_pdk_menu.waveguides.jnu_action_sbend_connect_between_two_cells:'';"
+            "jnu_mwp_pdk_menu.layout.jnu_action_snap_components:'7'"
+            "</key-bindings></config>", encoding="utf-8",
+        )
         probe_report = home / "probe.json"
         for startup_index in range(2):
             probe_report.unlink(missing_ok=True)
             run([str(args.klayout), "-z", "-e", "-rr", str(Path(__file__).resolve())])
             assert probe_report.is_file(), "第 %d 次冷启动未完成，不能用退出码替代验收" % (startup_index + 1)
         config_text = (home / "klayoutrc").read_text(encoding="utf-8")
+        assert (home / ".jnu_mwp_pdk_shortcuts_v2").is_file(), "旧版空绑定迁移标记未保存"
+        for menu_path, shortcut in (
+            ("jnu_mwp_pdk_menu.waveguides.jnu_action_waveguide_to_path", "8"),
+            ("jnu_mwp_pdk_menu.waveguides.jnu_action_sbend_connect_between_two_cells", "6"),
+        ):
+            assert "%s:'%s'" % (menu_path, shortcut) in config_text, "旧版空绑定未迁移：" + menu_path
         for action_id in (
             "jnu_action_path_to_waveguide",
             "jnu_action_waveguide_to_path",
@@ -144,7 +159,7 @@ def main():
             "jnu_action_snap_components",
         ):
             assert action_id in config_text, "冷启动后 klayoutrc 未保存快捷键：" + action_id
-        print("CLONE_INSTALLATION_OK: preview, path precedence, spaced/unicode home, junction, existing data protection, two GUI cold starts, persisted shortcuts")
+        print("CLONE_INSTALLATION_OK: preview, path precedence, spaced/unicode home, junction, existing data protection, two GUI cold starts, migrated shortcuts")
 
 
 if os.environ.get("JNU_CLONE_PROBE") == "1":
