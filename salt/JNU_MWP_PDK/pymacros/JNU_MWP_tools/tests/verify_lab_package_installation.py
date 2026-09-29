@@ -65,7 +65,7 @@ def probe():
         assert pya.Library.library_by_name("EBeam", "EBeam"), "EBeam 原库缺失"
         assert pya.Library.library_by_name("EBeam", "JNU_MWP_PDK"), "JNU 技术下的 EBeam 桥接缺失"
     actions = getattr(window, "_jnu_menu_actions_by_id", {})
-    assert len(actions) == 10, "JNU 菜单未完整加载"
+    assert len(actions) == 12, "JNU 菜单未完整加载"
     expected_shortcuts = {
         "jnu_action_path_to_waveguide": "9",
         "jnu_action_waveguide_to_path": "8",

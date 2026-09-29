@@ -35,7 +35,32 @@ def probe():
         layout.read(str(path))
         assert all(black.layout().cell(cell.name) for cell in layout.top_cells())
     window = pya.Application.instance().main_window()
-    assert len(getattr(window, "_jnu_menu_actions_by_id", {})) == 10
+    actions = getattr(window, "_jnu_menu_actions_by_id", {})
+    assert len(actions) == 12
+    expected_shortcuts = {
+        "jnu_action_path_to_waveguide": "9",
+        "jnu_action_waveguide_to_path": "8",
+        "jnu_action_sbend_connect_between_two_cells": "6",
+        "jnu_action_snap_components": "7",
+    }
+    for action_id, expected_shortcut in expected_shortcuts.items():
+        actual_shortcut = str(actions[action_id].shortcut)
+        assert actual_shortcut == expected_shortcut, (
+            "新安装默认快捷键错误：%s=%r，期望 %r"
+            % (action_id, actual_shortcut, expected_shortcut)
+        )
+    configured_shortcuts = str(pya.Application.instance().get_config("key-bindings") or "")
+    expected_paths = {
+        "jnu_mwp_pdk_menu.waveguides.jnu_action_path_to_waveguide": "9",
+        "jnu_mwp_pdk_menu.waveguides.jnu_action_waveguide_to_path": "8",
+        "jnu_mwp_pdk_menu.waveguides.jnu_action_sbend_connect_between_two_cells": "6",
+        "jnu_mwp_pdk_menu.layout.jnu_action_snap_components": "7",
+    }
+    for menu_path, expected_shortcut in expected_paths.items():
+        expected_entry = "%s:'%s'" % (menu_path, expected_shortcut)
+        assert expected_entry in configured_shortcuts.split(";"), (
+            "新安装未持久化默认快捷键：%s" % expected_entry
+        )
     layout = window.current_view().active_cellview().layout()
     assert {"Waveguide", "Composite_Waveguide"} <= set(layout.pcell_names())
     top = layout.create_cell("CLONE_SMOKE")
@@ -48,7 +73,8 @@ def probe():
     reloaded = pya.Layout()
     reloaded.read(str(path))
     assert not reloaded.cell("CLONE_SMOKE").bbox().empty()
-    report = {"pcells": len(expected), "blackbox_files": len(files), "menu_actions": 10,
+    report = {"pcells": len(expected), "blackbox_files": len(files), "menu_actions": 12,
+              "default_shortcuts": expected_shortcuts,
               "no_external_tech": True, "gds_roundtrip": True}
     (home / "probe.json").write_text(json.dumps(report), encoding="utf-8")
     print("CLONE_PROBE_OK", report)
@@ -105,9 +131,20 @@ def main():
         run(command + ["-KLayoutHome", str(blocked)], success=False)
         assert sentinel.read_text(encoding="utf-8") == "preserve user data"
         (home / "klayoutrc").write_text("<config><edit-mode>true</edit-mode></config>", encoding="utf-8")
-        run([str(args.klayout), "-z", "-e", "-t", "-rr", str(Path(__file__).resolve())])
-        assert (home / "probe.json").is_file(), "冷启动未完成，不能用退出码替代验收"
-        print("CLONE_INSTALLATION_OK: preview, path precedence, spaced/unicode home, junction, existing data protection, GUI cold start")
+        probe_report = home / "probe.json"
+        for startup_index in range(2):
+            probe_report.unlink(missing_ok=True)
+            run([str(args.klayout), "-z", "-e", "-rr", str(Path(__file__).resolve())])
+            assert probe_report.is_file(), "第 %d 次冷启动未完成，不能用退出码替代验收" % (startup_index + 1)
+        config_text = (home / "klayoutrc").read_text(encoding="utf-8")
+        for action_id in (
+            "jnu_action_path_to_waveguide",
+            "jnu_action_waveguide_to_path",
+            "jnu_action_sbend_connect_between_two_cells",
+            "jnu_action_snap_components",
+        ):
+            assert action_id in config_text, "冷启动后 klayoutrc 未保存快捷键：" + action_id
+        print("CLONE_INSTALLATION_OK: preview, path precedence, spaced/unicode home, junction, existing data protection, two GUI cold starts, persisted shortcuts")
 
 
 if os.environ.get("JNU_CLONE_PROBE") == "1":

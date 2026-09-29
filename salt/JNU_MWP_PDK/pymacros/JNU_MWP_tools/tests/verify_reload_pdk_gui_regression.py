@@ -17,6 +17,12 @@ if str(PYMACROS_DIR) not in sys.path:
 
 MENU_MACRO = PYMACROS_DIR / "JNU_MWP_PDK_Menu.lym"
 EXPECTED_ACTION_COUNT = 12
+DEFAULT_SHORTCUTS = {
+    "jnu_action_path_to_waveguide": "9",
+    "jnu_action_waveguide_to_path": "8",
+    "jnu_action_sbend_connect_between_two_cells": "6",
+    "jnu_action_snap_components": "7",
+}
 EXPECTED_SHORTCUTS = {
     "jnu_action_path_to_waveguide": "9",
     "jnu_action_waveguide_to_path": "8",
@@ -65,6 +71,58 @@ def _set_test_shortcuts(main_window):
     _assert(set(actions_by_id) == set(EXPECTED_SHORTCUTS), "JNU Action ID 映射不完整。")
     for item_id, shortcut in EXPECTED_SHORTCUTS.items():
         actions_by_id[item_id].shortcut = shortcut
+
+
+def _remove_jnu_configured_shortcuts(app):
+    """模拟从未安装过 JNU PDK 的全新 key-bindings 配置。"""
+    config = str(app.get_config("key-bindings") or "")
+    entries = [
+        entry
+        for entry in config.split(";")
+        if entry and not entry.split(":", 1)[0].strip().startswith("jnu_mwp_pdk_menu.")
+    ]
+    app.set_config("key-bindings", ";".join(entries))
+
+
+def _check_default_shortcuts_persisted(app, main_window):
+    """确认首次菜单注册同时设置 Action 并写入 KLayout 稳定菜单路径。"""
+    actions_by_id = getattr(main_window, "_jnu_menu_actions_by_id", {})
+    config = str(app.get_config("key-bindings") or "")
+    mapping = {}
+    for entry in config.split(";"):
+        if ":" in entry:
+            key, value = entry.split(":", 1)
+            mapping[key.strip()] = value.strip().strip("'\"")
+    parent_by_id = {
+        "jnu_action_path_to_waveguide": "jnu_mwp_pdk_menu.waveguides",
+        "jnu_action_waveguide_to_path": "jnu_mwp_pdk_menu.waveguides",
+        "jnu_action_sbend_connect_between_two_cells": "jnu_mwp_pdk_menu.waveguides",
+        "jnu_action_snap_components": "jnu_mwp_pdk_menu.layout",
+    }
+    for item_id, expected in DEFAULT_SHORTCUTS.items():
+        actual = str(_action_value(actions_by_id[item_id], "shortcut"))
+        _assert(actual == expected, "%s 首次安装快捷键错误：%s。" % (item_id, actual))
+        menu_path = parent_by_id[item_id] + "." + item_id
+        _assert(mapping.get(menu_path) == expected, "%s 未写入 key-bindings。" % item_id)
+
+
+def _set_explicit_empty_shortcut(app, menu_path):
+    """模拟用户在 KLayout 快捷键设置中主动清空一个绑定。"""
+    config = str(app.get_config("key-bindings") or "")
+    entries = []
+    replaced = False
+    for entry in config.split(";"):
+        if not entry:
+            continue
+        key = entry.split(":", 1)[0].strip()
+        if key == menu_path:
+            entries.append(menu_path + ":''")
+            replaced = True
+        else:
+            entries.append(entry)
+    if not replaced:
+        entries.append(menu_path + ":''")
+    app.set_config("key-bindings", ";".join(entries))
 
 
 def _set_configured_shortcuts(app):
@@ -163,8 +221,24 @@ def _verify_reload_timer_lifecycle(reload_pdk):
 
 def _run_regression(app, main_window):
     """执行菜单和重载回归；持久配置由外层负责恢复。"""
+    _remove_jnu_configured_shortcuts(app)
+    for item_id, action in getattr(main_window, "_jnu_menu_actions_by_id", {}).items():
+        if item_id in DEFAULT_SHORTCUTS:
+            action.shortcut = ""
     pya.Macro(str(MENU_MACRO)).run()
     _check_menu(main_window)
+    _check_default_shortcuts_persisted(app, main_window)
+
+    # 用户明确清空已有默认绑定时，后续菜单重载不得重新写回默认值。
+    cleared_id = "jnu_action_path_to_waveguide"
+    cleared_path = "jnu_mwp_pdk_menu.waveguides." + cleared_id
+    _set_explicit_empty_shortcut(app, cleared_path)
+    main_window._jnu_menu_actions_by_id[cleared_id].shortcut = ""
+    del main_window._jnu_menu_actions_by_id
+    pya.Macro(str(MENU_MACRO)).run()
+    actual = str(_action_value(main_window._jnu_menu_actions_by_id[cleared_id], "shortcut"))
+    _assert(actual == "", "用户明确清空的快捷键被默认值覆盖。")
+
     _set_test_shortcuts(main_window)
 
     # 模拟从没有 action-ID 映射的旧菜单首次升级，必须按唯一标题保留快捷键。

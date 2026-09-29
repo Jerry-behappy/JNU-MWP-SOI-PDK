@@ -54,8 +54,8 @@ _PDK_ROOT = os.path.dirname(_PYMACROS_DIR)
 _JNU_DRC_ENABLED = True
 _JNU_DRC_MACRO_NAMES = ("jnu mwp drc.lydrc", "jnu_mwp_drc.lydrc")
 
-# PDK 随菜单交付的默认快捷键。它们不写入用户 klayoutrc：首次安装时由
-# Action 直接采用；用户随后在 KLayout 中修改的 key-bindings 配置优先。
+# PDK 随菜单交付的默认快捷键。首次安装时补入 KLayout 的 key-bindings，
+# 使快捷键跨启动稳定生效；已有自定义或明确清空的绑定始终优先。
 _DEFAULT_SHORTCUTS = {
     "jnu_action_path_to_waveguide": "9",
     "jnu_action_waveguide_to_path": "8",
@@ -259,6 +259,38 @@ def _configured_shortcuts(app, action_specs):
     return shortcuts
 
 
+def _persist_missing_default_shortcuts(app, action_specs):
+    """只向 KLayout 配置补入缺失的默认快捷键，不覆盖已有用户设置。"""
+    path_to_default = {
+        parent + "." + item_id: shortcut
+        for parent, item_id, _title, _code in action_specs
+        for shortcut in (_DEFAULT_SHORTCUTS.get(item_id),)
+        if shortcut is not None
+    }
+    try:
+        config = str(app.get_config("key-bindings") or "")
+    except Exception:
+        return False
+    entries = [entry.strip() for entry in config.split(";") if entry.strip()]
+    configured_paths = {
+        entry.split(":", 1)[0].strip()
+        for entry in entries
+        if ":" in entry
+    }
+    additions = [
+        "%s:'%s'" % (menu_path, shortcut)
+        for menu_path, shortcut in path_to_default.items()
+        if menu_path not in configured_paths
+    ]
+    if not additions:
+        return False
+    try:
+        app.set_config("key-bindings", ";".join(entries + additions))
+        return True
+    except Exception:
+        return False
+
+
 def register_jnu_menu_items():
     """创建 JNU_MWP_PDK 顶层菜单，并注册各功能项。"""
     app = pya.Application.instance()
@@ -317,8 +349,8 @@ def register_jnu_menu_items():
     old_actions_by_id = dict(getattr(main_window, "_jnu_menu_actions_by_id", {}))
     title_to_id = {title: item_id for _parent, item_id, title, _code in action_specs}
     title_to_id["SBend connect"] = "jnu_action_sbend_connect_between_two_cells"
-    # 先采用 PDK 内置默认值，再以当前用户配置和当前会话中的设置覆盖。
-    # 这样发布包无需携带 klayoutrc，且不会覆盖用户后续自定义的快捷键。
+    # 先合并内置默认值、已有配置和当前会话设置。当前 Action 必须在写入
+    # 配置前读取，避免 set_config 触发 KLayout 刷新而覆盖尚未保存的修改。
     shortcut_by_id = dict(_DEFAULT_SHORTCUTS)
     shortcut_by_id.update(_configured_shortcuts(app, action_specs))
     for item_id, action in old_actions_by_id.items():
@@ -331,6 +363,10 @@ def register_jnu_menu_items():
         shortcut = _action_property(action, "shortcut", "")
         if item_id and (shortcut or item_id not in shortcut_by_id):
             shortcut_by_id[item_id] = shortcut
+
+    # 首次安装时把缺失的默认值交给 KLayout 自身持久化；已有配置（包括
+    # 用户明确清空的绑定）保持不变。
+    _persist_missing_default_shortcuts(app, action_specs)
 
     # 重载菜单宏时先移除旧入口和旧 Action 引用，保证菜单注册幂等。
     item_paths = [parent + "." + item_id for parent, item_id, _title, _code in action_specs]
