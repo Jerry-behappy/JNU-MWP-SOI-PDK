@@ -326,7 +326,7 @@ class JNULibBlackBox(pya.Library):
 
     def __init__(self):
         # 黑盒库同样保持稳定身份，并在 Library 面板说明栏显示发行版本。
-        self.description = "v1.1, JNU MWP PDK black-box components [Technology JNU_MWP_PDK]"
+        self.description = "v1.2, JNU MWP PDK black-box components [Technology JNU_MWP_PDK]"
 
         ly = self.layout()
 
