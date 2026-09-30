@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# 时间: 2026-09
 """验证 S_Bend Bezier 参数语义和 SBend connect 默认值。"""
 
 import os
@@ -61,11 +62,11 @@ def _check_connect_defaults_and_geometry():
 
     declaration = cell.pcell_declaration()
     declaration_name = declaration.name() if declaration is not None else ""
-    if declaration_name != "S_Bend":
+    if declaration_name != "Pcell_S_Bend":
         raise RuntimeError("SBend connect 创建的公开 PCell 名称不是 S_Bend。")
     library = pya.Library.library_by_name("JNULib")
     public_names = set(library.layout().pcell_names()) if library is not None else set()
-    if "S_Bend" not in public_names or "S_Bend_Waveguide" in public_names:
+    if "Pcell_S_Bend" not in public_names or "S_Bend" in public_names or "S_Bend_Waveguide" in public_names:
         raise RuntimeError("公开 PCell 列表未完成 S_Bend 唯一名称迁移。")
 
     params = cell.pcell_parameters_by_name()

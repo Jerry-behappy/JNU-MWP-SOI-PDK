@@ -22,9 +22,9 @@ def probe():
     white = pya.Library.library_by_name("JNULib")
     black = pya.Library.library_by_name("JNULib_BlackBox")
     assert white and black
-    expected = {"Bend_90deg", "Microring_DoubleBus", "Archimedean_Spiral",
-                "Paperclip_Spiral", "Paperclip_Spiral_with_Composite_Waveguide",
-                "Taper", "S_Bend", "Straight_Waveguide"}
+    expected = {"Pcell_Bend_90deg", "Pcell_Microring_DoubleBus", "Pcell_Archimedean_Spiral",
+                "Pcell_Paperclip_Spiral", "Pcell_Paperclip_Spiral_with_Composite_Waveguide",
+                "Pcell_Taper", "Pcell_S_Bend", "Pcell_Straight_Waveguide"}
     assert set(white.layout().pcell_names()) == expected
     assert not black.layout().pcell_names()
     source = home / "salt" / "JNU_MWP_PDK"

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-07
+# 时间: 2026-09
 
 """批量生成 Bend/Waveguide/Paperclip，并通过 GDS 重读检查基本几何。"""
 
@@ -102,7 +102,7 @@ def main():
             "Euler_Rmax": 30.0,
             "Euler_Rmin": 10.0,
         }
-        bend_cell, bend_inst = _create_variant(layout, "Bend_90deg", common, offset)
+        bend_cell, bend_inst = _create_variant(layout, "Pcell_Bend_90deg", common, offset)
         _assert_polygon_only(bend_cell, layout, SI_LAYER, "Si")
         _assert_polygon_only(bend_cell, layout, DEVREC_LAYER, "DevRec")
         _assert_pin_paths(bend_cell, layout)
@@ -119,7 +119,7 @@ def main():
         paperclip = dict(common)
         paperclip.update({"length": 100.0, "loops": 2, "ports_type": "type3"})
         paperclip_cell, paperclip_inst = _create_variant(
-            layout, "Paperclip_Spiral", paperclip, offset
+            layout, "Pcell_Paperclip_Spiral", paperclip, offset
         )
         _assert_polygon_only(paperclip_cell, layout, SI_LAYER, "Si")
         _assert_pin_paths(paperclip_cell, layout)
@@ -131,7 +131,7 @@ def main():
         composite.update({"straight_width": 0.5, "bend_width": 1.0, "taper_length": 20.0})
         composite_cell, composite_inst = _create_variant(
             layout,
-            "Paperclip_Spiral_with_Composite_Waveguide",
+            "Pcell_Paperclip_Spiral_with_Composite_Waveguide",
             composite,
             offset,
         )
@@ -153,7 +153,7 @@ def main():
     }
     long_cell, long_inst = _create_variant(
         layout,
-        "Paperclip_Spiral",
+        "Pcell_Paperclip_Spiral",
         long_params,
         offset,
     )

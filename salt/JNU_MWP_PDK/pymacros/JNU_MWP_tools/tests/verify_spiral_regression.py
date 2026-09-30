@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-08
+# 时间: 2026-09
 
 """批量验证 JNU Archimedean_Spiral 的弯曲、端口、拉伸、长度与 GDS 重读。"""
 
@@ -270,7 +270,7 @@ def _check_pinrec_directions(cell, layout, ports_type, geometry):
 
 def _create_variant(layout, params, x_offset, geometry):
     """创建 Spiral 变体，验证 PinRec 后返回平移实例。"""
-    cell = layout.create_cell("Archimedean_Spiral", LIBRARY_NAME, params)
+    cell = layout.create_cell("Pcell_Archimedean_Spiral", LIBRARY_NAME, params)
     if cell is None:
         raise RuntimeError("无法创建 Archimedean_Spiral PCell。")
     _check_pinrec_directions(cell, layout, params["ports_type"], geometry)
@@ -570,7 +570,7 @@ def _check_physical_wide_port_landings():
 
     layout = pya.Layout()
     layout.dbu = DBU
-    cell = layout.create_cell("Archimedean_Spiral", LIBRARY_NAME, params)
+    cell = layout.create_cell("Pcell_Archimedean_Spiral", LIBRARY_NAME, params)
     top = layout.create_cell("JNU_WIDE_PORT_REGRESSION")
     top.insert(pya.CellInstArray(cell.cell_index(), pya.Trans()))
     output = Path(tempfile.gettempdir()) / "jnu_spiral_wide_port_regression.gds"

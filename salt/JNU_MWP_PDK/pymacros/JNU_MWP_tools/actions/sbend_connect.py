@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-06
+# 时间: 2026-09
 
 # JNU_MWP_PDK SBend connect 功能。
 # 在两个选中的 cell instance 之间自动查找水平相向 pin，并插入可编辑 S_Bend PCell。
@@ -184,11 +184,11 @@ def _create_sbend_connect_pcell(layout, width_um, length_um, height_um):
         "bezier": DEFAULT_SBEND_CONNECT_BEZIER,
         "npoints": DEFAULT_NPOINTS,
     }
-    sbend_cell = layout.create_cell("S_Bend", library_name, params)
+    sbend_cell = layout.create_cell("Pcell_S_Bend", library_name, params)
     if sbend_cell is None:
         _ensure_jnu_libraries_registered()
         library_name = _sbend_library_name()
-        sbend_cell = layout.create_cell("S_Bend", library_name, params)
+        sbend_cell = layout.create_cell("Pcell_S_Bend", library_name, params)
     return sbend_cell
 
 

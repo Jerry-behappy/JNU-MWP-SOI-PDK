@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-07
+# 时间: 2026-09
 
 """验证公开 Straight_Waveguide 的几何、端口、DevRec 和 GDS 往返。"""
 
@@ -65,11 +65,11 @@ def main():
     library = pya.Library.library_by_name(LIBRARY_NAME)
     _assert(library is not None, "未找到 %s。" % LIBRARY_NAME)
     public_names = tuple(sorted(library.layout().pcell_names()))
-    _assert("Straight_Waveguide" in public_names, "公开库缺少 Straight_Waveguide。")
+    _assert("Pcell_Straight_Waveguide" in public_names, "公开库缺少 Straight_Waveguide。")
     _assert("Waveguide" not in public_names, "内部 Waveguide 被错误公开。")
     _assert("Composite_Waveguide" not in public_names, "内部 Composite_Waveguide 被错误公开。")
 
-    declaration = library.layout().pcell_declaration("Straight_Waveguide")
+    declaration = library.layout().pcell_declaration("Pcell_Straight_Waveguide")
     defaults = {parameter.name: parameter.default for parameter in declaration.get_parameters()}
     _assert(abs(float(defaults["width"]) - 0.5) < 1e-12, "默认宽度不是 0.5 um。")
     _assert(abs(float(defaults["length"]) - 50.0) < 1e-12, "默认长度不是 50 um。")
@@ -77,7 +77,7 @@ def main():
     layout = pya.Layout()
     layout.dbu = DBU
     cell = layout.create_cell(
-        "Straight_Waveguide",
+        "Pcell_Straight_Waveguide",
         LIBRARY_NAME,
         {"width": 0.75, "length": 12.345},
     )

@@ -94,14 +94,14 @@ class JNULib(pya.Library):
     def _register_pcells(self, ly):
         """注册需要出现在 Library 面板中的 PCell。"""
 
-        ly.register_pcell("Bend_90deg", Bend90deg())
-        ly.register_pcell("Microring_DoubleBus", MicroringDoubleBus())
-        ly.register_pcell("Archimedean_Spiral", ArchimedeanSpiral())
-        ly.register_pcell("Paperclip_Spiral", PaperclipSpiral())
-        ly.register_pcell("Paperclip_Spiral_with_Composite_Waveguide", PaperclipSpiralWithCompositeWaveguide())
-        ly.register_pcell("Taper", Taper())
-        ly.register_pcell("S_Bend", SBendWaveguide())
-        ly.register_pcell("Straight_Waveguide", StraightWaveguide())
+        ly.register_pcell("Pcell_Bend_90deg", Bend90deg())
+        ly.register_pcell("Pcell_Microring_DoubleBus", MicroringDoubleBus())
+        ly.register_pcell("Pcell_Archimedean_Spiral", ArchimedeanSpiral())
+        ly.register_pcell("Pcell_Paperclip_Spiral", PaperclipSpiral())
+        ly.register_pcell("Pcell_Paperclip_Spiral_with_Composite_Waveguide", PaperclipSpiralWithCompositeWaveguide())
+        ly.register_pcell("Pcell_Taper", Taper())
+        ly.register_pcell("Pcell_S_Bend", SBendWaveguide())
+        ly.register_pcell("Pcell_Straight_Waveguide", StraightWaveguide())
 
 
 for legacy_library_name in LEGACY_LIBRARY_NAMES:

@@ -30,9 +30,9 @@ def probe():
     black = pya.Library.library_by_name("JNULib_BlackBox")
     assert white and black, "未自动注册器件库"
     expected_pcells = {
-        "Bend_90deg", "Microring_DoubleBus", "Archimedean_Spiral",
-        "Paperclip_Spiral", "Paperclip_Spiral_with_Composite_Waveguide",
-        "Taper", "S_Bend", "Straight_Waveguide",
+        "Pcell_Bend_90deg", "Pcell_Microring_DoubleBus", "Pcell_Archimedean_Spiral",
+        "Pcell_Paperclip_Spiral", "Pcell_Paperclip_Spiral_with_Composite_Waveguide",
+        "Pcell_Taper", "Pcell_S_Bend", "Pcell_Straight_Waveguide",
     }
     assert set(white.layout().pcell_names()) == expected_pcells
     assert not black.layout().pcell_names(), "黑盒库不应注册 PCell"

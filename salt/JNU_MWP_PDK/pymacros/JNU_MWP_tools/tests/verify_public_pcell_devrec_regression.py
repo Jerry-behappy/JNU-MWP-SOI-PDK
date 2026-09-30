@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-07
+# 时间: 2026-09
 
 """验证全部公开 JNU PCell 均具有可重读的 DevRec 器件识别层。"""
 
@@ -28,10 +28,10 @@ PIN_LAYER = pya.LayerInfo(1, 10)
 DEVREC_LAYER = pya.LayerInfo(68, 0)
 DBU = 0.001
 NEW_DEVREC_PCELLS = (
-    "Microring_DoubleBus",
-    "Archimedean_Spiral",
-    "Paperclip_Spiral",
-    "Paperclip_Spiral_with_Composite_Waveguide",
+    "Pcell_Microring_DoubleBus",
+    "Pcell_Archimedean_Spiral",
+    "Pcell_Paperclip_Spiral",
+    "Pcell_Paperclip_Spiral_with_Composite_Waveguide",
 )
 
 
@@ -115,14 +115,14 @@ def main():
     public_names = sorted(library.layout().pcell_names())
     expected_public = sorted(
         (
-            "Bend_90deg",
-            "Microring_DoubleBus",
-            "Archimedean_Spiral",
-            "Paperclip_Spiral",
-            "Paperclip_Spiral_with_Composite_Waveguide",
-            "Taper",
-            "S_Bend",
-            "Straight_Waveguide",
+            "Pcell_Bend_90deg",
+            "Pcell_Microring_DoubleBus",
+            "Pcell_Archimedean_Spiral",
+            "Pcell_Paperclip_Spiral",
+            "Pcell_Paperclip_Spiral_with_Composite_Waveguide",
+            "Pcell_Taper",
+            "Pcell_S_Bend",
+            "Pcell_Straight_Waveguide",
         )
     )
     if public_names != expected_public:
@@ -146,18 +146,18 @@ def main():
         ("top_parallel", {"drop_bus_position": "top_parallel"}),
     )
     for label, params in microring_variants:
-        cell = _create(layout, "Microring_DoubleBus", params)
-        _assert_new_devrec(cell, layout, "Microring_DoubleBus", label)
+        cell = _create(layout, "Pcell_Microring_DoubleBus", params)
+        _assert_new_devrec(cell, layout, "Pcell_Microring_DoubleBus", label)
         top.insert(pya.CellInstArray(cell.cell_index(), pya.Trans(x_offset, 0)))
         x_offset += max(100000, cell.bbox().width() + 10000)
         created.append(cell)
 
     straight = _create(
         layout,
-        "Straight_Waveguide",
+        "Pcell_Straight_Waveguide",
         {"width": 0.75, "length": 12.345},
     )
-    _assert_new_devrec(straight, layout, "Straight_Waveguide", "custom")
+    _assert_new_devrec(straight, layout, "Pcell_Straight_Waveguide", "custom")
     top.insert(pya.CellInstArray(straight.cell_index(), pya.Trans(x_offset, 0)))
     x_offset += max(100000, straight.bbox().width() + 10000)
     created.append(straight)

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-07
+# 时间: 2026-09
 
 """验证 JNU 器件库的注册身份不随发行版本变化。"""
 
@@ -68,7 +68,7 @@ def main():
 
     layout = pya.Layout()
     cell = layout.create_cell(
-        "Straight_Waveguide", WHITE_LIBRARY, {"width": 0.5, "length": 50.0}
+        "Pcell_Straight_Waveguide", WHITE_LIBRARY, {"width": 0.5, "length": 50.0}
     )
     _assert(cell is not None, "稳定库名无法创建公开 PCell。")
     _assert(not cell.bbox().empty(), "公开 PCell 未生成几何。")

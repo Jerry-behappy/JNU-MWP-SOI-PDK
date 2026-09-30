@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-07
+# 时间: 2026-09
 
 """验证 Taper 两端直波导延伸、端口位置和 GDS 重读。"""
 
@@ -26,7 +26,7 @@ DBU = 0.001
 
 
 def _create(layout, params=None):
-    cell = layout.create_cell("Taper", LIBRARY_NAME, params or {})
+    cell = layout.create_cell("Pcell_Taper", LIBRARY_NAME, params or {})
     if cell is None:
         raise RuntimeError("无法创建 Taper PCell。")
     return cell

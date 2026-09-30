@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-08
+# 时间: 2026-09
 """验证 Paperclip_Spiral 的 Si 端口内侧存在严格水平的 10 nm landing。"""
 
 import os
@@ -147,7 +147,7 @@ def main():
                 "loops": 2,
                 "ports_type": ports_type,
             }
-            cell = layout.create_cell("Paperclip_Spiral", "JNULib", params)
+            cell = layout.create_cell("Pcell_Paperclip_Spiral", "JNULib", params)
             if cell is None:
                 raise RuntimeError("无法创建 Paperclip_Spiral PCell。")
             try:

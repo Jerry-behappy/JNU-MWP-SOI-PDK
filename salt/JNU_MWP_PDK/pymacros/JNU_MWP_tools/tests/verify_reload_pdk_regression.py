@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-07
+# 时间: 2026-09
 
 """验证 JNU PDK 重载不会重复注册库，并刷新本地内部波导声明。"""
 
@@ -72,7 +72,7 @@ def main():
     layout = pya.Layout()
     layout.dbu = 0.001
     public_cell = layout.create_cell(
-        "Straight_Waveguide",
+        "Pcell_Straight_Waveguide",
         LIBRARY_NAME,
         {"width": 0.5, "length": 50.0},
     )
@@ -106,7 +106,7 @@ def main():
             pya.Library.library_by_name(BLACKBOX_LIBRARY_NAME) is not None,
             "重载后黑盒库丢失。",
         )
-        _assert("Straight_Waveguide" in library.layout().pcell_names(), "重载后直波导 PCell 丢失。")
+        _assert("Pcell_Straight_Waveguide" in library.layout().pcell_names(), "重载后直波导 PCell 丢失。")
         _assert(layout.pcell_id("Waveguide") == single_id, "Waveguide PCell ID 在重载后变化。")
         _assert(
             layout.pcell_id("Composite_Waveguide") == composite_id,
