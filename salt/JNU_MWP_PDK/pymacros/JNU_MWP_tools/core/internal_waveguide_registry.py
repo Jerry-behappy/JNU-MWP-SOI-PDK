@@ -10,6 +10,7 @@ import importlib
 import pya
 
 from JNU_MWP_tools.core.ui_language import localize_pcell_declaration
+from JNU_MWP_tools.core.waveguide_variant_names import normalize_local_waveguide_names
 
 
 INTERNAL_WAVEGUIDE_PCELL_NAMES = ("Waveguide", "Composite_Waveguide")
@@ -82,6 +83,7 @@ def ensure_internal_waveguide_pcells(layout, replace=False):
     # 新声明；预注册场景下调用 refresh 也不会改变版图几何。
     if registered:
         layout.refresh()
+    normalize_local_waveguide_names(layout)
     return registered
 
 

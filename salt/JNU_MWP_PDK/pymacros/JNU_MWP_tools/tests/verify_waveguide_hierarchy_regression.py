@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-08
+# 时间: 2026-09
 
 """验证 Path to Waveguide 的直接 PCell 层级、参数化命名和 GDS 往返。"""
 
@@ -34,6 +34,17 @@ from JNU_MWP_tools.core.internal_waveguide_registry import (  # noqa: E402
 
 
 DBU = 0.001
+
+
+def _waveguide_variant_names(layout):
+    names = []
+    for cell in layout.each_cell():
+        if not cell.is_pcell_variant():
+            continue
+        declaration = cell.pcell_declaration()
+        if declaration is not None and declaration.name() in ("Waveguide", "Composite_Waveguide"):
+            names.append(cell.name)
+    return names
 
 
 def _path_points(path):
@@ -142,6 +153,10 @@ def main():
         raise RuntimeError("同名不同路径未追加 __002 后缀：%s" % names[2])
     if not all(instance.cell.is_pcell_variant() for instance in direct_instances):
         raise RuntimeError("直接子实例中存在非 PCell 波导。")
+    variant_names = _waveguide_variant_names(layout)
+    if any(name in ("Waveguide", "Composite_Waveguide") or "$" in name
+           for name in variant_names):
+        raise RuntimeError("Cell 列表中仍存在未命名的波导 variant：%s" % variant_names)
 
     expected_region = pya.Region(top.begin_shapes_rec(layout.layer(SI_LAYER))).merged()
     reread = _write_and_reread(layout)
@@ -154,6 +169,10 @@ def main():
         raise RuntimeError("GDS 重读后波导名称不稳定：%s" % reread_names)
     if not all(instance.cell.is_pcell_variant() for instance in reread_instances):
         raise RuntimeError("GDS 重读前注册声明后仍未恢复真实 PCell。")
+    reread_variant_names = _waveguide_variant_names(reread)
+    if any(name in ("Waveguide", "Composite_Waveguide") or "$" in name
+           for name in reread_variant_names):
+        raise RuntimeError("GDS 重读后 Cell 列表出现未命名波导：%s" % reread_variant_names)
 
     restored_paths = []
     for instance in reread_instances:

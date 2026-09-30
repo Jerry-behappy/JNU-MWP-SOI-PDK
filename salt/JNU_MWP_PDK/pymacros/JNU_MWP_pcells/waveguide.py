@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-07
+# 时间: 2026-09
 
 # JNU_MWP_PDK 的参数化 Waveguide PCell。
 # 该 PCell 不依赖 WAVEGUIDES.xml，而是直接使用 path、width、radius、bend_type 参数生成波导。
@@ -28,6 +28,7 @@ if PYMACROS_DIR not in sys.path:
 from JNU_MWP_tools.core.bend_sampling import AUTO_SAMPLE_COUNT, effective_points_per_90
 from JNU_MWP_tools.core.bend_curvature import bezier_Rmax_Rmin, euler_Reff
 from JNU_MWP_tools.core.path_geometry import insert_centerline_polygons
+from JNU_MWP_tools.core.waveguide_variant_names import name_waveguide_variant
 
 # 确保 pymacros 目录在 sys.path 中，以便从 bend_90deg 导入公共弯曲点生成函数
 _PYMACROS_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -561,6 +562,7 @@ class Waveguide(pya.PCellDeclarationHelper):
             euler_Rmax=self.Euler_Rmax,
             euler_Rmin=self.Euler_Rmin,
         )
+        name_waveguide_variant(self.layout, self.cell, self.display_text_impl())
 
 
 __all__ = [

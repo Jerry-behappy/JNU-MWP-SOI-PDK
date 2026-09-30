@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-07
+# 时间: 2026-09
 
 """直段与弯曲采用不同宽度的可逆 Waveguide PCell。"""
 
@@ -24,6 +24,7 @@ if PYMACROS_DIR not in sys.path:
 
 from JNU_MWP_tools.core.bend_curvature import bezier_Rmax_Rmin, euler_Reff
 from JNU_MWP_tools.core.bend_sampling import AUTO_SAMPLE_COUNT, effective_points_per_90
+from JNU_MWP_tools.core.waveguide_variant_names import name_waveguide_variant
 
 from .bend_90deg import _normalize_bend_type, corner_points
 from .waveguide import (
@@ -476,6 +477,7 @@ class CompositeWaveguide(pya.PCellDeclarationHelper):
             start_width=self.start_width, end_width=self.end_width,
             transition_length=self.transition_length,
         )
+        name_waveguide_variant(self.layout, self.cell, self.display_text_impl())
 
 
 __all__ = ["CompositeWaveguide", "draw_composite_waveguide_geometry", "build_route_primitives"]

@@ -1885,7 +1885,9 @@ def _claim_parameterized_cell_name(layout, waveguide_cell, pcell_id, declaration
         suffix = "" if suffix_index == 1 else "__%03d" % suffix_index
         candidate = base_name + suffix
         existing = layout.cell(candidate)
-        if existing is None or existing.cell_index() == current.cell_index():
+        if existing is not None and existing.cell_index() == current.cell_index():
+            return current
+        if existing is None:
             if suffix:
                 values = dict(pcell_params)
                 values["name_suffix"] = suffix
