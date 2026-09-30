@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-07
+# 时间: 2026-09
 
 """验证 JNU 全部 PCell 的可编辑/只读参数分区顺序。"""
 
@@ -16,12 +16,13 @@ if str(PYMACROS_DIR) not in sys.path:
 
 import JNULib  # noqa: E402,F401  注册 JNULib
 from JNU_MWP_pcells import CompositeWaveguide, Waveguide  # noqa: E402
+from JNU_MWP_tools.core.ui_language import LANGUAGE_ZH, active_language  # noqa: E402
 
 
 LIBRARY_NAME = "JNULib"
 
 
-def _check_declaration(pcell_name, declaration):
+def _check_declaration(pcell_name, declaration, readonly_suffix=" [uneditable]"):
     """检查一个 PCell 声明的可编辑/只读参数顺序。"""
     readonly_started = False
     readonly_count = 0
@@ -35,10 +36,10 @@ def _check_declaration(pcell_name, declaration):
         if is_readonly:
             readonly_started = True
             readonly_count += 1
-            if not str(parameter.description).endswith(" [uneditable]"):
+            if not str(parameter.description).endswith(readonly_suffix):
                 raise RuntimeError(
-                    "%s.%s 的界面名称未以 [uneditable] 结尾。"
-                    % (pcell_name, parameter.name)
+                    "%s.%s 的界面名称未以 %s 结尾。"
+                    % (pcell_name, parameter.name, readonly_suffix)
                 )
     return readonly_count
 
@@ -56,7 +57,8 @@ def main():
         declaration = layout.pcell_declaration(pcell_name)
         if declaration is None:
             raise RuntimeError("无法读取 PCell 声明: %s" % pcell_name)
-        readonly_count += _check_declaration(pcell_name, declaration)
+        suffix = " [不可编辑]" if active_language() == LANGUAGE_ZH else " [uneditable]"
+        readonly_count += _check_declaration(pcell_name, declaration, suffix)
         checked += 1
 
     # 工具内部波导 PCell 不进入公开 JNULib，仍必须遵守同一参数顺序规则。

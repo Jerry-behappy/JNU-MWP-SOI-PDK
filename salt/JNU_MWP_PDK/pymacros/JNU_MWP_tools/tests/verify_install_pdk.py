@@ -132,7 +132,7 @@ def main():
         actions = app.main_window()._jnu_menu_actions_by_id
         assert "jnu_action_update_pdk" in actions
         assert "jnu_action_install_private" in actions
-        assert len(actions) == 12
+        assert len(actions) == 14
     print("PASS: install/reinstall/update, dirty/branch/legacy guards, private library, GUI worker, menu reload")
 
 

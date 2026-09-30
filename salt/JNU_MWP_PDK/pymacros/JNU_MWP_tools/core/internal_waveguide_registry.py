@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-08
+# 时间: 2026-09
 
 """在版图文件解析前注册 Path to Waveguide 使用的本地 PCell 声明。"""
 
@@ -8,6 +8,8 @@ import builtins
 import importlib
 
 import pya
+
+from JNU_MWP_tools.core.ui_language import localize_pcell_declaration
 
 
 INTERNAL_WAVEGUIDE_PCELL_NAMES = ("Waveguide", "Composite_Waveguide")
@@ -74,7 +76,7 @@ def ensure_internal_waveguide_pcells(layout, replace=False):
     for name in INTERNAL_WAVEGUIDE_PCELL_NAMES:
         if not replace and layout.pcell_declaration(name) is not None:
             continue
-        layout.register_pcell(name, factories[name]())
+        layout.register_pcell(name, localize_pcell_declaration(factories[name]()))
         registered.append(name)
     # 若 GDS 已在声明注册前读入，refresh 会将保存的 PCell 参数重新关联到
     # 新声明；预注册场景下调用 refresh 也不会改变版图几何。

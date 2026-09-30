@@ -29,6 +29,7 @@
 #   Layout     -> Numerical text array
 #   Layout     -> Snap components
 #   Reload JNU PDK
+#   Language   -> English / 简体中文（重启后生效）
 #
 # 注意事项：
 # - .lym autorun 宏执行完毕后，其局部命名空间会被 KLayout 销毁。
@@ -48,6 +49,22 @@ _PYMACROS_DIR = os.path.dirname(os.path.abspath(__file__))
 if _PYMACROS_DIR not in sys.path:
     sys.path.insert(0, _PYMACROS_DIR)
 _PDK_ROOT = os.path.dirname(_PYMACROS_DIR)
+from JNU_MWP_tools.core.ui_language import LANGUAGE_ZH, active_language
+
+_MENU_TITLES_ZH = {
+    "jnu_action_path_to_waveguide": "路径转波导",
+    "jnu_action_waveguide_to_path": "波导转路径",
+    "jnu_action_sbend_connect_between_two_cells": "通过波导连接器件",
+    "jnu_action_make_pins_for_cell": "为单元生成端口",
+    "jnu_action_layer_exclude": "排除图层",
+    "jnu_action_numerical_text_array": "数字文本阵列",
+    "jnu_action_snap_components": "对齐器件",
+    "jnu_action_reload_jnu_pdk": "重新加载 JNU PDK",
+    "jnu_action_update_pdk": "检查 PDK 更新",
+    "jnu_action_install_private": "安装／更新白盒器件库",
+    "jnu_action_jnu_mwp_drc": "编辑 JNU 设计规则",
+    "jnu_action_run_jnu_mwp_drc": "运行 JNU 设计规则检查",
+}
 
 # JNU DRC 已恢复；打开原生编辑器时仍由 actions/drc.py 关闭调试模式，
 # 并同步当前宏与活动运行宏，避免再次出现 Run 目标错位。
@@ -325,6 +342,7 @@ def register_jnu_menu_items():
         _disable_jnu_drc_macro_editor_state(app)
 
     menu = main_window.menu()
+    chinese = active_language() == LANGUAGE_ZH
 
     # ---- 顶层菜单 ----
     root_menu = "jnu_mwp_pdk_menu"
@@ -334,17 +352,29 @@ def register_jnu_menu_items():
     # ---- Waveguides 子菜单 ----
     waveguide_parent = root_menu + ".waveguides"
     if not menu.is_menu(waveguide_parent):
-        menu.insert_menu(root_menu + ".begin", "waveguides", "Waveguides")
+        menu.insert_menu(root_menu + ".begin", "waveguides", "波导" if chinese else "Waveguides")
+    else:
+        menu.action(waveguide_parent).title = "波导" if chinese else "Waveguides"
 
     # ---- Layout 子菜单 ----
     layout_parent = root_menu + ".layout"
     if not menu.is_menu(layout_parent):
-        menu.insert_menu(root_menu + ".waveguides+", "layout", "Layout")
+        menu.insert_menu(root_menu + ".waveguides+", "layout", "版图" if chinese else "Layout")
+    else:
+        menu.action(layout_parent).title = "版图" if chinese else "Layout"
 
     # ---- DRC 子菜单 ----
     drc_parent = root_menu + ".drc"
     if _JNU_DRC_ENABLED and not menu.is_menu(drc_parent):
-        menu.insert_menu(root_menu + ".layout+", "drc", "DRC")
+        menu.insert_menu(root_menu + ".layout+", "drc", "设计规则检查（DRC）" if chinese else "DRC")
+    elif _JNU_DRC_ENABLED:
+        menu.action(drc_parent).title = "设计规则检查（DRC）" if chinese else "DRC"
+
+    language_parent = root_menu + ".language"
+    if not menu.is_menu(language_parent):
+        menu.insert_menu(root_menu + ".begin", "language", "语言" if chinese else "Language")
+    else:
+        menu.action(language_parent).title = "语言" if chinese else "Language"
 
     action_specs = [
         (waveguide_parent, "jnu_action_path_to_waveguide", "Path to Waveguide", _PATH_TO_WAVEGUIDE_CODE),
@@ -358,6 +388,8 @@ def register_jnu_menu_items():
         (root_menu, "jnu_action_reload_jnu_pdk", "Reload JNU PDK", _RELOAD_PDK_CODE),
         (root_menu, "jnu_action_update_pdk", "Check for PDK Updates", "from JNU_MWP_tools.actions.install_pdk import show_installer; show_installer('update')"),
         (root_menu, "jnu_action_install_private", "Install / Update Whitebox Library", "from JNU_MWP_tools.actions.install_pdk import show_installer; show_installer('private')"),
+        (language_parent, "jnu_action_language_en", "English", "from JNU_MWP_tools.actions.set_language import choose_language; choose_language('en')"),
+        (language_parent, "jnu_action_language_zh", "简体中文", "from JNU_MWP_tools.actions.set_language import choose_language; choose_language('zh_CN')"),
     ]
     if _JNU_DRC_ENABLED:
         action_specs.extend((
@@ -370,6 +402,7 @@ def register_jnu_menu_items():
     old_actions = list(getattr(main_window, "_jnu_menu_actions", []))
     old_actions_by_id = dict(getattr(main_window, "_jnu_menu_actions_by_id", {}))
     title_to_id = {title: item_id for _parent, item_id, title, _code in action_specs}
+    title_to_id.update({title: item_id for item_id, title in _MENU_TITLES_ZH.items()})
     title_to_id["SBend connect"] = "jnu_action_sbend_connect_between_two_cells"
     # 先合并内置默认值、已有配置和当前会话设置。当前 Action 必须在写入
     # 配置前读取，避免 set_config 触发 KLayout 刷新而覆盖尚未保存的修改。
@@ -418,7 +451,8 @@ def register_jnu_menu_items():
 
     # ===== 注册功能项 =====
     for parent, item_id, title, code_string in action_specs:
-        action = _make_action(title, code_string)
+        display_title = _MENU_TITLES_ZH.get(item_id, title) if chinese else title
+        action = _make_action(display_title, code_string)
         if item_id in shortcut_by_id:
             _set_action_shortcut(action, shortcut_by_id[item_id])
         position = parent + (".begin" if item_id == "jnu_action_reload_jnu_pdk" else ".end")

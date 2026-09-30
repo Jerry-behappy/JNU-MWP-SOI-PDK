@@ -41,6 +41,7 @@ from JNU_MWP_pcells import (
     Taper,
 )
 from JNU_MWP_tools.core.ebeam_library_bridge import register_ebeam_libraries_for_jnu
+from JNU_MWP_tools.core.ui_language import localize_pcell_declaration
 
 
 def _delete_existing_library(library_name):
@@ -94,14 +95,17 @@ class JNULib(pya.Library):
     def _register_pcells(self, ly):
         """注册需要出现在 Library 面板中的 PCell。"""
 
-        ly.register_pcell("Pcell_Bend_90deg", Bend90deg())
-        ly.register_pcell("Pcell_Microring_DoubleBus", MicroringDoubleBus())
-        ly.register_pcell("Pcell_Archimedean_Spiral", ArchimedeanSpiral())
-        ly.register_pcell("Pcell_Paperclip_Spiral", PaperclipSpiral())
-        ly.register_pcell("Pcell_Paperclip_Spiral_with_Composite_Waveguide", PaperclipSpiralWithCompositeWaveguide())
-        ly.register_pcell("Pcell_Taper", Taper())
-        ly.register_pcell("Pcell_S_Bend", SBendWaveguide())
-        ly.register_pcell("Pcell_Straight_Waveguide", StraightWaveguide())
+        for name, factory in (
+            ("Pcell_Bend_90deg", Bend90deg),
+            ("Pcell_Microring_DoubleBus", MicroringDoubleBus),
+            ("Pcell_Archimedean_Spiral", ArchimedeanSpiral),
+            ("Pcell_Paperclip_Spiral", PaperclipSpiral),
+            ("Pcell_Paperclip_Spiral_with_Composite_Waveguide", PaperclipSpiralWithCompositeWaveguide),
+            ("Pcell_Taper", Taper),
+            ("Pcell_S_Bend", SBendWaveguide),
+            ("Pcell_Straight_Waveguide", StraightWaveguide),
+        ):
+            ly.register_pcell(name, localize_pcell_declaration(factory()))
 
 
 for legacy_library_name in LEGACY_LIBRARY_NAMES:

@@ -1908,6 +1908,8 @@ def _claim_parameterized_cell_name(layout, waveguide_cell, pcell_id, declaration
 
 def _internal_waveguide_declaration(pcell_name):
     """创建工具内部波导 PCell 声明，不把它加入公开 JNULib。"""
+    from JNU_MWP_tools.core.ui_language import localize_pcell_declaration
+
     pymacros_dir = os.path.dirname(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     )
@@ -1916,11 +1918,11 @@ def _internal_waveguide_declaration(pcell_name):
     if pcell_name == "Waveguide":
         from JNU_MWP_pcells.waveguide import Waveguide
 
-        return Waveguide()
+        return localize_pcell_declaration(Waveguide())
     if pcell_name == "Composite_Waveguide":
         from JNU_MWP_pcells.composite_waveguide import CompositeWaveguide
 
-        return CompositeWaveguide()
+        return localize_pcell_declaration(CompositeWaveguide())
     raise RuntimeError("未知的内部波导 PCell：%s" % pcell_name)
 
 

@@ -36,7 +36,7 @@ def probe():
         assert all(black.layout().cell(cell.name) for cell in layout.top_cells())
     window = pya.Application.instance().main_window()
     actions = getattr(window, "_jnu_menu_actions_by_id", {})
-    assert len(actions) == 12
+    assert len(actions) == 14
     expected_shortcuts = {
         "jnu_action_path_to_waveguide": "9",
         "jnu_action_waveguide_to_path": "8",
@@ -73,7 +73,40 @@ def probe():
     reloaded = pya.Layout()
     reloaded.read(str(path))
     assert not reloaded.cell("CLONE_SMOKE").bbox().empty()
-    report = {"pcells": len(expected), "blackbox_files": len(files), "menu_actions": 12,
+    from JNU_MWP_tools.core.ui_language import LANGUAGE_EN, LANGUAGE_ZH, active_language, set_next_language
+    expect_chinese = os.environ.get("JNU_EXPECT_ZH") == "1"
+    expected_language = LANGUAGE_ZH if expect_chinese else LANGUAGE_EN
+    assert active_language() == expected_language
+    menu_title = str(actions["jnu_action_path_to_waveguide"].title)
+    assert menu_title == ("路径转波导" if expect_chinese else "Path to Waveguide")
+    declaration = white.layout().pcell_declaration("Pcell_Straight_Waveguide")
+    width_label = next(parameter.description for parameter in declaration.get_parameters() if parameter.name == "width")
+    assert width_label == ("波导宽度" if expect_chinese else "Waveguide width")
+    if expect_chinese:
+        for pcell_name in expected:
+            for parameter in white.layout().pcell_declaration(pcell_name).get_parameters():
+                assert any("\u4e00" <= character <= "\u9fff" for character in parameter.description), (
+                    "PCell 参数标签未翻译：%s.%s=%s" % (pcell_name, parameter.name, parameter.description)
+                )
+                if parameter.readonly:
+                    assert parameter.description.endswith(" [不可编辑]"), (
+                        "PCell 只读参数标注未翻译：%s.%s" % (pcell_name, parameter.name)
+                    )
+                for title in parameter.choice_descriptions():
+                    assert any("\u4e00" <= character <= "\u9fff" for character in title), (
+                        "PCell 选项未翻译：%s.%s=%s" % (pcell_name, parameter.name, title)
+                    )
+        for pcell_name in ("Waveguide", "Composite_Waveguide"):
+            for parameter in layout.pcell_declaration(pcell_name).get_parameters():
+                assert any("\u4e00" <= character <= "\u9fff" for character in parameter.description), (
+                    "内部波导参数未翻译：%s.%s=%s" % (pcell_name, parameter.name, parameter.description)
+                )
+    if not expect_chinese:
+        set_next_language(LANGUAGE_ZH)
+        assert active_language() == LANGUAGE_EN, "语言切换在重启前错误生效"
+        pya.Macro(str(source / "pymacros" / "JNU_MWP_PDK_Menu.lym")).run()
+        assert str(window._jnu_menu_actions_by_id["jnu_action_path_to_waveguide"].title) == "Path to Waveguide"
+    report = {"pcells": len(expected), "blackbox_files": len(files), "menu_actions": 14,
               "default_shortcuts": expected_shortcuts,
               "no_external_tech": True, "gds_roundtrip": True}
     (home / "probe.json").write_text(json.dumps(report), encoding="utf-8")
@@ -143,7 +176,9 @@ def main():
         probe_report = home / "probe.json"
         for startup_index in range(2):
             probe_report.unlink(missing_ok=True)
-            run([str(args.klayout), "-z", "-e", "-rr", str(Path(__file__).resolve())])
+            startup_env = env.copy()
+            startup_env["JNU_EXPECT_ZH"] = "1" if startup_index else "0"
+            run([str(args.klayout), "-z", "-e", "-rr", str(Path(__file__).resolve())], environment=startup_env)
             assert probe_report.is_file(), "第 %d 次冷启动未完成，不能用退出码替代验收" % (startup_index + 1)
         config_text = (home / "klayoutrc").read_text(encoding="utf-8")
         assert (home / ".jnu_mwp_pdk_shortcuts_v2").is_file(), "旧版空绑定迁移标记未保存"
@@ -159,7 +194,7 @@ def main():
             "jnu_action_snap_components",
         ):
             assert action_id in config_text, "冷启动后 klayoutrc 未保存快捷键：" + action_id
-        print("CLONE_INSTALLATION_OK: preview, path precedence, spaced/unicode home, junction, existing data protection, two GUI cold starts, migrated shortcuts")
+        print("CLONE_INSTALLATION_OK: preview, path precedence, spaced/unicode home, junction, existing data protection, two GUI cold starts, restart-only language, migrated shortcuts")
 
 
 if os.environ.get("JNU_CLONE_PROBE") == "1":

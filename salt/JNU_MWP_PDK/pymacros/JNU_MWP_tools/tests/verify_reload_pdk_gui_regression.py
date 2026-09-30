@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-08
+# 时间: 2026-09
 
 """在 KLayout 隐藏 GUI 中验证菜单宏和 PDK 重载入口的幂等性。"""
 
@@ -14,9 +14,11 @@ PYMACROS_DIR = Path(__file__).resolve().parents[2]
 if str(PYMACROS_DIR) not in sys.path:
     sys.path.insert(0, str(PYMACROS_DIR))
 
+from JNU_MWP_tools.core.ui_language import LANGUAGE_ZH, active_language  # noqa: E402
+
 
 MENU_MACRO = PYMACROS_DIR / "JNU_MWP_PDK_Menu.lym"
-EXPECTED_ACTION_COUNT = 12
+EXPECTED_ACTION_COUNT = 14
 DEFAULT_SHORTCUTS = {
     "jnu_action_path_to_waveguide": "9",
     "jnu_action_waveguide_to_path": "8",
@@ -36,6 +38,8 @@ EXPECTED_SHORTCUTS = {
     "jnu_action_reload_jnu_pdk": "Ctrl+Alt+R",
     "jnu_action_update_pdk": "",
     "jnu_action_install_private": "",
+    "jnu_action_language_en": "",
+    "jnu_action_language_zh": "",
 }
 _PERSISTENT_CONFIG_KEYS = (
     "key-bindings",
@@ -55,8 +59,9 @@ def _check_menu(main_window):
     actions = getattr(main_window, "_jnu_menu_actions", [])
     _assert(len(actions) == EXPECTED_ACTION_COUNT, "JNU 菜单 Action 数量错误：%d。" % len(actions))
     titles = sorted(str(action.title) for action in actions)
-    _assert("Reload JNU PDK" in titles, "根菜单缺少 Reload JNU PDK。")
-    _assert("Cell Connect by Waveguide" in titles, "Waveguides 菜单缺少自动连接功能。")
+    chinese = active_language() == LANGUAGE_ZH
+    _assert(("重新加载 JNU PDK" if chinese else "Reload JNU PDK") in titles, "根菜单缺少 Reload JNU PDK。")
+    _assert(("通过波导连接器件" if chinese else "Cell Connect by Waveguide") in titles, "Waveguides 菜单缺少自动连接功能。")
     _assert("SBend connect" not in titles, "旧 SBend connect 菜单标题仍然存在。")
     _assert(len(titles) == len(set(titles)), "JNU 菜单存在重复 Action。")
 
@@ -146,6 +151,8 @@ def _set_configured_shortcuts(app):
         "jnu_action_reload_jnu_pdk": "jnu_mwp_pdk_menu",
         "jnu_action_update_pdk": "jnu_mwp_pdk_menu",
         "jnu_action_install_private": "jnu_mwp_pdk_menu",
+        "jnu_action_language_en": "jnu_mwp_pdk_menu.language",
+        "jnu_action_language_zh": "jnu_mwp_pdk_menu.language",
     }
     for item_id, shortcut in EXPECTED_SHORTCUTS.items():
         mapping[parent_by_id[item_id] + "." + item_id] = "'%s'" % shortcut
