@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-09
+# 时间: 2026-10
 
 """生成仅在实验室内分发的完整 Salt Package，含白盒固定 GDS。"""
 
@@ -54,7 +54,8 @@ def build_package(output, source=PDK_ROOT, gds_source=None):
         "JNU_MWP_InternalWaveguideRegistry.lym",
     ):
         shutil.copy2(source / "pymacros" / filename, macros / filename)
-    for name in ("JNU_MWP_pcells", "JNU_MWP_blackbox", "Keybindings"):
+    for name in ("JNU_MWP_pcells", "JNU_MWP_blackbox", "JNU_MWP_blackbox_gds",
+                 "JNU_MWP_ebeam_gds", "Keybindings"):
         _copy_tree(source / "pymacros" / name, macros / name)
     # 独立私有器件库只提取 GDS，不携带 Git 元数据、维护脚本或账户凭据。
     destination_gds = macros / "JNU_MWP_gds"

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-09
+# 时间: 2026-10
 
 # 生成可分发的 JNU_MWP_PDK 黑盒版本。
 # 输出目录默认在桌面：JNU_MWP_PDK_blackbox_v1.1。
@@ -32,6 +32,8 @@ LIBRARY_DBU = 0.001
 def _safe_remove_output(path):
     """安全删除旧输出目录，避免误删非黑盒发布目录。"""
     resolved = path.resolve()
+    if not resolved.exists():
+        return
     desktop = (Path.home() / "Desktop").resolve()
     if resolved == desktop or desktop not in resolved.parents:
         raise RuntimeError("拒绝删除非桌面黑盒输出目录：%s" % resolved)
@@ -100,6 +102,7 @@ def _copy_required_files(package_root):
 
     for filename in ("__init__.py", "JNU_MWP_PDK.lyt", "layers.lyp"):
         shutil.copy2(str(PDK_ROOT / filename), str(package_root / filename))
+    shutil.copy2(str(PDK_ROOT.parents[1] / "LICENSE.md"), str(package_root / "LICENSE.md"))
 
     for dirname in ("drc", "d25", "lvs", "macros", "xsect"):
         src = PDK_ROOT / dirname
@@ -285,9 +288,9 @@ def _copy_pin_layer(src_cell, dst_cell, src_layout, dst_layout):
         iterator.next()
 
 
-def _draw_blackbox_cell(src_cell, src_layout, dst_layout):
+def _draw_blackbox_cell(src_cell, src_layout, dst_layout, target_name=None):
     """从白盒 cell 生成单个黑盒 cell。"""
-    dst_cell = dst_layout.create_cell(src_cell.name)
+    dst_cell = dst_layout.create_cell(target_name or src_cell.name)
     src_bbox = src_cell.bbox()
     si_bbox = _get_layer_bbox(src_cell, src_layout, SI_LAYER)
     devrec_bbox = _get_layer_bbox(src_cell, src_layout, DEVREC_LAYER)
@@ -309,7 +312,7 @@ def _draw_blackbox_cell(src_cell, src_layout, dst_layout):
     dst_cell.shapes(si_index).insert(si_bbox)
     dst_cell.shapes(devrec_index).insert(devrec_bbox)
 
-    label_text = src_cell.name + " (black box)"
+    label_text = dst_cell.name + " (black box)"
     if not _insert_basic_text(dst_cell, si_bbox, dst_layout.dbu, label_text):
         _insert_fallback_text(dst_cell, text_index, si_bbox, dst_layout.dbu, label_text)
 
@@ -374,16 +377,27 @@ def _insert_fallback_text(cell, text_index, target_box, dbu, label_text):
 
 
 def _generate_blackbox_gds(package_root):
-    """从白盒固定 GDS 生成黑盒固定 GDS。"""
+    """以仓库发布的黑盒为基线，可选用私有白盒刷新同名旧器件。"""
     src_dir = PDK_ROOT / "pymacros" / "JNU_MWP_gds"
+    bundled_dir = PDK_ROOT / "pymacros" / "JNU_MWP_blackbox_gds"
     dst_dir = package_root / "pymacros" / "JNU_MWP_blackbox_gds"
     dst_dir.mkdir(parents=True, exist_ok=True)
+    bundled_files = sorted(bundled_dir.glob("*.gds"))
+    if not bundled_files:
+        raise RuntimeError("未找到仓库自带黑盒 GDS：%s" % bundled_dir)
+    for path in bundled_files:
+        shutil.copy2(str(path), str(dst_dir / path.name))
+    notice = bundled_dir / "NOTICE.md"
+    if notice.is_file():
+        shutil.copy2(str(notice), str(dst_dir / notice.name))
 
-    if not src_dir.is_dir():
-        raise RuntimeError("未找到白盒 GDS 目录：%s" % src_dir)
-
-    count = 0
-    for src_path in sorted(src_dir.glob("*.gds")):
+    reserved = {
+        "ebeam_crossing4", "ebeam_terminator_te1310", "ebeam_terminator_te1550",
+        "ebeam_y_1310", "ebeam_y_1550", "Pcell_Waveguide_Bump",
+    }
+    for src_path in sorted(src_dir.glob("*.gds")) if src_dir.is_dir() else ():
+        if src_path.stem in reserved:
+            continue
         src_layout = pya.Layout()
         src_layout.read(str(src_path))
 
@@ -398,9 +412,8 @@ def _generate_blackbox_gds(package_root):
             continue
 
         dst_layout.write(str(dst_dir / src_path.name))
-        count += 1
 
-    return count
+    return len(list(dst_dir.glob("*.gds")))
 
 
 def _rewrite_technology_file(lyt_root, base_path, original_base_path, layer_path):
@@ -583,6 +596,9 @@ def _write_install_note(release_root, package_root, tech_root):
         "注意：\n"
         "- 本发布包不包含白盒固定器件 GDS。\n"
         "- 固定器件来自 salt/JNU_MWP_PDK/pymacros/JNU_MWP_blackbox_gds/。\n"
+        "- 当前包含 30 个固定黑盒器件，其中 6 个为新增的 crossing、terminator、Y 分支和默认 bump。\n"
+        "- 新增器件仅保留端口、器件名与矩形占位，不包含源 GDS 的说明文字或内部几何。\n"
+        "- EBeam 派生数据的来源与 MIT 条款见 JNU_MWP_blackbox_gds/NOTICE.md 和包内 LICENSE.md。\n"
         "- 黑盒器件库只包含固定黑盒器件，不生成、不打包 PCell。\n"
     )
     (release_root / "README_BLACKBOX_INSTALL.txt").write_text(note, encoding="utf-8", newline="\n")
@@ -621,6 +637,7 @@ def _verify_blackbox_exclusions(release_root, package_root):
         package_root / "pymacros" / "JNU_MWP_skills",
         package_root / "pymacros" / "JNU_MWP_pcells",
         package_root / "pymacros" / "JNU_MWP_gds",
+        package_root / "pymacros" / "JNU_MWP_ebeam_gds",
         package_root / "pymacros" / "JNULib.py",
         package_root / "pymacros" / "JNU_MWP_tools" / "release",
         package_root / "pymacros" / "JNU_MWP_tools" / "tests",

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-09
+# 时间: 2026-10
 
 """JNU 界面语言偏好及 PCell 显示文字。"""
 
@@ -70,6 +70,7 @@ def set_next_language(language):
 # 这里只改变界面说明文字；PCell 参数键、选择值和器件注册名保持英文。
 PARAMETER_LABELS_ZH = {
     "Bend arc length": "弯曲弧长",
+    "Actual incremental length": "实际增量长度",
     "Bend points per 90 deg": "每 90° 弯曲采样点数",
     "Bend radius": "弯曲半径",
     "Bend radius (calculated)": "弯曲半径（计算值）",
@@ -92,8 +93,10 @@ PARAMETER_LABELS_ZH = {
     "Coupling gap": "耦合间隙",
     "Curve sample points": "曲线采样点数",
     "DevRec layer": "器件识别层",
+    "Device length": "器件长度",
     "Drop bus position": "下方总线位置",
     "Effective ring points": "实际圆环采样点数",
+    "Effective bend radius": "有效弯曲半径",
     "End waveguide width": "末端波导宽度",
     "Estimated centerline length": "中心线估计长度",
     "Euler Reff": "欧拉有效半径 Reff",
@@ -105,10 +108,12 @@ PARAMETER_LABELS_ZH = {
     "Gap": "间隙",
     "Horizontal length": "水平长度",
     "Inner length": "内侧长度",
+    "Incremental length": "增量长度",
     "Inner length (min 2× bend radius)": "内侧长度（至少为弯曲半径的 2 倍）",
     "Internal name suffix": "内部名称后缀",
     "Loops": "圈数",
     "Minimum / center bend radius": "最小／中心弯曲半径",
+    "Maximum angle": "最大弯曲角度",
     "Number of loops": "圈数",
     "Offset height": "偏移高度",
     "Output port vertical": "输出端口竖直",

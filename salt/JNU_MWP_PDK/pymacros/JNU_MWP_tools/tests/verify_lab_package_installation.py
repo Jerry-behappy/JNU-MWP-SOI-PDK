@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-09
+# 时间: 2026-10
 
 """用真实 Salt 安装与两次独立 KLayout 启动验证完整实验室包。"""
 
@@ -33,6 +33,7 @@ def probe():
         "Pcell_Bend_90deg", "Pcell_Microring_DoubleBus", "Pcell_Archimedean_Spiral",
         "Pcell_Paperclip_Spiral", "Pcell_Paperclip_Spiral_with_Composite_Waveguide",
         "Pcell_Taper", "Pcell_S_Bend", "Pcell_Straight_Waveguide",
+        "Pcell_Waveguide_Bump",
     }
     assert set(white.layout().pcell_names()) == expected_pcells
     assert not black.layout().pcell_names(), "黑盒库不应注册 PCell"

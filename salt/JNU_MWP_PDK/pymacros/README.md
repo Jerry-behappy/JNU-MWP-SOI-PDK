@@ -2,7 +2,7 @@
 
 > 英文名称：JNU Microwave Photonics PDK  
 > 创建者：Junyi Zhang  
-> 更新时间：2026 年 6 月
+> 更新时间：2026 年 10 月
 
 ## 中文说明
 
@@ -11,8 +11,8 @@
 `JNU_MWP_PDK` 是面向硅基微波光子芯片版图设计与流片的 KLayout 光子器件设计包。安装后将注册以下技术与器件库：
 
 - KLayout 技术：`JNU_MWP_PDK`
-- 白盒器件库：`JNULib_v1.1`
-- 黑盒器件库：`JNULib_BlackBox_v1.1`
+- 白盒器件库：`JNULib`（显示版本 v1.2）
+- 黑盒器件库：`JNULib_BlackBox`（显示版本 v1.2）
 
 器件库包含固定 GDS 单元、参数化单元（PCell）、波导转换工具、端口生成工具和版图检查脚本。光学端口采用 `PinRec` 路径与文本标记，可被兼容的光子版图工具识别。
 
@@ -36,7 +36,9 @@
 | `layers.lyp` | 定义图层名称、颜色、线型和默认可见性 |
 | `pymacros/JNULib.py` | 加载固定 GDS 单元并注册白盒 PCell |
 | `pymacros/JNULib_BlackBox.py` | 注册黑盒器件库 |
-| `pymacros/JNU_MWP_gds/` | 存放 23 个固定版图单元 |
+| `pymacros/JNU_MWP_gds/` | 可选的授权实验室固定白盒目录；数量随授权版本变化 |
+| `pymacros/JNU_MWP_ebeam_gds/` | 随包提供五个 MIT 许可 EBeam 原始 GDS 与来源说明 |
+| `pymacros/JNU_MWP_blackbox_gds/` | 存放 30 个固定黑盒 GDS |
 | `pymacros/JNU_MWP_pcells/` | 存放参数化器件实现 |
 | `pymacros/JNU_MWP_tools/` | 存放波导转换、端口生成、图层处理及回归脚本 |
 | `pymacros/JNU_MWP_PDK_Menu.lym` | 注册 KLayout 顶部菜单及工具入口 |
@@ -51,16 +53,20 @@
 
 #### 固定版图单元
 
-`JNULib_v1.1` 从 `pymacros/JNU_MWP_gds/` 加载 23 个固定 GDS 单元，包括：
+`JNULib` 可从授权目录加载原有实验室固定 GDS，并始终从 `pymacros/JNU_MWP_ebeam_gds/` 加载五个公开原始 GDS，包括：
 
 - 1310 nm 与 1550 nm 光栅耦合器
 - MMI 耦合器与功率分束器
 - 偏振分束器、偏振旋转器与偏振器
 - 边缘耦合器、光开关和终端器件
 
+公开器件的准确名称为 `ebeam_crossing4`、`ebeam_terminator_te1310`、`ebeam_terminator_te1550`、`ebeam_y_1310`、`ebeam_y_1550`。它们保留原始几何、端口、外框和全部 Text，包括两个 Y 分支的说明文字。源文件中的模型文字不表示新增 JNU 仿真模型。
+
+`JNULib_BlackBox` 提供 30 个固定黑盒：原有 24 个加以上五个器件和一个默认参数的 `Pcell_Waveguide_Bump`。每个黑盒只含矩形 Si 占位、端口与端口名、DevRec 外框和器件名标签；原始 EBeam 的其他 Text 和内部物理几何均不进入黑盒。
+
 #### 参数化单元
 
-当前注册 9 个 PCell：
+当前公开注册 9 个 PCell，另有两个工具内部波导 PCell：
 
 | PCell 名称 | 源文件 | 功能 |
 |---|---|---|
@@ -70,9 +76,11 @@
 | `Paperclip_Spiral` | `paperclip_spiral.py` | 回形针螺旋延迟线，支持三种端口布局 |
 | `Paperclip_Spiral_with_Composite_Waveguide` | `paperclip_spiral_composite.py` | 采用复合波导截面的回形针螺旋延迟线 |
 | `Taper` | `taper.py` | 线性锥形波导 |
-| `Waveguide` | `waveguide.py` | 根据 Manhattan 路径生成带端口和器件识别区域的波导 |
-| `Composite_Waveguide` | `composite_waveguide.py` | 直段与弯曲采用不同宽度、并以直段内taper过渡的可逆波导 |
-| `S_Bend_Waveguide` | `s_bend_waveguide.py` | S 形波导连接器 |
+| `Straight_Waveguide` | `straight_waveguide.py` | 恒宽直波导 |
+| `S_Bend` | `s_bend_waveguide.py` | S 形波导连接器 |
+| `Pcell_Waveguide_Bump` | `waveguide_bump.py` | 四圆弧长度补偿器；增量长度、宽度、有效半径和最大角度可编辑 |
+
+`Waveguide` 和 `Composite_Waveguide` 由 Path to Waveguide 工具在版图内按需创建，不列入公开 `JNULib` 器件菜单。
 
 所有 JNU PCell 的设置面板均先显示可编辑参数，再在底部集中显示带 `[uneditable]` 标记的只读计算参数。
 
@@ -112,15 +120,15 @@
 
 ```python
 import pya
+from pathlib import Path
 
 # 创建版图对象。
 layout = pya.Layout()
 
 # 读取固定器件版图。
-layout.read(
-    r"C:\Users\zjy\KLayout\salt\JNU_MWP_PDK\pymacros"
-    r"\JNU_MWP_gds\1550_1_2_MMI.gds"
-)
+home = Path(pya.Application.instance().application_data_path())
+layout.read(str(home / "salt" / "JNU_MWP_PDK" / "pymacros" /
+                "JNU_MWP_ebeam_gds" / "ebeam_crossing4.gds"))
 
 # 输出顶层单元名称。
 print([cell.name for cell in layout.top_cells()])
@@ -130,7 +138,7 @@ print([cell.name for cell in layout.top_cells()])
 
 - 如果切换到 `JNU_MWP_PDK` 后仍只显示 `1/0` 等原始图层号，请确认 `JNU_MWP_PDK.lyt` 和 `layers.lyp` 均已加载，然后重启 KLayout。
 - 如果 Library 面板中没有器件库，请检查 `pymacros` 目录是否完整，并查看 KLayout Macro Development 窗口或控制台中的加载信息。
-- 白盒库和黑盒库名称带有版本号；脚本实例化器件时应使用 `JNULib_v1.1` 或 `JNULib_BlackBox_v1.1`。
+- 白盒库和黑盒库注册名稳定为 `JNULib` 与 `JNULib_BlackBox`；v1.2 仅显示在库说明中。
 - `1/99` 默认隐藏，仅承担输入引导和旧版文件读取兼容。新 Waveguide 的恢复数据位于 PCell 参数与无图形属性中，因此转换不会额外显示一条 Waveguide Path。
 - 流片前应根据目标工艺重新核对图层映射、设计规则和器件适用波长。
 
@@ -143,8 +151,8 @@ print([cell.name for cell in layout.top_cells()])
 `JNU_MWP_PDK` is a KLayout photonic design kit for the layout and tape-out of silicon microwave-photonic integrated circuits. The package registers:
 
 - KLayout technology: `JNU_MWP_PDK`
-- White-box library: `JNULib_v1.1`
-- Black-box library: `JNULib_BlackBox_v1.1`
+- Whitebox library: `JNULib` (display version v1.2)
+- Blackbox library: `JNULib_BlackBox` (display version v1.2)
 
 The package includes fixed GDS cells, parameterized cells (PCells), waveguide conversion tools, optical-pin utilities, and layout verification scripts. Optical ports are represented by `PinRec` paths and labels so that compatible photonic-layout tools can recognize them.
 
@@ -168,7 +176,9 @@ All paths below are relative to the `JNU_MWP_PDK` package root:
 | `layers.lyp` | Defines layer names, colors, line styles, and default visibility |
 | `pymacros/JNULib.py` | Loads fixed GDS cells and registers the white-box PCells |
 | `pymacros/JNULib_BlackBox.py` | Registers the black-box library |
-| `pymacros/JNU_MWP_gds/` | Contains 23 fixed layout cells |
+| `pymacros/JNU_MWP_gds/` | Optional authorized laboratory whitebox directory; device count varies by release |
+| `pymacros/JNU_MWP_ebeam_gds/` | Bundles five original MIT-licensed EBeam GDS files and provenance |
+| `pymacros/JNU_MWP_blackbox_gds/` | Contains 30 fixed blackbox GDS files |
 | `pymacros/JNU_MWP_pcells/` | Contains the PCell implementations |
 | `pymacros/JNU_MWP_tools/` | Contains waveguide conversion, pin, layer-processing, and regression tools |
 | `pymacros/JNU_MWP_PDK_Menu.lym` | Registers the KLayout menu and tool actions |
@@ -183,16 +193,20 @@ All paths below are relative to the `JNU_MWP_PDK` package root:
 
 #### Fixed layout cells
 
-`JNULib_v1.1` loads 23 fixed GDS cells from `pymacros/JNU_MWP_gds/`, including:
+`JNULib` loads authorized laboratory fixed GDS when available and always loads five original EBeam GDS files from `pymacros/JNU_MWP_ebeam_gds/`, including:
 
 - 1310 nm and 1550 nm grating couplers
 - MMI couplers and power splitters
 - Polarization beam splitters, rotators, and polarizers
 - Edge couplers, optical switches, and terminators
 
+The five public cell names are `ebeam_crossing4`, `ebeam_terminator_te1310`, `ebeam_terminator_te1550`, `ebeam_y_1310`, and `ebeam_y_1550`. Their original geometry, ports, outlines, and all Text are preserved, including Y-branch annotations. Original model annotations do not provide a new JNU simulation model.
+
+`JNULib_BlackBox` contains 30 fixed blackboxes: 24 existing devices plus these five and a static default `Pcell_Waveguide_Bump`. Each blackbox contains a rectangular Si placeholder, PinRec ports and port names, a DevRec outline, and a device-name label. Other EBeam Text and internal physical geometry are omitted.
+
 #### Parameterized cells
 
-Nine PCells are currently registered:
+Nine public PCells are currently registered, plus two internal routing PCells:
 
 | PCell | Source | Function |
 |---|---|---|
@@ -202,9 +216,11 @@ Nine PCells are currently registered:
 | `Paperclip_Spiral` | `paperclip_spiral.py` | Paperclip spiral delay line with three port layouts |
 | `Paperclip_Spiral_with_Composite_Waveguide` | `paperclip_spiral_composite.py` | Paperclip spiral delay line using a composite waveguide cross-section |
 | `Taper` | `taper.py` | Linear waveguide taper |
-| `Waveguide` | `waveguide.py` | Waveguide generated from a Manhattan path, including optical pins and a device-recognition region |
-| `Composite_Waveguide` | `composite_waveguide.py` | Reversible waveguide with separate straight/bend widths and tapers placed on straight sections |
-| `S_Bend_Waveguide` | `s_bend_waveguide.py` | S-bend waveguide connector |
+| `Straight_Waveguide` | `straight_waveguide.py` | Constant-width straight waveguide |
+| `S_Bend` | `s_bend_waveguide.py` | S-bend waveguide connector |
+| `Pcell_Waveguide_Bump` | `waveguide_bump.py` | Four-arc length compensation; directly editable incremental length, width, effective radius, and maximum angle |
+
+`Waveguide` and `Composite_Waveguide` are created within layouts by Path to Waveguide and are not listed as public `JNULib` devices.
 
 Every JNU PCell dialog lists editable parameters first and groups read-only derived parameters marked `[uneditable]` at the bottom.
 
@@ -244,15 +260,15 @@ The Composite-width tab defaults to a `2.0 µm` straight width, `0.5 µm` bend w
 
 ```python
 import pya
+from pathlib import Path
 
 # Create a layout object.
 layout = pya.Layout()
 
 # Read a fixed-device layout.
-layout.read(
-    r"C:\Users\zjy\KLayout\salt\JNU_MWP_PDK\pymacros"
-    r"\JNU_MWP_gds\1550_1_2_MMI.gds"
-)
+home = Path(pya.Application.instance().application_data_path())
+layout.read(str(home / "salt" / "JNU_MWP_PDK" / "pymacros" /
+                "JNU_MWP_ebeam_gds" / "ebeam_crossing4.gds"))
 
 # Print the top-cell names.
 print([cell.name for cell in layout.top_cells()])
@@ -262,6 +278,6 @@ print([cell.name for cell in layout.top_cells()])
 
 - If raw layer numbers such as `1/0` remain visible after assigning the `JNU_MWP_PDK` technology, verify that both `JNU_MWP_PDK.lyt` and `layers.lyp` are loaded, then restart KLayout.
 - If the libraries do not appear in the Library panel, verify that the `pymacros` directory is complete and inspect the KLayout Macro Development window or console for load messages.
-- The white-box and black-box library names include version suffixes. Use `JNULib_v1.1` or `JNULib_BlackBox_v1.1` when instantiating cells from scripts.
+- Library registration names remain `JNULib` and `JNULib_BlackBox`; v1.2 appears only in their descriptions.
 - Layer `1/99` is hidden by default and is retained for input guides and legacy-file recovery. New Waveguide recovery data is stored in PCell parameters and non-geometric properties, so conversion does not leave a visible Waveguide Path.
 - Before tape-out, verify the layer mapping, design rules, and device wavelength against the target fabrication process.

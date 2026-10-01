@@ -1,7 +1,7 @@
 # $autorun
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-09
+# 时间: 2026-10
 
 # JNULib KLayout 器件库加载器。
 # 从指定 GDS 目录加载固定版图单元（fixed_gds 器件），
@@ -29,6 +29,7 @@ if SCRIPT_DIR not in sys.path:
 from JNU_MWP_tools.core.fixed_gds import fixed_gds_directory
 
 GDS_DIR = fixed_gds_directory(SCRIPT_DIR)
+PUBLIC_EBEAM_GDS_DIR = os.path.join(SCRIPT_DIR, "JNU_MWP_ebeam_gds")
 
 from JNU_MWP_pcells import (
     Bend90deg,
@@ -39,6 +40,7 @@ from JNU_MWP_pcells import (
     StraightWaveguide,
     ArchimedeanSpiral,
     Taper,
+    WaveguideBump,
 )
 from JNU_MWP_tools.core.ebeam_library_bridge import register_ebeam_libraries_for_jnu
 from JNU_MWP_tools.core.ui_language import localize_pcell_declaration
@@ -65,6 +67,7 @@ class JNULib(pya.Library):
 
         # 先把外部 GDS 中已有的器件加载进库，再注册参数化器件。
         self._load_gds_cells(ly)
+        self._load_public_ebeam_cells(ly)
         self._register_pcells(ly)
 
         self.register(LIBRARY_NAME)
@@ -92,6 +95,21 @@ class JNULib(pya.Library):
                 new_cell = ly.create_cell(cell.name)
                 new_cell.copy_tree(cell)
 
+    def _load_public_ebeam_cells(self, ly):
+        """始终加载公开授权的五份原始 GDS，保留全部文字与端口。"""
+        if not os.path.isdir(PUBLIC_EBEAM_GDS_DIR):
+            raise RuntimeError("缺少公开 EBeam GDS 目录：%s" % PUBLIC_EBEAM_GDS_DIR)
+        for filename in sorted(os.listdir(PUBLIC_EBEAM_GDS_DIR)):
+            if not filename.lower().endswith(".gds"):
+                continue
+            temp = pya.Layout()
+            temp.read(os.path.join(PUBLIC_EBEAM_GDS_DIR, filename))
+            for top_cell in temp.each_top_cell():
+                cell = temp.cell(top_cell) if isinstance(top_cell, int) else top_cell
+                if ly.cell(cell.name) is not None:
+                    raise RuntimeError("白盒器件名冲突：%s" % cell.name)
+                ly.create_cell(cell.name).copy_tree(cell)
+
     def _register_pcells(self, ly):
         """注册需要出现在 Library 面板中的 PCell。"""
 
@@ -104,6 +122,7 @@ class JNULib(pya.Library):
             ("Pcell_Taper", Taper),
             ("Pcell_S_Bend", SBendWaveguide),
             ("Pcell_Straight_Waveguide", StraightWaveguide),
+            ("Pcell_Waveguide_Bump", WaveguideBump),
         ):
             ly.register_pcell(name, localize_pcell_declaration(factory()))
 

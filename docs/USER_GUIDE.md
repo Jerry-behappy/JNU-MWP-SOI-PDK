@@ -19,7 +19,7 @@
 
 ### 2. 器件与参数
 
-`JNULib` 中可直接放置的 8 类 PCell：
+`JNULib` 中可直接放置的 9 类 PCell：
 
 | PCell | 主要用途与参数 |
 |---|---|
@@ -31,6 +31,7 @@
 | `Paperclip_Spiral` | 回形针螺旋延迟线，设置宽度、间距、圈数、内侧长度、端口类型及弯曲参数。 |
 | `Paperclip_Spiral_with_Composite_Waveguide` | 复合宽度回形针螺旋；横向直波导使用 straight width，纵向直波导及弯曲使用 bend width，并通过直段中的 taper 过渡。 |
 | `Archimedean_Spiral` | 双臂阿基米德螺旋，以目标长度为下限确定圈数，并显示实际长度与外径等结果。 |
+| `Pcell_Waveguide_Bump` | 四圆弧波导长度补偿器；直接编辑增量长度、宽度、有效半径和最大角度。默认值为 0.2、0.5、20 µm 和 149°。 |
 
 `Waveguide` 和 `Composite_Waveguide` 是波导转换工具创建的内部 PCell，不在 `JNULib` 的公开器件列表中直接选择。
 
@@ -42,9 +43,9 @@
 
 ### 3. 固定器件与黑盒
 
-`JNULib_BlackBox` 随仓库提供 25 个固定黑盒 GDS，覆盖 1310/1550 nm 光栅耦合器、端面耦合器、MMI、分光器、偏振器件、光开关和终端器件。黑盒保留器件占位、端口、识别边界与名称，可用于规划布局及连接，但不包含可直接流片的内部结构。
+`JNULib_BlackBox` 随仓库提供 30 个固定黑盒 GDS（原有 24 个，加本次 6 个）。新增 `ebeam_crossing4`、`ebeam_terminator_te1310`、`ebeam_terminator_te1550`、`ebeam_y_1310`、`ebeam_y_1550` 和默认参数的 `Pcell_Waveguide_Bump`。黑盒仅保留矩形占位、PinRec 端口与端口名、DevRec 边界及器件名标签；不保留源 GDS 的其他 Text 或内部物理结构。
 
-固定白盒 GDS 来自另行授权的私有器件库。按 [README 中的白盒说明](../README.md#更新与白盒-gds) 放置到 KLayout 用户目录的 `jnu_private/JNU_MWP_gds` 后，重启或执行 `Reload JNU PDK`，即可在 `JNULib` 使用；已有源码目录中的 `pymacros/JNU_MWP_gds` 也兼容。取得白盒文件不会自动把已放置的黑盒替换为真实结构，交付前必须检查实际引用的器件。
+上列五个 EBeam 固定器件的原始白盒 GDS 随仓库提供，保留全部 Text（含 Y 分支说明文字），无需安装 EBeam。原有实验室固定白盒 GDS 仍来自另行授权的私有器件库；按 [README 中的白盒说明](../README.md#更新与白盒-gds) 安装后即可在 `JNULib` 使用。原始 EBeam 模型文字不表示新增 JNU 仿真模型。取得白盒文件不会自动把已放置的黑盒替换为真实结构，交付前必须检查实际引用的器件。
 
 ### 4. 菜单与快捷键
 
@@ -157,12 +158,13 @@ New ordinary PCell instances use built-in defaults. Path to Waveguide settings a
 | `Paperclip_Spiral` | Paperclip delay line with configurable turns, spacing, and ports. |
 | `Paperclip_Spiral_with_Composite_Waveguide` | Paperclip with straight width on horizontal straights, bend width on vertical straights and bends, and tapers on straight sections. |
 | `Archimedean_Spiral` | Dual-arm Archimedean spiral sized to meet a target-length lower bound. |
+| `Pcell_Waveguide_Bump` | Four-arc length-compensation waveguide. Edit incremental length, width, effective radius, and maximum angle; defaults are 0.2, 0.5, 20 µm, and 149°. |
 
 The internal `Waveguide` and `Composite_Waveguide` PCells are created by the routing tools, not selected from the public library list. Circular uses a radius; Bezier adds `B` and displays derived `Rmax/Rmin`; Euler uses `Rmax/Rmin` and displays `Reff`. Bend sampling is automatic and read-only, with applicable derived fields refreshed as inputs change.
 
 Spiral ports use `type1` for same-side, `type2` for opposite-side offset, and `type3` for opposite-side equal-height ports. For a single-width spiral, `gap` is edge-to-edge spacing and `pitch = width + gap`. Check local spacing separately for composite widths and taper regions. Spiral `L` is centerline length and `delta_L = L - abs(opt2.x - opt1.x)` is extra geometric length, not a propagation time.
 
-The repository includes 25 fixed blackboxes with footprints and ports but no internal fabrication geometry. Authorized whitebox GDS is installed separately as described in the [README](../README.md#updates-and-whitebox-gds). Installing whitebox files does not automatically replace already placed blackbox instances.
+The repository includes 30 fixed blackboxes: the original 24 plus `ebeam_crossing4`, two `ebeam_terminator` cells, two `ebeam_y` cells, and a static default `Pcell_Waveguide_Bump`. Blackboxes retain rectangular footprints, PinRec ports and names, DevRec bounds, and a device-name label; they omit original source annotations and internal fabrication geometry. The five EBeam whitebox GDS files are bundled with their original Text and need no EBeam installation. Other laboratory whitebox GDS is installed separately as described in the [README](../README.md#updates-and-whitebox-gds). Original EBeam model annotations do not provide a JNU simulation model. Installing whitebox files does not automatically replace already placed blackbox instances.
 
 ### Menus and Shortcuts
 

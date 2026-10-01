@@ -2,21 +2,21 @@
 
 ## 中文说明
 
-`JNU-MWP-SOI-PDK` 是暨南大学光电混合集成实验室使用的硅光 PDK 项目。当前仓库以开发源码形式发布，包含 `JNU_MWP_PDK` technology、KLayout 菜单、DRC、PCell、固定黑盒器件和图层配置。白盒 GDS 保持私有，仅在实验室内授权分发。
+`JNU-MWP-SOI-PDK` 是暨南大学光电混合集成实验室使用的硅光 PDK 项目。当前仓库以开发源码形式发布，包含 `JNU_MWP_PDK` technology、KLayout 菜单、DRC、PCell、固定黑盒器件、五个公开 EBeam 白盒 GDS 和图层配置。实验室自有白盒 GDS 仍需单独授权。
 
 > [!IMPORTANT]
 > **使用过程中遇到 Bug，欢迎[提交 Issues](https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK/issues)。**
 
 ### 功能概览
 
-该 PDK 支持在 KLayout 中进行硅光器件放置与参数化设计，包括直波导、90° 弯曲、S 弯、Taper、双总线微环和多种螺旋延迟线；提供 Circular、Bezier、Euler 弯曲，以及单宽度和复合宽度波导的路径转换。借助 PinRec 端口识别，可自动连接两个器件或进行端口吸附，并完成端口生成、编号文字阵列、图层筛选与展平、当前 Cell 及其子层级的 DRC 检查。功能菜单还支持自定义波导预设和 PDK 热重载；固定黑盒器件可用于布局与连线，实际器件内部结构需另行取得授权白盒 GDS。
+该 PDK 支持在 KLayout 中进行硅光器件放置与参数化设计，包括直波导、90° 弯曲、S 弯、Taper、四圆弧长度补偿波导、双总线微环和多种螺旋延迟线；提供 Circular、Bezier、Euler 弯曲，以及单宽度和复合宽度波导的路径转换。借助 PinRec 端口识别，可自动连接两个器件或进行端口吸附，并完成端口生成、编号文字阵列、图层筛选与展平、当前 Cell 及其子层级的 DRC 检查。功能菜单还支持自定义波导预设和 PDK 热重载。仓库中五个 EBeam 白盒可直接查看内部结构；其余固定黑盒仅用于布局与连线，实际结构需另行授权。
 
 **点击下方任意功能框，直接跳转到对应的使用说明章节。**
 
 <table>
   <tr><th colspan="2"><a href="docs/USER_GUIDE.md#中文使用说明">JNU-MWP-SOI-PDK · 功能框图</a></th></tr>
   <tr>
-    <td width="50%"><a href="docs/USER_GUIDE.md#2-器件与参数" title="器件库与参数化设计"><img src="docs/assets/features/devices-zh.svg" width="520" alt="器件库与参数化设计: 8 类可编辑 PCell; 直波导 / 90° 弯曲 / S 弯 / Taper; 双总线微环 / 阿基米德螺旋; Paperclip / 复合宽度 Paperclip; 25 个固定黑盒器件，可用于布局与连接; 白盒内部结构：另行授权安装"></a></td>
+    <td width="50%"><a href="docs/USER_GUIDE.md#2-器件与参数" title="器件库与参数化设计"><img src="docs/assets/features/devices-zh.svg" width="520" alt="器件库与参数化设计: 9 类可编辑 PCell; 包括四圆弧 Waveguide Bump; 30 个固定黑盒器件; 五个公开 EBeam 白盒 GDS"></a></td>
     <td width="50%"><a href="docs/USER_GUIDE.md#5-绘制与修改波导" title="波导设计"><img src="docs/assets/features/waveguides-zh.svg" width="520" alt="波导设计: Path to Waveguide / Waveguide to Path; 单宽度波导 / 复合宽度波导; Circular / Bezier / Euler 弯曲; Taper 渐变与 transition 过渡; 自动采样与只读曲率计算; User-Defined 参数预设与 Note"></a></td>
   </tr>
   <tr>
@@ -52,7 +52,8 @@
 - `salt/JNU_MWP_PDK/layers.lyp`：JNU PDK 图层显示配置。
 - `salt/JNU_MWP_PDK/drc/JNU_MWP_DRC.lydrc`：JNU DRC 规则入口。
 - `salt/JNU_MWP_PDK/pymacros/JNU_MWP_pcells/`：JNU PCell 源码。
-- `salt/JNU_MWP_PDK/pymacros/JNU_MWP_blackbox_gds/`：随仓库提供的 25 个固定黑盒器件 GDS。
+- `salt/JNU_MWP_PDK/pymacros/JNU_MWP_blackbox_gds/`：随仓库提供的 30 个固定黑盒器件 GDS。
+- `salt/JNU_MWP_PDK/pymacros/JNU_MWP_ebeam_gds/`：五个保留原始 Text 的公开 EBeam 白盒 GDS 及来源说明。
 - `salt/JNU_MWP_PDK/pymacros/JNU_MWP_tools/`：JNU 菜单功能和公共工具源码。
 - `salt/JNU_MWP_PDK/pymacros/JNU_MWP_skill/`：项目内部维护用 skill，不用于黑盒发布包。
 
@@ -133,7 +134,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "E:\Photonics\JNU-MWP-SOI-PD
 - 顶部功能菜单：`JNU_MWP_PDK`
 - 器件库：`JNULib`、`JNULib_BlackBox`
 
-`JNULib` 提供 8 类可编辑 PCell；`JNULib_BlackBox` 自动加载仓库自带的 25 个固定黑盒器件，无需另行取得白盒 GDS。选择 `Instance → JNULib_BlackBox` 即可放置器件。黑盒覆盖 1310/1550 nm 的光栅耦合器、端面耦合器、MMI、分光器、偏振分束器、偏振旋转器、偏振器、光开关和终端器件。
+`JNULib` 提供 9 类可编辑 PCell，其中 `Pcell_Waveguide_Bump` 可直接设置增量长度、宽度、有效半径与最大角度；另随包提供 `ebeam_crossing4`、两个 `ebeam_terminator` 和两个 `ebeam_y` 原始白盒 GDS。`JNULib_BlackBox` 自动加载仓库自带的 30 个固定黑盒器件。选择 `Instance → JNULib_BlackBox` 即可放置器件，无需安装 EBeam。
 
 黑盒只保留器件占位矩形、PinRec 端口、DevRec 边界和名称标签，不包含内部物理结构。这些占位图形用于布局与连接，不能直接作为最终流片的器件结构。
 
@@ -150,10 +151,10 @@ git -C "$env:USERPROFILE\JNU-MWP-SOI-PDK" pull --ff-only origin main
 随后重启 KLayout；仅修改 Python 功能时也可使用 `Reload JNU PDK`。目录联接使更新直接作用于实际安装，无需重复复制。
 遇到本地修改或分支分歧时先处理并保留自己的修改，不要使用强制重置。重要版图在升级 PCell 代码前应备份。
 
-白盒 GDS 来自私有仓库 `Jerry-behappy/JNU-MWP-SOI-Library`，需单独授权获取；不会随本仓库克隆或更新。
+除上述五个公开 EBeam GDS 外，实验室自有固定白盒 GDS 来自私有仓库 `Jerry-behappy/JNU-MWP-SOI-Library`，需单独授权获取。
 获授权后点击 **JNU_MWP_PDK → Install / Update Whitebox Library**。Git 使用本机已有凭据，或由 Git Credential Manager 弹出 GitHub 登录；安装器不收集密码或 token。若认证失败，请先在 Git Credential Manager 中完成 GitHub 登录并确认账户已被授予私有仓库访问权，再重试。
 私有库会单独克隆到 `<实际用户配置目录>/jnu_private`，之后再次点击同一菜单即可更新。已有手动放置的 `jnu_private` 不会被覆盖；此时可继续手动维护，或先备份后迁移。也可将获授权的 `JNU_MWP_gds` 内容手动放入用户目录 `jnu_private/JNU_MWP_gds`，重启后在 `JNULib` 中使用。
-既有源码目录中的 `pymacros/JNU_MWP_gds` 仍兼容加载。不要将任何白盒 GDS 提交到本仓库。
+既有源码目录中的 `pymacros/JNU_MWP_gds` 仍兼容加载。不要将私有实验室白盒 GDS 提交到本仓库。公开 EBeam GDS 的原始 Text（包括模型注记）保留在白盒中，但不代表新增 JNU 仿真模型。
 
 ### 重要说明
 
@@ -166,7 +167,7 @@ git -C "$env:USERPROFILE\JNU-MWP-SOI-PDK" pull --ff-only origin main
 > salt/JNU_MWP_PDK/pymacros/JNU_MWP_gds/
 > ```
 >
-> **该目录已通过 `.gitignore` 排除，白盒 GDS 不随本仓库公开上传。**
+> **该目录已通过 `.gitignore` 排除，实验室私有白盒 GDS 不随本仓库公开上传；五个 MIT 许可的 EBeam GDS 位于独立公开目录。**
 >
 > **如需白盒 GDS，请与实验室联系。**
 
@@ -178,21 +179,21 @@ git -C "$env:USERPROFILE\JNU-MWP-SOI-PDK" pull --ff-only origin main
 
 ## English Description
 
-`JNU-MWP-SOI-PDK` is a silicon photonics PDK project used by the Optoelectronic Hybrid Integration Laboratory at Jinan University. This repository provides the development source, technology, menus, DRC, PCells, fixed blackbox devices and layer configuration. Whitebox GDS remains private and is distributed only to authorized laboratory users.
+`JNU-MWP-SOI-PDK` is a silicon photonics PDK project used by the Optoelectronic Hybrid Integration Laboratory at Jinan University. This repository provides the development source, technology, menus, DRC, PCells, fixed blackboxes, five public EBeam whitebox GDS files, and layer configuration. The laboratory's own whitebox GDS still requires separate authorization.
 
 > [!IMPORTANT]
 > **Found a bug? Please [submit an issue](https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK/issues).**
 
 ### Capabilities
 
-The PDK supports silicon-photonic layout and parametric device design in KLayout, including straight waveguides, 90-degree bends, S-bends, tapers, double-bus microrings, and spiral delay lines. It provides Circular, Bezier, and Euler bends, reversible path conversion for single-width and composite-width waveguides, PinRec-based device connections and snapping, pin creation, numbered text arrays, layer filtering and flattening, and DRC of the active cell and its descendants. Saved waveguide presets and PDK hot reload support repeated design work. Bundled blackboxes provide placement and connectivity references; actual internal device geometry requires separately authorized whitebox GDS.
+The PDK supports silicon-photonic layout and parametric device design in KLayout, including straight waveguides, 90-degree bends, S-bends, tapers, a four-arc waveguide bump, double-bus microrings, and spiral delay lines. It provides Circular, Bezier, and Euler bends, reversible path conversion for single-width and composite-width waveguides, PinRec-based device connections and snapping, pin creation, numbered text arrays, layer filtering and flattening, and DRC of the active cell and its descendants. Saved waveguide presets and PDK hot reload support repeated design work. Five bundled EBeam cells include original whitebox geometry; the other fixed blackboxes provide only placement and connectivity references.
 
 **Click any functional block to open its corresponding user-guide section.**
 
 <table>
   <tr><th colspan="2"><a href="docs/USER_GUIDE.md#english-user-guide">JNU-MWP-SOI-PDK · Feature Map</a></th></tr>
   <tr>
-    <td width="50%"><a href="docs/USER_GUIDE.md#device-libraries" title="Libraries and PCells"><img src="docs/assets/features/devices-en.svg" width="520" alt="Libraries and PCells: 8 editable PCell types; Straight / 90-degree bend / S-bend / Taper; Microring / Archimedean / Paperclip spirals; Composite-width Paperclip spiral; 25 fixed blackboxes for placement and routing; Whitebox geometry: separate authorization"></a></td>
+    <td width="50%"><a href="docs/USER_GUIDE.md#device-libraries" title="Libraries and PCells"><img src="docs/assets/features/devices-en.svg" width="520" alt="Libraries and PCells: 9 editable PCell types including Waveguide Bump; 30 fixed blackboxes; five bundled EBeam whitebox GDS cells"></a></td>
     <td width="50%"><a href="docs/USER_GUIDE.md#waveguide-workflow" title="Waveguide Design"><img src="docs/assets/features/waveguides-en.svg" width="520" alt="Waveguide Design: Path to Waveguide / Waveguide to Path; Single-width / Composite-width waveguides; Circular / Bezier / Euler bends; Tapers and constant-width transitions; Automatic sampling and calculated curvature; User-Defined presets and Notes"></a></td>
   </tr>
   <tr>
@@ -228,7 +229,8 @@ Use an AI agent that can access local files and run commands, following the Git 
 - `salt/JNU_MWP_PDK/layers.lyp`: JNU PDK layer display configuration.
 - `salt/JNU_MWP_PDK/drc/JNU_MWP_DRC.lydrc`: JNU DRC entry script.
 - `salt/JNU_MWP_PDK/pymacros/JNU_MWP_pcells/`: JNU PCell source code.
-- `salt/JNU_MWP_PDK/pymacros/JNU_MWP_blackbox_gds/`: 25 bundled fixed blackbox device GDS files.
+- `salt/JNU_MWP_PDK/pymacros/JNU_MWP_blackbox_gds/`: 30 bundled fixed blackbox device GDS files.
+- `salt/JNU_MWP_PDK/pymacros/JNU_MWP_ebeam_gds/`: five original EBeam whitebox GDS files and source notice.
 - `salt/JNU_MWP_PDK/pymacros/JNU_MWP_tools/`: JNU menu actions and shared utility code.
 - `salt/JNU_MWP_PDK/pymacros/JNU_MWP_skill/`: internal project skill used for maintenance, not included in blackbox release packages.
 
@@ -315,7 +317,7 @@ Restart KLayout. After successful loading, KLayout should show:
 - Top-level menu: `JNU_MWP_PDK`
 - Libraries: `JNULib`, `JNULib_BlackBox`
 
-`JNULib` provides eight editable PCell types. `JNULib_BlackBox` automatically loads 25 bundled fixed blackbox devices without requiring whitebox GDS. Use `Instance → JNULib_BlackBox` to place them. The devices cover 1310/1550 nm grating and edge couplers, MMIs, splitters, polarization beam splitters, a polarization rotator, polarizers, optical switches, and a terminator.
+`JNULib` provides nine editable PCell types, including `Pcell_Waveguide_Bump` with directly editable incremental length, width, effective radius, and maximum angle. It also bundles five original EBeam GDS cells: `ebeam_crossing4`, two `ebeam_terminator` cells, and two `ebeam_y` cells. `JNULib_BlackBox` loads 30 fixed blackboxes without requiring EBeam. Use `Instance → JNULib_BlackBox` to place them.
 
 Blackboxes retain only a rectangular footprint, PinRec ports, DevRec bounds, and a name label. They omit internal physical geometry and are layout/connectivity placeholders, not final fabrication geometry.
 
@@ -333,11 +335,11 @@ Restart KLayout; Python-only changes may also use Reload JNU PDK. The junction
 removes the need to copy updated files. Preserve local changes and resolve branch
 divergence instead of forcing a reset. Back up important layouts before PCell upgrades.
 
-Whitebox GDS requires separate authorization to `Jerry-behappy/JNU-MWP-SOI-Library`.
+Other laboratory whitebox GDS requires separate authorization to `Jerry-behappy/JNU-MWP-SOI-Library`.
 Use **JNU_MWP_PDK → Install / Update Whitebox Library** after access is granted. Git uses your existing credentials or Git Credential Manager's GitHub login; the installer never collects passwords or tokens. If authentication fails, sign in with Git Credential Manager and verify repository access before retrying. The private checkout lives in `<actual user directory>/jnu_private`; the same menu updates it later. Existing manual private data is preserved and requires backup before migration.
 Alternatively put authorized extracted GDS in `<KLayout user home>/jnu_private/JNU_MWP_gds`
 and restart/reload. Legacy `pymacros/JNU_MWP_gds` remains supported. Public code
-updates do not update private GDS. Never commit whitebox GDS to this repository.
+updates do not update private GDS. Never commit private laboratory whitebox GDS to this repository. The bundled EBeam GDS retains its original Text, including model annotations; this does not provide a JNU simulation model.
 
 ### Notes
 
@@ -350,7 +352,7 @@ This project is based on the original project by Lukas Chrostowski and contribut
 > salt/JNU_MWP_PDK/pymacros/JNU_MWP_gds/
 > ```
 >
-> **This directory is excluded by `.gitignore`; whitebox GDS is not published in this repository.**
+> **This directory is excluded by `.gitignore`; private laboratory whitebox GDS is not published here. The five MIT-licensed EBeam cells are in a separate public directory.**
 >
 > **Please contact the laboratory if you need whitebox GDS.**
 

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-07
+# 时间: 2026-10
 
 # JNU_MWP_pcells PCell 子模块。
 # 包含微环、双臂螺旋、回形针螺旋、普通波导、S 弯波导和 90° 弯曲等参数化器件定义。
@@ -24,9 +24,10 @@ from .Archimedean_spiral import ArchimedeanSpiral
 from .taper import Taper
 from .waveguide import Waveguide
 from .composite_waveguide import CompositeWaveguide
+from .waveguide_bump import WaveguideBump
 
 __all__ = [
     "Bend90deg", "MicroringDoubleBus", "PaperclipSpiral",
     "PaperclipSpiralWithCompositeWaveguide", "ArchimedeanSpiral", "Taper", "Waveguide",
-    "SBendWaveguide", "StraightWaveguide", "CompositeWaveguide",
+    "SBendWaveguide", "StraightWaveguide", "CompositeWaveguide", "WaveguideBump",
 ]
