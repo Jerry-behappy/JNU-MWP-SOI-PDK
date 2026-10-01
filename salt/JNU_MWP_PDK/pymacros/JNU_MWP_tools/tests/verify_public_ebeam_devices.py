@@ -18,11 +18,11 @@ import JNULib  # noqa: F401
 
 
 FIXED = (
-    ("ebeam_crossing4", 7, 4),
-    ("ebeam_terminator_te1310", 3, 1),
-    ("ebeam_terminator_te1550", 4, 1),
-    ("ebeam_y_1310", 6, 3),
-    ("ebeam_y_1550", 6, 3),
+    ("ebeam_crossing4", "Crossing4", 7, 4),
+    ("ebeam_terminator_te1310", "1310_TE_Terminator", 3, 1),
+    ("ebeam_terminator_te1550", "1550_TE_Terminator", 4, 1),
+    ("ebeam_y_1310", "1310_Ybranch", 6, 3),
+    ("ebeam_y_1550", "1550_Ybranch", 6, 3),
 )
 
 
@@ -61,10 +61,10 @@ def _port_signature(cell, layout):
 
 
 def verify_fixed(library):
-    for name, text_count, port_count in FIXED:
+    for source_name, name, text_count, port_count in FIXED:
         source = pya.Layout()
-        source.read(str(PYMACROS / "JNU_MWP_ebeam_gds" / (name + ".gds")))
-        original = source.cell(name)
+        source.read(str(PYMACROS / "JNU_MWP_ebeam_gds" / (source_name + ".gds")))
+        original = source.cell(source_name)
         copied = library.layout().cell(name)
         assert original is not None and copied is not None, name
         assert abs(source.dbu - library.layout().dbu) < 1e-12, name
@@ -118,7 +118,7 @@ def verify_bump(library):
 
 
 def verify_blackbox_ports(library):
-    names = [name for name, _, _ in FIXED] + ["Pcell_Waveguide_Bump"]
+    names = [name for _, name, _, _ in FIXED] + ["Pcell_Waveguide_Bump"]
     for name in names:
         layout = pya.Layout()
         layout.read(str(PYMACROS / "JNU_MWP_blackbox_gds" / (name + ".gds")))

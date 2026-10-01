@@ -43,7 +43,7 @@
 
 ### 3. 固定器件与黑盒
 
-`JNULib_BlackBox` 随仓库提供 30 个固定黑盒 GDS（原有 24 个，加本次 6 个）。新增 `ebeam_crossing4`、`ebeam_terminator_te1310`、`ebeam_terminator_te1550`、`ebeam_y_1310`、`ebeam_y_1550` 和默认参数的 `Pcell_Waveguide_Bump`。黑盒仅保留矩形占位、PinRec 端口与端口名、DevRec 边界及器件名标签；不保留源 GDS 的其他 Text 或内部物理结构。
+`JNULib_BlackBox` 随仓库提供 30 个固定黑盒 GDS（原有 24 个，加本次 6 个）。新增 `Crossing4`、`1310_TE_Terminator`、`1550_TE_Terminator`、`1310_Ybranch`、`1550_Ybranch` 和默认参数的 `Pcell_Waveguide_Bump`。这五个固定器件在 `JNULib` 中使用相同新名称。黑盒仅保留矩形占位、PinRec 端口与端口名、DevRec 边界及器件名标签；不保留源 GDS 的其他 Text 或内部物理结构。
 
 上列五个 EBeam 固定器件的原始白盒 GDS 随仓库提供，保留全部 Text（含 Y 分支说明文字），无需安装 EBeam。原有实验室固定白盒 GDS 仍来自另行授权的私有器件库；按 [README 中的白盒说明](../README.md#更新与白盒-gds) 安装后即可在 `JNULib` 使用。原始 EBeam 模型文字不表示新增 JNU 仿真模型。取得白盒文件不会自动把已放置的黑盒替换为真实结构，交付前必须检查实际引用的器件。
 
@@ -164,7 +164,7 @@ The internal `Waveguide` and `Composite_Waveguide` PCells are created by the rou
 
 Spiral ports use `type1` for same-side, `type2` for opposite-side offset, and `type3` for opposite-side equal-height ports. For a single-width spiral, `gap` is edge-to-edge spacing and `pitch = width + gap`. Check local spacing separately for composite widths and taper regions. Spiral `L` is centerline length and `delta_L = L - abs(opt2.x - opt1.x)` is extra geometric length, not a propagation time.
 
-The repository includes 30 fixed blackboxes: the original 24 plus `ebeam_crossing4`, two `ebeam_terminator` cells, two `ebeam_y` cells, and a static default `Pcell_Waveguide_Bump`. Blackboxes retain rectangular footprints, PinRec ports and names, DevRec bounds, and a device-name label; they omit original source annotations and internal fabrication geometry. The five EBeam whitebox GDS files are bundled with their original Text and need no EBeam installation. Other laboratory whitebox GDS is installed separately as described in the [README](../README.md#updates-and-whitebox-gds). Original EBeam model annotations do not provide a JNU simulation model. Installing whitebox files does not automatically replace already placed blackbox instances.
+The repository includes 30 fixed blackboxes: the original 24 plus `Crossing4`, `1310_TE_Terminator`, `1550_TE_Terminator`, `1310_Ybranch`, `1550_Ybranch`, and a static default `Pcell_Waveguide_Bump`. The five fixed whitebox cells in `JNULib` use the same new names. Blackboxes retain rectangular footprints, PinRec ports and names, DevRec bounds, and a device-name label; they omit original source annotations and internal fabrication geometry. The five EBeam whitebox GDS files are bundled with their original Text and need no EBeam installation. Other laboratory whitebox GDS is installed separately as described in the [README](../README.md#updates-and-whitebox-gds). Original EBeam model annotations do not provide a JNU simulation model. Installing whitebox files does not automatically replace already placed blackbox instances.
 
 ### Menus and Shortcuts
 

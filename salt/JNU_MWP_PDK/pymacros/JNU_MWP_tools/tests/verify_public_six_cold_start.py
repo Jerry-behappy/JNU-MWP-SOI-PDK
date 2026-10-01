@@ -21,9 +21,12 @@ def _probe():
     assert "v1.2" in white.description and "v1.2" in black.description
 
     names = (
-        "ebeam_crossing4", "ebeam_terminator_te1310", "ebeam_terminator_te1550",
-        "ebeam_y_1310", "ebeam_y_1550", "Pcell_Waveguide_Bump",
+        "Crossing4", "1310_TE_Terminator", "1550_TE_Terminator",
+        "1310_Ybranch", "1550_Ybranch", "Pcell_Waveguide_Bump",
     )
+    for old_name in ("ebeam_crossing4", "ebeam_terminator_te1310",
+                     "ebeam_terminator_te1550", "ebeam_y_1310", "ebeam_y_1550"):
+        assert white.layout().cell(old_name) is None and black.layout().cell(old_name) is None
     assert len(list(black.layout().each_top_cell())) == 30
     assert not list(black.layout().pcell_names())
     for name in names:

@@ -134,7 +134,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "E:\Photonics\JNU-MWP-SOI-PD
 - 顶部功能菜单：`JNU_MWP_PDK`
 - 器件库：`JNULib`、`JNULib_BlackBox`
 
-`JNULib` 提供 9 类可编辑 PCell，其中 `Pcell_Waveguide_Bump` 可直接设置增量长度、宽度、有效半径与最大角度；另随包提供 `ebeam_crossing4`、两个 `ebeam_terminator` 和两个 `ebeam_y` 原始白盒 GDS。`JNULib_BlackBox` 自动加载仓库自带的 30 个固定黑盒器件。选择 `Instance → JNULib_BlackBox` 即可放置器件，无需安装 EBeam。
+`JNULib` 提供 9 类可编辑 PCell，其中 `Pcell_Waveguide_Bump` 可直接设置增量长度、宽度、有效半径与最大角度；另随包提供五个原始 EBeam 白盒 GDS，在器件库中命名为 `Crossing4`、`1310_TE_Terminator`、`1550_TE_Terminator`、`1310_Ybranch` 和 `1550_Ybranch`。`JNULib_BlackBox` 自动加载仓库自带的 30 个固定黑盒器件。选择 `Instance → JNULib_BlackBox` 即可放置器件，无需安装 EBeam。
 
 黑盒只保留器件占位矩形、PinRec 端口、DevRec 边界和名称标签，不包含内部物理结构。这些占位图形用于布局与连接，不能直接作为最终流片的器件结构。
 
@@ -317,7 +317,7 @@ Restart KLayout. After successful loading, KLayout should show:
 - Top-level menu: `JNU_MWP_PDK`
 - Libraries: `JNULib`, `JNULib_BlackBox`
 
-`JNULib` provides nine editable PCell types, including `Pcell_Waveguide_Bump` with directly editable incremental length, width, effective radius, and maximum angle. It also bundles five original EBeam GDS cells: `ebeam_crossing4`, two `ebeam_terminator` cells, and two `ebeam_y` cells. `JNULib_BlackBox` loads 30 fixed blackboxes without requiring EBeam. Use `Instance → JNULib_BlackBox` to place them.
+`JNULib` provides nine editable PCell types, including `Pcell_Waveguide_Bump` with directly editable incremental length, width, effective radius, and maximum angle. It also bundles five original EBeam GDS cells, exposed as `Crossing4`, `1310_TE_Terminator`, `1550_TE_Terminator`, `1310_Ybranch`, and `1550_Ybranch`. `JNULib_BlackBox` loads 30 fixed blackboxes without requiring EBeam. Use `Instance → JNULib_BlackBox` to place them.
 
 Blackboxes retain only a rectangular footprint, PinRec ports, DevRec bounds, and a name label. They omit internal physical geometry and are layout/connectivity placeholders, not final fabrication geometry.
 

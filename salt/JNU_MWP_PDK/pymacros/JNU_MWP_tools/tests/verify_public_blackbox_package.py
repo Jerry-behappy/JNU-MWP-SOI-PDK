@@ -40,7 +40,10 @@ def main():
             si = list(cell.shapes(layout.layer(1, 0)).each())
             assert len(si) == 1 and si[0].is_box(), cell.name
     assert len(names) == 30, len(names)
-    assert "Pcell_Waveguide_Bump" in names
+    assert {"Crossing4", "1310_TE_Terminator", "1550_TE_Terminator",
+            "1310_Ybranch", "1550_Ybranch", "Pcell_Waveguide_Bump"} <= names
+    assert not {"ebeam_crossing4", "ebeam_terminator_te1310", "ebeam_terminator_te1550",
+                "ebeam_y_1310", "ebeam_y_1550"} & names
     print("PASS: 30 blackbox cells in standalone package; no whitebox GDS or PCell source.")
 
 

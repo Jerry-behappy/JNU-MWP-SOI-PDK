@@ -60,7 +60,7 @@
 - 偏振分束器、偏振旋转器与偏振器
 - 边缘耦合器、光开关和终端器件
 
-公开器件的准确名称为 `ebeam_crossing4`、`ebeam_terminator_te1310`、`ebeam_terminator_te1550`、`ebeam_y_1310`、`ebeam_y_1550`。它们保留原始几何、端口、外框和全部 Text，包括两个 Y 分支的说明文字。源文件中的模型文字不表示新增 JNU 仿真模型。
+公开器件在 `JNULib` 和 `JNULib_BlackBox` 中的名称为 `Crossing4`、`1310_TE_Terminator`、`1550_TE_Terminator`、`1310_Ybranch`、`1550_Ybranch`。上游 GDS 文件保留原文件名以便核对来源；白盒保留原始几何、端口、外框和全部 Text，包括两个 Y 分支的说明文字。源文件中的模型文字不表示新增 JNU 仿真模型。
 
 `JNULib_BlackBox` 提供 30 个固定黑盒：原有 24 个加以上五个器件和一个默认参数的 `Pcell_Waveguide_Bump`。每个黑盒只含矩形 Si 占位、端口与端口名、DevRec 外框和器件名标签；原始 EBeam 的其他 Text 和内部物理几何均不进入黑盒。
 
@@ -200,7 +200,7 @@ All paths below are relative to the `JNU_MWP_PDK` package root:
 - Polarization beam splitters, rotators, and polarizers
 - Edge couplers, optical switches, and terminators
 
-The five public cell names are `ebeam_crossing4`, `ebeam_terminator_te1310`, `ebeam_terminator_te1550`, `ebeam_y_1310`, and `ebeam_y_1550`. Their original geometry, ports, outlines, and all Text are preserved, including Y-branch annotations. Original model annotations do not provide a new JNU simulation model.
+The five public cell names in `JNULib` and `JNULib_BlackBox` are `Crossing4`, `1310_TE_Terminator`, `1550_TE_Terminator`, `1310_Ybranch`, and `1550_Ybranch`. The original GDS filenames are kept for provenance; the whitebox cells preserve their geometry, ports, outlines, and all Text, including Y-branch annotations. Original model annotations do not provide a new JNU simulation model.
 
 `JNULib_BlackBox` contains 30 fixed blackboxes: 24 existing devices plus these five and a static default `Pcell_Waveguide_Bump`. Each blackbox contains a rectangular Si placeholder, PinRec ports and port names, a DevRec outline, and a device-name label. Other EBeam Text and internal physical geometry are omitted.
 

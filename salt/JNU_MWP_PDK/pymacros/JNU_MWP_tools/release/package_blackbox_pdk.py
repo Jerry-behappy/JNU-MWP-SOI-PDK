@@ -394,6 +394,8 @@ def _generate_blackbox_gds(package_root):
     reserved = {
         "ebeam_crossing4", "ebeam_terminator_te1310", "ebeam_terminator_te1550",
         "ebeam_y_1310", "ebeam_y_1550", "Pcell_Waveguide_Bump",
+        "Crossing4", "1310_TE_Terminator", "1550_TE_Terminator",
+        "1310_Ybranch", "1550_Ybranch",
     }
     for src_path in sorted(src_dir.glob("*.gds")) if src_dir.is_dir() else ():
         if src_path.stem in reserved:

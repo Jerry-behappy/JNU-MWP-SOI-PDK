@@ -20,9 +20,12 @@ def _probe():
     assert black is not None and "v1.2" in black.description
     assert not list(black.layout().pcell_names())
     names = {
-        "ebeam_crossing4", "ebeam_terminator_te1310", "ebeam_terminator_te1550",
-        "ebeam_y_1310", "ebeam_y_1550", "Pcell_Waveguide_Bump",
+        "Crossing4", "1310_TE_Terminator", "1550_TE_Terminator",
+        "1310_Ybranch", "1550_Ybranch", "Pcell_Waveguide_Bump",
     }
+    for old_name in ("ebeam_crossing4", "ebeam_terminator_te1310",
+                     "ebeam_terminator_te1550", "ebeam_y_1310", "ebeam_y_1550"):
+        assert black.layout().cell(old_name) is None
     assert len(list(black.layout().each_top_cell())) == 30
     for name in names:
         layout = pya.Layout()

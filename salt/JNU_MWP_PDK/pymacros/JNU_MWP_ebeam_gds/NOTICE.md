@@ -9,6 +9,10 @@ installed locally as EBeam version 0.4.53:
 - `ebeam_y_1310.gds`
 - `ebeam_y_1550.gds`
 
+JNU library display names, in the same order: `Crossing4`,
+`1310_TE_Terminator`, `1550_TE_Terminator`, `1310_Ybranch`, and `1550_Ybranch`.
+The source GDS filenames and their internal upstream cell names remain unchanged.
+
 Upstream project: <https://github.com/SiEPIC/SiEPIC_EBeam_PDK>.
 Original path: `EBeam/gds/EBeam/`.
 License: MIT, <https://github.com/SiEPIC/SiEPIC_EBeam_PDK/blob/master/LICENSE.md>.

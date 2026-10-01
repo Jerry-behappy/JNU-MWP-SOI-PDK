@@ -1,9 +1,10 @@
 # Origin of five bundled EBeam blackboxes
 
-`ebeam_crossing4.gds`, `ebeam_terminator_te1310.gds`,
-`ebeam_terminator_te1550.gds`, `ebeam_y_1310.gds`, and `ebeam_y_1550.gds`
-are fixed rectangular blackboxes derived from the corresponding original
-SiEPIC EBeam PDK GDS cells (local release 0.4.53). Original waveguide geometry
+`Crossing4.gds`, `1310_TE_Terminator.gds`, `1550_TE_Terminator.gds`,
+`1310_Ybranch.gds`, and `1550_Ybranch.gds` are fixed rectangular blackboxes
+derived from upstream `ebeam_crossing4`, `ebeam_terminator_te1310`,
+`ebeam_terminator_te1550`, `ebeam_y_1310`, and `ebeam_y_1550` in the
+SiEPIC EBeam PDK (local release 0.4.53). Original waveguide geometry
 and model annotations are omitted; optical port locations and names are kept.
 
 Upstream: <https://github.com/SiEPIC/SiEPIC_EBeam_PDK>.

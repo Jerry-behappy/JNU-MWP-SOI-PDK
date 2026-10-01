@@ -15,13 +15,10 @@ if str(PYMACROS) not in sys.path:
     sys.path.insert(0, str(PYMACROS))
 
 from JNU_MWP_pcells.waveguide_bump import WaveguideBump
+from JNU_MWP_tools.core.public_ebeam_cells import PUBLIC_EBEAM_CELLS
 from JNU_MWP_tools.release.package_blackbox_pdk import LIBRARY_DBU, _draw_blackbox_cell
 
 
-FIXED_NAMES = (
-    "ebeam_crossing4", "ebeam_terminator_te1310", "ebeam_terminator_te1550",
-    "ebeam_y_1310", "ebeam_y_1550",
-)
 BUMP_NAME = "Pcell_Waveguide_Bump"
 
 
@@ -35,13 +32,13 @@ def _write_one(src_cell, src_layout, output, name):
 def update_public_ebeam_blackboxes():
     source = PYMACROS / "JNU_MWP_ebeam_gds"
     output = PYMACROS / "JNU_MWP_blackbox_gds"
-    for name in FIXED_NAMES:
+    for source_name, public_name in PUBLIC_EBEAM_CELLS:
         layout = pya.Layout()
-        layout.read(str(source / (name + ".gds")))
-        cell = layout.cell(name)
+        layout.read(str(source / (source_name + ".gds")))
+        cell = layout.cell(source_name)
         if cell is None:
-            raise RuntimeError("源 GDS 缺少器件：%s" % name)
-        _write_one(cell, layout, output, name)
+            raise RuntimeError("源 GDS 缺少器件：%s" % source_name)
+        _write_one(cell, layout, output, public_name)
 
     layout = pya.Layout()
     layout.dbu = LIBRARY_DBU
@@ -57,6 +54,11 @@ def update_public_ebeam_blackboxes():
     if bump is None or bump.bbox().empty():
         raise RuntimeError("无法生成 bump 默认 PCell")
     _write_one(bump, layout, output, BUMP_NAME)
+    # 新文件全部写出后才移除五个旧名称，避免生成中途失败导致旧黑盒丢失。
+    for source_name, _ in PUBLIC_EBEAM_CELLS:
+        old_path = output / (source_name + ".gds")
+        if old_path.is_file():
+            old_path.unlink()
     print("已更新 6 个公开器件黑盒：%s" % output)
 
 
