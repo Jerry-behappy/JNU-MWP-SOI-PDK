@@ -30,7 +30,7 @@ def _write_one(src_cell, src_layout, output, name):
 
 
 def update_public_ebeam_blackboxes():
-    source = PYMACROS / "JNU_MWP_ebeam_gds"
+    source = PYMACROS / "JNU_MWP_gds"
     output = PYMACROS / "JNU_MWP_blackbox_gds"
     for source_name, public_name in PUBLIC_EBEAM_CELLS:
         layout = pya.Layout()

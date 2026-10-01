@@ -13,6 +13,10 @@ import xml.etree.ElementTree as ET
 PDK_ROOT = Path(__file__).resolve().parents[3]
 TEMPLATES = Path(__file__).resolve().parent / "lab_package"
 PACKAGE_NAME = "JNU_MWP_PDK"
+PUBLIC_EBEAM_FILENAMES = (
+    "ebeam_crossing4.gds", "ebeam_terminator_te1310.gds",
+    "ebeam_terminator_te1550.gds", "ebeam_y_1310.gds", "ebeam_y_1550.gds",
+)
 
 
 def _copy_tree(source, destination):
@@ -30,9 +34,14 @@ def build_package(output, source=PDK_ROOT, gds_source=None):
     if output == source or source in output.parents:
         raise ValueError("交付目录必须位于 PDK 源码之外。")
     fixed_gds = Path(gds_source).resolve() if gds_source else source / "pymacros" / "JNU_MWP_gds"
-    gds_count = len(list(fixed_gds.glob("*.gds")))
-    if not gds_count:
-        raise RuntimeError("完整实验室包需要本机白盒 GDS 目录：%s" % fixed_gds)
+    public_gds = source / "pymacros" / "JNU_MWP_gds"
+    for filename in PUBLIC_EBEAM_FILENAMES:
+        if not (public_gds / filename).is_file():
+            raise FileNotFoundError("缺少公开白盒 GDS：%s" % (public_gds / filename))
+    private_gds = sorted(path for path in fixed_gds.glob("*.gds")
+                         if path.name not in PUBLIC_EBEAM_FILENAMES)
+    if not private_gds:
+        raise RuntimeError("完整实验室包需要本机私有白盒 GDS 目录：%s" % fixed_gds)
     license_file = source.parents[1] / "LICENSE.md"
     if not license_file.is_file():
         raise FileNotFoundError("未找到项目 LICENSE.md：%s" % license_file)
@@ -55,12 +64,14 @@ def build_package(output, source=PDK_ROOT, gds_source=None):
     ):
         shutil.copy2(source / "pymacros" / filename, macros / filename)
     for name in ("JNU_MWP_pcells", "JNU_MWP_blackbox", "JNU_MWP_blackbox_gds",
-                 "JNU_MWP_ebeam_gds", "Keybindings"):
+                 "Keybindings"):
         _copy_tree(source / "pymacros" / name, macros / name)
-    # 独立私有器件库只提取 GDS，不携带 Git 元数据、维护脚本或账户凭据。
+    # 公开与私有 GDS 合并到原有白盒目录；私有仓库只提取 GDS。
     destination_gds = macros / "JNU_MWP_gds"
     destination_gds.mkdir()
-    for path in sorted(fixed_gds.glob("*.gds")):
+    for filename in PUBLIC_EBEAM_FILENAMES + ("LICENSE.md", "NOTICE.md"):
+        shutil.copy2(public_gds / filename, destination_gds / filename)
+    for path in private_gds:
         shutil.copy2(path, destination_gds / path.name)
     tools = macros / "JNU_MWP_tools"
     tools.mkdir()
@@ -94,7 +105,8 @@ def build_package(output, source=PDK_ROOT, gds_source=None):
     if (package / "tech").exists():
         raise RuntimeError("实验室包不应依赖 tech 副本。")
     print("完整实验室 Package：%s" % output)
-    print("白盒固定 GDS：%d 个；请仅在实验室内部发放。" % gds_count)
+    print("白盒固定 GDS：%d 个；请仅在实验室内部发放。" %
+          (len(private_gds) + len(PUBLIC_EBEAM_FILENAMES)))
     return output
 
 

@@ -1,20 +1,118 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-09
+# 时间: 2026-10
 
 """拖入安装宏与菜单共用的 Git 安装器；后台任务不接触 KLayout 对象。"""
 
+import hashlib
+import json
 import os
 from pathlib import Path
 import queue
 import shutil
 import subprocess
+import tempfile
 import threading
 
 
 PUBLIC_URL = "https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK.git"
 PRIVATE_URL = "https://github.com/Jerry-behappy/JNU-MWP-SOI-Library.git"
 PDK_RELATIVE = Path("salt/JNU_MWP_PDK")
+PUBLIC_EBEAM_GDS = {
+    "ebeam_crossing4.gds", "ebeam_terminator_te1310.gds",
+    "ebeam_terminator_te1550.gds", "ebeam_y_1310.gds", "ebeam_y_1550.gds",
+}
+PRIVATE_SYNC_MANIFEST = ".jnu_private_gds_sync.json"
+
+
+def _file_digest(path):
+    """判断已同步副本是否被用户改动，决定能否安全替换或移除。"""
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def _sync_private_gds(home, repository, notify=lambda _message: None):
+    """将授权 GDS 同步到原白盒目录，保留用户自行修改的文件。"""
+    source_dir = Path(repository) / "JNU_MWP_gds"
+    source_files = sorted(path for path in source_dir.glob("*.gds") if path.is_file())
+    if not source_files:
+        raise RuntimeError("私有仓库内没有找到 JNU_MWP_gds/*.gds。")
+    checkout_dir = _existing_public_checkout(Path(home).resolve())
+    if checkout_dir is None:
+        notify("尚未安装公开 PDK，授权 GDS 已保留在 jnu_private。")
+        return 0
+    destination_dir = checkout_dir / PDK_RELATIVE / "pymacros" / "JNU_MWP_gds"
+    if not destination_dir.is_dir():
+        notify("请先更新公开 PDK；授权 GDS 已保留在 jnu_private。")
+        return 0
+    if not destination_dir.resolve().is_relative_to(checkout_dir.resolve()):
+        raise RuntimeError("白盒目标目录不属于当前 PDK Git 克隆：%s" % destination_dir)
+
+    manifest_path = destination_dir / PRIVATE_SYNC_MANIFEST
+    previous = {}
+    if manifest_path.is_file():
+        document = json.loads(manifest_path.read_text(encoding="utf-8"))
+        previous = document["files"]
+        if not isinstance(previous, dict) or any(
+                Path(name).name != name or not name.lower().endswith(".gds")
+                or name in PUBLIC_EBEAM_GDS or not isinstance(value, str)
+                for name, value in previous.items()):
+            raise RuntimeError("私有 GDS 同步记录无效，已保留原文件：%s" % manifest_path)
+
+    managed = {}
+    conflicts = []
+    current_names = {path.name for path in source_files}
+    if current_names & PUBLIC_EBEAM_GDS:
+        raise RuntimeError("私有 GDS 与公开 EBeam 文件同名，已保留原文件。")
+    for source_path in source_files:
+        target_path = destination_dir / source_path.name
+        source_digest = _file_digest(source_path)
+        if target_path.exists():
+            target_digest = _file_digest(target_path)
+            recorded_digest = previous.get(source_path.name)
+            if recorded_digest is not None and target_digest != recorded_digest:
+                conflicts.append(source_path.name)
+                continue
+            if recorded_digest is None and target_digest != source_digest:
+                conflicts.append(source_path.name)
+                continue
+        else:
+            target_digest = None
+        if target_digest != source_digest:
+            with tempfile.NamedTemporaryFile(dir=destination_dir, suffix=".gds.tmp",
+                                             delete=False) as temporary:
+                temporary_path = Path(temporary.name)
+            try:
+                shutil.copy2(source_path, temporary_path)
+                os.replace(temporary_path, target_path)
+            finally:
+                temporary_path.unlink(missing_ok=True)
+        managed[source_path.name] = source_digest
+
+    for name, recorded_digest in previous.items():
+        if name in current_names:
+            continue
+        target_path = destination_dir / name
+        if target_path.is_file() and _file_digest(target_path) == recorded_digest:
+            target_path.unlink()
+        elif target_path.exists():
+            conflicts.append(name)
+
+    with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=destination_dir,
+                                     suffix=".json.tmp", delete=False) as temporary:
+        temporary_path = Path(temporary.name)
+        json.dump({"files": managed}, temporary, ensure_ascii=False, indent=2)
+    try:
+        os.replace(temporary_path, manifest_path)
+    finally:
+        temporary_path.unlink(missing_ok=True)
+    if conflicts:
+        notify("已保留手动修改或同名冲突的白盒 GDS：%s" % ", ".join(sorted(conflicts)))
+    notify("已同步 %d 个授权 GDS 到 %s" % (len(managed), destination_dir))
+    return len(managed)
 
 
 def find_git():
@@ -154,6 +252,9 @@ def install_public(home, notify=lambda _message: None):
     if not (source / "JNU_MWP_PDK.lyt").is_file():
         raise RuntimeError("克隆中缺少 JNU_MWP_PDK.lyt，未建立安装联接。")
     _link_directory(source, home / "salt" / "JNU_MWP_PDK")
+    private_dir = home / "jnu_private"
+    if (private_dir / "JNU_MWP_gds").is_dir():
+        _sync_private_gds(home, private_dir, notify)
     return "安装/更新完成。请保存版图并重启 KLayout。\n源码：%s" % repository
 
 
@@ -164,11 +265,10 @@ def update_public(home, notify=lambda _message: None):
 
 
 def install_private(home, notify=lambda _message: None):
-    # 私有仓库放在独立目录，完全沿用 fixed_gds.py 的读取路径。
+    # 私有仓库单独克隆，授权 GDS 同步到原白盒目录且不进入公开 Git。
     repository = checkout(find_git(), Path(home) / "jnu_private", PRIVATE_URL, notify)
-    if not list((repository / "JNU_MWP_gds").glob("*.gds")):
-        raise RuntimeError("私有仓库内没有找到 JNU_MWP_gds/*.gds。")
-    return "白盒器件库安装/更新完成，请重启 KLayout。"
+    count = _sync_private_gds(home, repository, notify)
+    return "白盒器件库安装/更新完成，已同步 %d 个授权 GDS；请重启 KLayout。" % count
 
 
 def show_installer(mode="install", execute=True):

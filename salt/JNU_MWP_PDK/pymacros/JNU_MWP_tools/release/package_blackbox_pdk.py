@@ -639,7 +639,6 @@ def _verify_blackbox_exclusions(release_root, package_root):
         package_root / "pymacros" / "JNU_MWP_skills",
         package_root / "pymacros" / "JNU_MWP_pcells",
         package_root / "pymacros" / "JNU_MWP_gds",
-        package_root / "pymacros" / "JNU_MWP_ebeam_gds",
         package_root / "pymacros" / "JNULib.py",
         package_root / "pymacros" / "JNU_MWP_tools" / "release",
         package_root / "pymacros" / "JNU_MWP_tools" / "tests",

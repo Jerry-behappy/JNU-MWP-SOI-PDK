@@ -23,7 +23,6 @@ def main():
     assert count == 30, count
     macros = package / "pymacros"
     assert not (macros / "JNU_MWP_pcells").exists()
-    assert not (macros / "JNU_MWP_ebeam_gds").exists()
     assert not (macros / "JNU_MWP_gds").exists()
     assert not (macros / "JNULib.py").exists()
     assert not (macros / "JNU_MWP_tools" / "release").exists()

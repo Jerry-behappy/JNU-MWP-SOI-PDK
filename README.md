@@ -53,7 +53,7 @@
 - `salt/JNU_MWP_PDK/drc/JNU_MWP_DRC.lydrc`：JNU DRC 规则入口。
 - `salt/JNU_MWP_PDK/pymacros/JNU_MWP_pcells/`：JNU PCell 源码。
 - `salt/JNU_MWP_PDK/pymacros/JNU_MWP_blackbox_gds/`：随仓库提供的 30 个固定黑盒器件 GDS。
-- `salt/JNU_MWP_PDK/pymacros/JNU_MWP_ebeam_gds/`：五个保留原始 Text 的公开 EBeam 白盒 GDS 及来源说明。
+- `salt/JNU_MWP_PDK/pymacros/JNU_MWP_gds/`：原有白盒目录，含五个保留原始 Text 的公开 EBeam GDS 与来源说明；本机也可放入获授权的实验室 GDS。
 - `salt/JNU_MWP_PDK/pymacros/JNU_MWP_tools/`：JNU 菜单功能和公共工具源码。
 - `salt/JNU_MWP_PDK/pymacros/JNU_MWP_skill/`：项目内部维护用 skill，不用于黑盒发布包。
 
@@ -153,8 +153,7 @@ git -C "$env:USERPROFILE\JNU-MWP-SOI-PDK" pull --ff-only origin main
 
 除上述五个公开 EBeam GDS 外，实验室自有固定白盒 GDS 来自私有仓库 `Jerry-behappy/JNU-MWP-SOI-Library`，需单独授权获取。
 获授权后点击 **JNU_MWP_PDK → Install / Update Whitebox Library**。Git 使用本机已有凭据，或由 Git Credential Manager 弹出 GitHub 登录；安装器不收集密码或 token。若认证失败，请先在 Git Credential Manager 中完成 GitHub 登录并确认账户已被授予私有仓库访问权，再重试。
-私有库会单独克隆到 `<实际用户配置目录>/jnu_private`，之后再次点击同一菜单即可更新。已有手动放置的 `jnu_private` 不会被覆盖；此时可继续手动维护，或先备份后迁移。也可将获授权的 `JNU_MWP_gds` 内容手动放入用户目录 `jnu_private/JNU_MWP_gds`，重启后在 `JNULib` 中使用。
-既有源码目录中的 `pymacros/JNU_MWP_gds` 仍兼容加载。不要将私有实验室白盒 GDS 提交到本仓库。公开 EBeam GDS 的原始 Text（包括模型注记）保留在白盒中，但不代表新增 JNU 仿真模型。
+私有库会单独克隆到 `<实际用户配置目录>/jnu_private`，并把授权的 GDS 同步到 `pymacros/JNU_MWP_gds` 顶层；之后再次点击同一菜单即可更新。已有手动放置的 `jnu_private` 不会被覆盖；此时可继续手动维护，或先备份后迁移。同步时保留手工修改或同名冲突的文件。也可手动将获授权的 GDS 放入 `pymacros/JNU_MWP_gds`；若该目录尚无私有 GDS，加载器仍兼容 `jnu_private/JNU_MWP_gds`。不要将私有实验室白盒 GDS 提交到本仓库。公开 EBeam GDS 的原始 Text（包括模型注记）保留在白盒中，但不代表新增 JNU 仿真模型。
 
 ### 重要说明
 
@@ -167,7 +166,7 @@ git -C "$env:USERPROFILE\JNU-MWP-SOI-PDK" pull --ff-only origin main
 > salt/JNU_MWP_PDK/pymacros/JNU_MWP_gds/
 > ```
 >
-> **该目录已通过 `.gitignore` 排除，实验室私有白盒 GDS 不随本仓库公开上传；五个 MIT 许可的 EBeam GDS 位于独立公开目录。**
+> **该目录仅追踪五个 MIT 许可的 EBeam GDS；其余实验室私有 GDS 通过 `.gitignore` 排除，不随本仓库公开上传。**
 >
 > **如需白盒 GDS，请与实验室联系。**
 
@@ -230,7 +229,7 @@ Use an AI agent that can access local files and run commands, following the Git 
 - `salt/JNU_MWP_PDK/drc/JNU_MWP_DRC.lydrc`: JNU DRC entry script.
 - `salt/JNU_MWP_PDK/pymacros/JNU_MWP_pcells/`: JNU PCell source code.
 - `salt/JNU_MWP_PDK/pymacros/JNU_MWP_blackbox_gds/`: 30 bundled fixed blackbox device GDS files.
-- `salt/JNU_MWP_PDK/pymacros/JNU_MWP_ebeam_gds/`: five original EBeam whitebox GDS files and source notice.
+- `salt/JNU_MWP_PDK/pymacros/JNU_MWP_gds/`: the original whitebox directory, with five public EBeam GDS files and source notice; the private installer synchronizes authorized laboratory GDS into the same folder.
 - `salt/JNU_MWP_PDK/pymacros/JNU_MWP_tools/`: JNU menu actions and shared utility code.
 - `salt/JNU_MWP_PDK/pymacros/JNU_MWP_skill/`: internal project skill used for maintenance, not included in blackbox release packages.
 
@@ -337,9 +336,7 @@ divergence instead of forcing a reset. Back up important layouts before PCell up
 
 Other laboratory whitebox GDS requires separate authorization to `Jerry-behappy/JNU-MWP-SOI-Library`.
 Use **JNU_MWP_PDK → Install / Update Whitebox Library** after access is granted. Git uses your existing credentials or Git Credential Manager's GitHub login; the installer never collects passwords or tokens. If authentication fails, sign in with Git Credential Manager and verify repository access before retrying. The private checkout lives in `<actual user directory>/jnu_private`; the same menu updates it later. Existing manual private data is preserved and requires backup before migration.
-Alternatively put authorized extracted GDS in `<KLayout user home>/jnu_private/JNU_MWP_gds`
-and restart/reload. Legacy `pymacros/JNU_MWP_gds` remains supported. Public code
-updates do not update private GDS. Never commit private laboratory whitebox GDS to this repository. The bundled EBeam GDS retains its original Text, including model annotations; this does not provide a JNU simulation model.
+The private installer clones to `<KLayout user home>/jnu_private` and synchronizes authorized GDS into the restored `pymacros/JNU_MWP_gds` folder alongside the five public EBeam GDS files. Updates preserve manually changed or conflicting files. Authorized GDS may also be placed there manually; the loader continues to support `jnu_private/JNU_MWP_gds` when no local laboratory GDS is present. Public code updates do not update private GDS. Never commit private laboratory whitebox GDS to this repository. The bundled EBeam GDS retains its original Text, including model annotations; this does not provide a JNU simulation model.
 
 ### Notes
 
@@ -352,7 +349,7 @@ This project is based on the original project by Lukas Chrostowski and contribut
 > salt/JNU_MWP_PDK/pymacros/JNU_MWP_gds/
 > ```
 >
-> **This directory is excluded by `.gitignore`; private laboratory whitebox GDS is not published here. The five MIT-licensed EBeam cells are in a separate public directory.**
+> **Only the five MIT-licensed EBeam GDS files are tracked in this directory; `.gitignore` excludes all other private laboratory GDS files from this public repository.**
 >
 > **Please contact the laboratory if you need whitebox GDS.**
 

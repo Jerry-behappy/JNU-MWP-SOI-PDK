@@ -30,7 +30,8 @@ from JNU_MWP_tools.core.fixed_gds import fixed_gds_directory
 from JNU_MWP_tools.core.public_ebeam_cells import PUBLIC_EBEAM_CELLS
 
 GDS_DIR = fixed_gds_directory(SCRIPT_DIR)
-PUBLIC_EBEAM_GDS_DIR = os.path.join(SCRIPT_DIR, "JNU_MWP_ebeam_gds")
+PUBLIC_EBEAM_GDS_DIR = os.path.join(SCRIPT_DIR, "JNU_MWP_gds")
+PUBLIC_EBEAM_SOURCE_NAMES = {source_name for source_name, _ in PUBLIC_EBEAM_CELLS}
 
 from JNU_MWP_pcells import (
     Bend90deg,
@@ -82,6 +83,9 @@ class JNULib(pya.Library):
 
         for filename in sorted(os.listdir(GDS_DIR)):
             if not filename.lower().endswith(".gds"):
+                continue
+            # 同一目录中的 EBeam 源 cell 只按 JNU 名称注册一次。
+            if os.path.splitext(filename)[0] in PUBLIC_EBEAM_SOURCE_NAMES:
                 continue
 
             fullpath = os.path.join(GDS_DIR, filename)

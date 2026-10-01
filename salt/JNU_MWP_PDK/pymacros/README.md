@@ -36,8 +36,7 @@
 | `layers.lyp` | 定义图层名称、颜色、线型和默认可见性 |
 | `pymacros/JNULib.py` | 加载固定 GDS 单元并注册白盒 PCell |
 | `pymacros/JNULib_BlackBox.py` | 注册黑盒器件库 |
-| `pymacros/JNU_MWP_gds/` | 可选的授权实验室固定白盒目录；数量随授权版本变化 |
-| `pymacros/JNU_MWP_ebeam_gds/` | 随包提供五个 MIT 许可 EBeam 原始 GDS 与来源说明 |
+| `pymacros/JNU_MWP_gds/` | 原有白盒目录；含五个 MIT 许可 EBeam GDS，安装器把授权的实验室固定 GDS 同步至此 |
 | `pymacros/JNU_MWP_blackbox_gds/` | 存放 30 个固定黑盒 GDS |
 | `pymacros/JNU_MWP_pcells/` | 存放参数化器件实现 |
 | `pymacros/JNU_MWP_tools/` | 存放波导转换、端口生成、图层处理及回归脚本 |
@@ -53,7 +52,7 @@
 
 #### 固定版图单元
 
-`JNULib` 可从授权目录加载原有实验室固定 GDS，并始终从 `pymacros/JNU_MWP_ebeam_gds/` 加载五个公开原始 GDS，包括：
+`JNULib` 从 `pymacros/JNU_MWP_gds/` 加载五个公开原始 GDS；安装私有库后，授权 GDS 同步到同一目录。若尚未同步，仍可从用户目录 `jnu_private/JNU_MWP_gds` 加载。原有实验室固定器件包括：
 
 - 1310 nm 与 1550 nm 光栅耦合器
 - MMI 耦合器与功率分束器
@@ -128,7 +127,7 @@ layout = pya.Layout()
 # 读取固定器件版图。
 home = Path(pya.Application.instance().application_data_path())
 layout.read(str(home / "salt" / "JNU_MWP_PDK" / "pymacros" /
-                "JNU_MWP_ebeam_gds" / "ebeam_crossing4.gds"))
+                "JNU_MWP_gds" / "ebeam_crossing4.gds"))
 
 # 输出顶层单元名称。
 print([cell.name for cell in layout.top_cells()])
@@ -176,8 +175,7 @@ All paths below are relative to the `JNU_MWP_PDK` package root:
 | `layers.lyp` | Defines layer names, colors, line styles, and default visibility |
 | `pymacros/JNULib.py` | Loads fixed GDS cells and registers the white-box PCells |
 | `pymacros/JNULib_BlackBox.py` | Registers the black-box library |
-| `pymacros/JNU_MWP_gds/` | Optional authorized laboratory whitebox directory; device count varies by release |
-| `pymacros/JNU_MWP_ebeam_gds/` | Bundles five original MIT-licensed EBeam GDS files and provenance |
+| `pymacros/JNU_MWP_gds/` | Original whitebox directory; bundles five MIT-licensed EBeam GDS files and receives authorized laboratory fixed GDS from the installer |
 | `pymacros/JNU_MWP_blackbox_gds/` | Contains 30 fixed blackbox GDS files |
 | `pymacros/JNU_MWP_pcells/` | Contains the PCell implementations |
 | `pymacros/JNU_MWP_tools/` | Contains waveguide conversion, pin, layer-processing, and regression tools |
@@ -193,7 +191,7 @@ All paths below are relative to the `JNU_MWP_PDK` package root:
 
 #### Fixed layout cells
 
-`JNULib` loads authorized laboratory fixed GDS when available and always loads five original EBeam GDS files from `pymacros/JNU_MWP_ebeam_gds/`, including:
+`JNULib` always loads five original EBeam GDS files from `pymacros/JNU_MWP_gds/`. Installing the private library synchronizes authorized GDS into the same directory; until then, the loader still supports `jnu_private/JNU_MWP_gds`. Existing laboratory devices include:
 
 - 1310 nm and 1550 nm grating couplers
 - MMI couplers and power splitters
@@ -268,7 +266,7 @@ layout = pya.Layout()
 # Read a fixed-device layout.
 home = Path(pya.Application.instance().application_data_path())
 layout.read(str(home / "salt" / "JNU_MWP_PDK" / "pymacros" /
-                "JNU_MWP_ebeam_gds" / "ebeam_crossing4.gds"))
+                "JNU_MWP_gds" / "ebeam_crossing4.gds"))
 
 # Print the top-cell names.
 print([cell.name for cell in layout.top_cells()])

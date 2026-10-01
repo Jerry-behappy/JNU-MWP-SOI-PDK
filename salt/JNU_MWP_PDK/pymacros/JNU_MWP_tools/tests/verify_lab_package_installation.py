@@ -39,12 +39,20 @@ def probe():
     assert not black.layout().pcell_names(), "黑盒库不应注册 PCell"
     gdss = sorted((package / "pymacros" / "JNU_MWP_gds").glob("*.gds"))
     assert gdss, "固定 GDS 缺失"
+    public_names = {
+        "ebeam_crossing4": "Crossing4",
+        "ebeam_terminator_te1310": "1310_TE_Terminator",
+        "ebeam_terminator_te1550": "1550_TE_Terminator",
+        "ebeam_y_1310": "1310_Ybranch",
+        "ebeam_y_1550": "1550_Ybranch",
+    }
     for path in gdss:
         source = pya.Layout()
         source.read(str(path))
         for cell in source.top_cells():
-            assert white.layout().cell(cell.name), "固定器件未加载：" + cell.name
-            assert black.layout().cell(cell.name), "黑盒器件未加载：" + cell.name
+            name = public_names.get(cell.name, cell.name)
+            assert white.layout().cell(name), "固定器件未加载：" + name
+            assert black.layout().cell(name), "黑盒器件未加载：" + name
 
     app = pya.Application.instance()
     window = app.main_window()

@@ -62,8 +62,9 @@ def _port_signature(cell, layout):
 
 def verify_fixed(library):
     for source_name, name, text_count, port_count in FIXED:
+        assert library.layout().cell(source_name) is None, source_name
         source = pya.Layout()
-        source.read(str(PYMACROS / "JNU_MWP_ebeam_gds" / (source_name + ".gds")))
+        source.read(str(PYMACROS / "JNU_MWP_gds" / (source_name + ".gds")))
         original = source.cell(source_name)
         copied = library.layout().cell(name)
         assert original is not None and copied is not None, name

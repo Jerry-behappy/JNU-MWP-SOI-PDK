@@ -53,6 +53,15 @@ def seed(path, private=False):
         layout.write(str(target))
     else:
         target.write_text("<technology><name>JNU_MWP_PDK</name></technology>", encoding="utf-8")
+        public_gds = path / installer.PDK_RELATIVE / "pymacros/JNU_MWP_gds"
+        public_gds.mkdir(parents=True)
+        (public_gds / "NOTICE.md").write_text("public fixture", encoding="utf-8")
+        for filename in installer.PUBLIC_EBEAM_GDS:
+            (public_gds / filename).write_bytes(b"public fixture")
+        (path / ".gitignore").write_text(
+            "salt/JNU_MWP_PDK/pymacros/JNU_MWP_gds/*.gds\n"
+            "salt/JNU_MWP_PDK/pymacros/JNU_MWP_gds/.jnu_private_gds_sync.json\n",
+            encoding="utf-8")
     git(path, "add", ".")
     git(path, "commit", "-m", "Initial fixture")
 
@@ -95,7 +104,28 @@ def main():
         reject(lambda: installer.update_public(home), "未发布提交")
         installer.install_private(home)
         assert (home / "jnu_private/JNU_MWP_gds/test.gds").is_file()
+        synced = checkout / installer.PDK_RELATIVE / "pymacros/JNU_MWP_gds/test.gds"
+        assert synced.is_file()
+        assert synced.read_bytes() == (home / "jnu_private/JNU_MWP_gds/test.gds").read_bytes()
         installer.install_private(home)
+        assert synced.is_file()
+        replacement = private / "JNU_MWP_gds/new.gds"
+        replacement.write_bytes((private / "JNU_MWP_gds/test.gds").read_bytes())
+        (private / "JNU_MWP_gds/test.gds").unlink()
+        git(private, "add", "-A")
+        git(private, "commit", "-m", "Replace fixture GDS")
+        installer.install_private(home)
+        assert not synced.exists(), "已删除的受管 GDS 不应留在原白盒目录"
+        synced_new = synced.with_name("new.gds")
+        assert synced_new.is_file()
+        synced_new.write_bytes(b"user edited")
+        layout = pya.Layout()
+        layout.create_cell("UPDATED")
+        layout.write(str(replacement))
+        git(private, "add", "-A")
+        git(private, "commit", "-m", "Update fixture GDS")
+        installer.install_private(home)
+        assert synced_new.read_bytes() == b"user edited", "用户修改不得被同步覆盖"
         legacy = directory / "legacy"
         target = legacy / "salt/JNU_MWP_PDK"
         target.mkdir(parents=True)
