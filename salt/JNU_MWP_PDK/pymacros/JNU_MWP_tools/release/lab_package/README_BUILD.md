@@ -20,6 +20,9 @@ python salt\JNU_MWP_PDK\pymacros\JNU_MWP_tools\release\package_lab_pdk.py `
 每次修改白盒后，先从完整的 Library `JNU_MWP_gds` 目录运行
 `release/sync_blackboxes_from_library.py --source <Library/JNU_MWP_gds>`，
 确认 30 个黑盒及端口后将对应更新提交到公开 PDK 开发分支。
+若系统 Python 未安装 `pya`，设置环境变量 `JNU_WHITEBOX_GDS_DIR` 为该白盒目录，
+再用 KLayout 自带 Python 执行 `klayout_app.exe -z -e -r <同步脚本绝对路径>`。
+检查输出确认为 30 个且无 `ERROR:`；KLayout 宏异常不一定使退出码非零。
 脚本不修改本机正在使用的 GDS。省略 `--gds-source` 时使用当前 PDK 的本机 GDS。
 公开仓库自身不带 GDS，因此从公开源码构建完整包时必须提供该参数。
 
@@ -58,6 +61,10 @@ this argument uses the local PDK's GDS; public source checkouts do not contain i
 After every whitebox edit, run `release/sync_blackboxes_from_library.py` with
 `--source <Library/JNU_MWP_gds>` and commit the verified fixed blackboxes to
 the PDK branch.
+If standalone Python lacks `pya`, set `JNU_WHITEBOX_GDS_DIR` to the Library GDS
+directory and run `klayout_app.exe -z -e -r <absolute sync script path>`.
+Check that the output reports 30 devices and no `ERROR:` line; macro errors may
+not change KLayout's process exit code.
 
 Distribute the complete ZIP internally, not as a public GitHub Release. Recipients
 install with the provided local package-manager launcher and do not need GitHub

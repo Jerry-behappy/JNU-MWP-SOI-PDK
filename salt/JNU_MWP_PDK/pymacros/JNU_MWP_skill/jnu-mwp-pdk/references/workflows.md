@@ -88,6 +88,7 @@
 - 白盒规范源为独立 `JNU-MWP-SOI-Library/JNU_MWP_gds/`；公开 PDK 的 `pymacros/JNU_MWP_gds/` 不跟踪任何 GDS。私有仓库克隆仍位于 `jnu_private`，安装器用同步记录保护用户手动修改并将授权 GDS 放到原目录顶层。同步前仍可从 `jnu_private/JNU_MWP_gds/` 加载。不要创建顶层 `gds/` 或独立 `JNU_MWP_ebeam_gds/`。
 - 移动或清理固定 GDS 后，用 `rg` 检查 loader、打包脚本、README 和辅助脚本，确保不存在指向旧 `gds/` 的路径；同时验证 `JNULib.py` 仍指向 `pymacros/JNU_MWP_gds/`。
 - 固定白盒修改后运行 `release/sync_blackboxes_from_library.py --source <Library/JNU_MWP_gds>`，从全部 29 份白盒生成对应黑盒，再附加默认 bump；核对 30 个黑盒的名称、端口和矩形占位后与白盒分别提交。发布包只复制已同步黑盒，排除白盒目录与 `JNULib.py`。
+- 若系统 Python 没有 `pya`，用 KLayout 自带 Python 运行同步脚本：先设置环境变量 `JNU_WHITEBOX_GDS_DIR=<Library/JNU_MWP_gds>`，再执行 `klayout_app.exe -z -e -r <PDK/pymacros/JNU_MWP_tools/release/sync_blackboxes_from_library.py>`；必须在输出中确认同步数量为 30 且没有 `ERROR:`，因为部分 KLayout 版本的宏错误不会使进程返回非零退出码。
 - 文档可使用 `JNU_MWP_SOI_PDK` 展示名；代码、Technology、Salt、菜单、安装目录、skill 与黑盒包继续使用 `JNU_MWP_PDK`。
 - 只有执行黑盒打包流程时，才同步修改 `pymacros/README.md` 和 PDK 使用说明；普通开发、维护和单独文档请求不改写这两类文档。若打包流程确需更新 `pymacros/README.md`，保持完整中文章节在前、完整英文章节在后。
 
