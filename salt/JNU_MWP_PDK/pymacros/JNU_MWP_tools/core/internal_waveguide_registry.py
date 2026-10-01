@@ -114,10 +114,15 @@ def _view_layouts(view):
     return layouts
 
 
-def register_view_layouts(view):
+def register_view_layouts(view, pending_recovery=None):
     """给视图现有的全部 CellView 注册内部 PCell。"""
     count = 0
+    if pending_recovery is None:
+        pending_recovery = _clean_unrecognized_file_layouts(view)
     for layout in _view_layouts(view):
+        if any(layout == item for item in pending_recovery):
+            # 先注册会把未识别的文件标记为已修改，导致读后恢复误判为用户编辑。
+            continue
         count += len(ensure_internal_waveguide_pcells(layout))
     return count
 
@@ -138,6 +143,27 @@ def _has_unrecognized_waveguides(layout):
             except Exception:
                 pass
     return False
+
+
+def _clean_unrecognized_file_layouts(view):
+    """找出可从原文件重读、且尚未被用户编辑的波导版图。"""
+    layouts = []
+    try:
+        count = int(_property_or_call(view, "cellviews"))
+    except Exception:
+        return layouts
+    for index in range(count):
+        try:
+            cellview = _property_or_call(view, "cellview", index)
+            layout = _property_or_call(cellview, "layout")
+            filename = str(_property_or_call(cellview, "filename") or "")
+            if (layout is not None and filename and os.path.isfile(filename)
+                    and not _property_or_call(cellview, "is_dirty")
+                    and _has_unrecognized_waveguides(layout)):
+                layouts.append(layout)
+        except Exception:
+            continue
+    return layouts
 
 
 def _recover_loaded_view(view):
@@ -241,7 +267,8 @@ def attach_view(view):
     if view is None:
         return 0
     first_attach = not _has_hook(view, "view_file_open_hooks")
-    count = register_view_layouts(view)
+    pending_recovery = _clean_unrecognized_file_layouts(view)
+    count = register_view_layouts(view, pending_recovery)
     if not _has_hook(view, "view_file_open_hooks"):
         callback = lambda __view=view: _dynamic_register_view(__view)
         # GDS 读取可能快于本地 PCell 声明注册；回调会在读入完成后检查
@@ -255,7 +282,7 @@ def attach_view(view):
         # 监听此事件尽早注册；若事件晚于解析，再走读后恢复流程。
         view.on_cellviews_changed = callback
         _remember_hook(view, callback, "view_cellviews_hooks")
-    if first_attach:
+    if first_attach or pending_recovery:
         _schedule_loaded_view_recovery(view)
     return count
 
