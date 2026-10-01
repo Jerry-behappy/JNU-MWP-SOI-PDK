@@ -12,7 +12,8 @@ description: Use when developing, verifying, or packaging the JNU_MWP_PDK KLayou
 - Workspace: `C:\Users\zjy\KLayout`
 - PDK: `C:\Users\zjy\KLayout\salt\JNU_MWP_PDK`
 - Canonical skill: `C:\Users\zjy\KLayout\salt\JNU_MWP_PDK\pymacros\JNU_MWP_skill\jnu-mwp-pdk`
-- Fixed GDS source: `C:\Users\zjy\KLayout\salt\JNU_MWP_PDK\pymacros\JNU_MWP_gds`
+- Fixed GDS source repository: `C:\Users\zjy\KLayout\_github_publish\JNU-MWP-SOI-Library\JNU_MWP_gds` (or an authorized checkout)
+- Installed whitebox directory: `C:\Users\zjy\KLayout\salt\JNU_MWP_PDK\pymacros\JNU_MWP_gds`
 - Blackbox output: `C:\Users\zjy\Desktop\JNU_MWP_PDK_blackbox_v1.1`
 
 ## Core Rules
@@ -28,7 +29,7 @@ description: Use when developing, verifying, or packaging the JNU_MWP_PDK KLayou
 - Layout 菜单的 `Numerical text array` 生成普通容器 Cell；每个编号必须保持为 `Basic.TEXT` PCell 实例，字号字段直接映射 `Basic.Text.mag`，不得转换为普通 `pya.Text` 或多边形；排列距离定义为相邻文字实际 bbox 的中心距，DBU 量化误差不超过 1 DBU。
 - Layout 菜单的 `Snap components` 采用 transient selection 流程：当前选中的全部对象为移动组，鼠标悬停命中的对象为固定参考；不限制选中对象类型，只要选中集合和参考对象中能识别到 PinRec 光学端口即可，在双方全部端口中选择距离最近且方向相差 180° 的端口对，对移动组全部对象执行整体平移，不旋转、不镜像、不修改 PCell 参数。成功或端口已经重合时完全静默，仅失败时弹窗提示。
 - `DRC → JNU_MWP_DRC` 必须直接打开 KLayout 原生 `Macro Development` 并定位到 `drc/JNU_MWP_DRC.lydrc`，不得再实现自制文本编辑对话框。打开时必须同步设置 `macro-editor-current-macro` 与 `macro-editor-active-macro`，并关闭 `macro-editor-debugging-enabled`，避免界面显示规则与绿色 Run 实际执行目标不一致，或连续 DRC 被调试状态占住。Technology 的 `drc` 目录只能保留这一份 `.lydrc`，禁止混入 KLayout 示例规则造成重复或误选。用户通过原生编辑器保存规则，修改跨重启保留。规则文件保留且只允许一个单参数 `report("标题")`，使原生绿色 Run 建立报告上下文；禁止直接调用 `source()` 或带报告路径的 `report()`。`DRC → Run JNU_MWP_DRC` 读取已保存规则、剥离该单参数 report，将当前内存 layout 写入临时 GDS，并注入当前正在编辑的 `active_cell` 作为 source top cell 与临时报告路径，因此只检查该 cell 及其子层级。所有规则的注释、`output()` 描述和数值阈值必须一致；临时 GDS、宏和 `.lyrdb` 在报告载入当前 Marker Browser 后删除。DRC 执行回归必须使用确定违规版图，连续执行原生规则至少两次，并断言每次报告 marker 数量非零，不能只检查报告文件是否存在。
-- `pymacros/JNU_MWP_gds` 是白盒 GDS 的统一目录：公开仓库只追踪五个 MIT 许可的 EBeam 原始 GDS、许可证和来源说明；私有仓库克隆仍在 `jnu_private`，安装器把授权 GDS 安全同步到该目录顶层并由 `.gitignore` 排除，手工修改的副本不得覆盖。`JNULib.py` 跳过五个源 cell 原名，只按 JNU 名称注册一次；同步前兼容用户目录 `jnu_private/JNU_MWP_gds`。库注册名属于 PCell 身份，白盒与黑盒必须分别固定为 `JNULib` 和 `JNULib_BlackBox`，不得将版本号写入库名。已删除的顶层 `gds` 和独立 `JNU_MWP_ebeam_gds` 目录不得重新创建。
+- `Jerry-behappy/JNU-MWP-SOI-Library/JNU_MWP_gds` 是全部固定白盒 GDS 的 Git 规范源（当前 29 份，含五个 MIT 许可 EBeam 原始 GDS）。公开 PDK 仓库的 `pymacros/JNU_MWP_gds` 只保留元数据，不追踪任何 `.gds`；安装器把授权 GDS 安全同步到该目录顶层并由 `.gitignore` 排除，手工修改的副本不得覆盖。`JNULib.py` 在无白盒时仍注册全部公开 PCell；装好独立库后加载所有固定器件，将五个 EBeam 源 cell 映射为 JNU 名称且保留原几何、端口与全部 Text。同步前兼容用户目录 `jnu_private/JNU_MWP_gds`。库注册名固定为 `JNULib`、`JNULib_BlackBox`，不得写入版本号。不得重新创建顶层 `gds` 或独立 `JNU_MWP_ebeam_gds`。
 - EBeam PDK 已安装且已加载时，`JNULib` 启动阶段调用 `core/ebeam_library_bridge.py`，把 EBeam、EBeam_Beta、EBeam-Dream、EBeam-SiN、EBeam-ANT 以同名 Library 注册到 `JNU_MWP_PDK` Technology，使当前技术选择为 JNU 时 Library 面板仍可显示 EBeam 器件库。桥接必须复用已安装 EBeam 的 GDS、PCell 源码和版本说明；不得修改、删除或将原 `EBeam` Technology 的 Library 改绑为 JNU。EBeam 未安装或未加载时静默跳过，JNU PDK 仍应独立工作。
 - Waveguide PCell 与 Path to Waveguide 共用 `draw_waveguide_geometry()`；Si 与 DevRec 都把中心线扫掠结果规范化为 Polygon，DevRec 总宽度为 `wg_width + 2 µm`，即 Si 两侧各保留 1 µm 器件识别净空。PCell TypeShape `path` 和恢复属性继续保存可编辑 Manhattan 中心线，但不得在物理层或 `1/99` 生成恢复 Path。
 - Path to Waveguide 生成的 `Waveguide` / `Composite_Waveguide` 必须作为真实本地 PCell 直接实例化在原所属 cell 中，禁止新增 `__JNU_P2W_*` 中间容器。cell 名使用完整参数化显示名称；局部 Manhattan 路径与全部实际生效参数相同的波导复用同一 variant，不同路径产生同一基础名称时按稳定签名分配 `__002`、`__003` 后缀，禁止把 KLayout 自动生成的 `$N` 作为最终名称。输入路径以首点局部化并通过实例平移恢复原坐标。`JNU_MWP_InternalWaveguideRegistry.lym` 必须以 early autorun 安装注册器，`pymacros/__init__.py` 和菜单 autorun 同时作幂等兜底；注册器对已有视图和 CellView 同步预注册两个内部 PCell 声明。KLayout 首次用 GUI 打开 GDS 时可能先完成解析才创建视图；若带 JNU 路径属性的内部波导已变成普通 cell，须在文件读取完成、版图尚未编辑时从稳定文件快照预注册并重读，恢复 PCell、参数化名称及原活动 cell，不得改写原 GDS。二者仍不得进入公开 `JNULib` 器件列表。Waveguide to Path 继续兼容旧 `__JNU_P2W_*`、`JNU_WG_*`、`Waveguide$N` 与 `Composite_Waveguide$N`，但新生成数据不得写出这些结构或名称。
@@ -56,6 +57,7 @@ description: Use when developing, verifying, or packaging the JNU_MWP_PDK KLayou
 - Paperclip（含 Composite）的 20 nm PinRec 以 Si 端面为中心：内侧 10 nm 与 Si 重叠，外侧 10 nm 露出。Si 端面必须严格位于 pin 中心并与端口主体合并，DRC 只检查 PinRec 是否与 LayerSi 相交，不要求完整包覆。
 - 修改 Bend 后必须回归 Waveguide、Path to Waveguide、Archimedean_Spiral、Paperclip 和 Composite Paperclip。
 - 黑盒包不得包含 `JNU_MWP_skill`、`JNU_MWP_pcells`、`JNU_MWP_gds`、`JNULib.py`、`JNU_MWP_tools/release`、`JNU_MWP_tools/tests` 或 `klayoutrc*`；只携带工具包入口及 `core/actions` 运行时代码。
+- 修改任何固定白盒时，先提交到独立 Library 仓库，再运行 `release/sync_blackboxes_from_library.py --source <Library checkout/JNU_MWP_gds>`，从完整白盒目录重建并提交全部对应固定黑盒（当前 30 个，含默认 bump）。黑盒只保留矩形 Si/DevRec、PinRec 端口及器件名标签，发布包仅复制已验收的黑盒，不从本机白盒静默覆盖。公开 PDK 中不得提交任何白盒 `.gds`。
 - 完整实验室 Salt Package 与黑盒包分开构建：`release/package_lab_pdk.py --gds-source <私有器件 checkout/JNU_MWP_gds>` 从 `Jerry-behappy/JNU-MWP-SOI-Library` 获取的本地 checkout 复制固定 GDS，并包含公开 PCell。完整 ZIP 仅内部交付，不上传公开 PDK 仓库；安装索引只在接收方本地生成，不嵌入凭据。`JNU_MWP_PDK_Startup.lym` 早期只注册技术和内部波导接口，公开库及 EBeam 桥接必须由 `pymacros/__init__.py` 在普通 autorun 阶段加载，避免 SiEPIC 在主窗口建立前被缓存成 batch 环境而丢失菜单。Package 不依赖额外 `tech` 副本；发布前验证独立安装及 SiEPIC/EBeam 共存冷启动。
 - `JNU_MWP_SOI_PDK` 当前仅作为产品文档展示名；Technology、Salt、菜单、安装目录、canonical skill 和黑盒发布包继续使用工程名 `JNU_MWP_PDK`，除非用户明确启动整体迁移。
 - 当前安装仅使用 `salt/JNU_MWP_PDK/JNU_MWP_PDK.lyt`，仓库根目录不再维护 `tech/` 副本；技术及图层由包内启动宏注册。该配置必须保持可搬运：`base-path` 与 `original-base-path` 为空，`layer-properties_file` 为同目录相对路径 `layers.lyp`。运行时代码只可由 `__file__` 推导安装位置，禁止写入 `C:/Users/zjy/...` 等作者机器绝对路径；备用黑盒打包工具生成的 `.lyt` 同样遵守此规则。
@@ -65,7 +67,7 @@ description: Use when developing, verifying, or packaging the JNU_MWP_PDK KLayou
 
 ## Workflow
 
-推荐用户运行根目录 `Install_JNU_PDK.lym`：从运行中的 KLayout 读取 `application_data_path()`，无需用户寻找程序或配置目录。唯一逻辑源为 `actions/install_pdk.py`，修改后运行 `tools/build_install_macro.py` 生成独立宏并核验 XML 内源码一致。Git 克隆、更新和认证在后台线程执行，Qt 更新仅通过主线程 timer；只更新干净且无本地超前提交的 main，保留旧目录和修改。菜单提供 `Check for PDK Updates` 与 `Install / Update Whitebox Library`，私有库只克隆到用户目录 `jnu_private`，不接收或保存凭据。安装回归使用临时 Git 仓库和隔离 KLayout GUI，不操作用户实际安装。
+推荐用户运行根目录 `Install_JNU_PDK.lym`：从运行中的 KLayout 读取 `application_data_path()`，无需用户寻找程序或配置目录。唯一逻辑源为 `actions/install_pdk.py`，修改后运行 `tools/build_install_macro.py` 生成独立宏并核验 XML 内源码一致。Git 克隆、更新和认证在后台线程执行，Qt 更新仅通过主线程 timer；只更新干净且无本地超前提交的 main，保留旧目录和修改。菜单提供 `Check for PDK Updates` 与 `Install / Update Whitebox Library`，独立 Library 只克隆到用户目录 `jnu_private`，不接收或保存凭据。安装回归使用临时 Git 仓库和隔离 KLayout GUI，不操作用户实际安装。
 
 当前用户安装仅支持 Git 克隆及目录联接：仓库根 `Install_Cloned_PDK.ps1` 将克隆内 `salt/JNU_MWP_PDK` 联接到 KLayout 的 salt 目录，不覆盖已有安装，不配置在线索引。更新使用 `git pull --ff-only origin main` 后重启。私有 GDS 单独授权并保留独立目录读取兼容；离线实验室和黑盒构建工具仅作为维护者备用工具，不作为当前用户安装流程。
 
@@ -74,4 +76,4 @@ description: Use when developing, verifying, or packaging the JNU_MWP_PDK KLayou
 3. 对所有改动的 Python 文件运行 `py_compile`，再运行 KLayout 批处理和 GDS 重读验证。
 4. 修改本 skill 后运行 `python scripts/sync_skill_links.py sync` 与 `check`。
 5. `JNU_PDK_CONTEXT_BACKUP.md` 仅保留为历史记录，除非用户明确要求，否则不读取、不写入。
-6. 向 GitHub 发布本项目时直接推送到远端 `main` 分支，不默认创建发布分支、PR 分支或临时分支；只有用户明确要求分支/PR 工作流时才新建分支。
+6. 向 GitHub 发布时遵循用户指定的分支：当前 PDK 开发分支为 `JNU_MWP_PDK_V1.2`，独立 Library 使用其授权仓库的 `main`；未明确指定时不要擅自迁移分支或发布白盒到公开 PDK。

@@ -2,7 +2,7 @@
 # 创建者: Junyi Zhang
 # 时间: 2026-10
 
-"""公开 EBeam 原始 GDS cell 与 JNU 器件库名称的固定映射。"""
+"""独立白盒库 EBeam 原始 cell 与 JNU 器件库名称的固定映射。"""
 
 
 PUBLIC_EBEAM_CELLS = (

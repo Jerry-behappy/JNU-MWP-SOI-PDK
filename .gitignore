@@ -1,12 +1,7 @@
-# 实验室私有白盒 GDS 不推送到公开仓库；仅放行五份 MIT 许可的 EBeam GDS。
+# 所有固定白盒 GDS 只存放在独立器件库，不推送到公开 PDK 仓库。
 /salt/JNU_MWP_PDK/pymacros/JNU_MWP_gds/*
 !/salt/JNU_MWP_PDK/pymacros/JNU_MWP_gds/LICENSE.md
 !/salt/JNU_MWP_PDK/pymacros/JNU_MWP_gds/NOTICE.md
-!/salt/JNU_MWP_PDK/pymacros/JNU_MWP_gds/ebeam_crossing4.gds
-!/salt/JNU_MWP_PDK/pymacros/JNU_MWP_gds/ebeam_terminator_te1310.gds
-!/salt/JNU_MWP_PDK/pymacros/JNU_MWP_gds/ebeam_terminator_te1550.gds
-!/salt/JNU_MWP_PDK/pymacros/JNU_MWP_gds/ebeam_y_1310.gds
-!/salt/JNU_MWP_PDK/pymacros/JNU_MWP_gds/ebeam_y_1550.gds
 
 # 完整实验室交付物含私有白盒 GDS，不进入公开仓库。
 JNU_MWP_PDK_lab_package*/

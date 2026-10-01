@@ -1,7 +1,9 @@
-# Bundled SiEPIC EBeam layout cells
+# SiEPIC EBeam whitebox source location
 
-The following five unchanged GDS files are sourced from the SiEPIC EBeam PDK,
-installed locally as EBeam version 0.4.53:
+The following five unchanged GDS files are stored in the separately authorized
+`Jerry-behappy/JNU-MWP-SOI-Library/JNU_MWP_gds` repository, not in this public
+PDK repository. They originate from the SiEPIC EBeam PDK, installed locally as
+EBeam version 0.4.53:
 
 - `ebeam_crossing4.gds`
 - `ebeam_terminator_te1310.gds`
@@ -17,8 +19,9 @@ Upstream project: <https://github.com/SiEPIC/SiEPIC_EBeam_PDK>.
 Original path: `EBeam/gds/EBeam/`.
 License: MIT, <https://github.com/SiEPIC/SiEPIC_EBeam_PDK/blob/master/LICENSE.md>.
 Copyright (c) 2016-2020, Lukas Chrostowski and contributors.
-The required permission and warranty notice is included beside these GDS files
-in [`LICENSE.md`](LICENSE.md). The repository root also retains this copyright.
+The required permission and warranty notice accompanies the source files in
+the separate Library repository. This public repository distributes only
+derived fixed blackboxes for these devices.
 
 The original GDS Text is retained in the JNU whitebox cells. In particular,
 EBeam component and Lumerical INTERCONNECT annotations describe the upstream

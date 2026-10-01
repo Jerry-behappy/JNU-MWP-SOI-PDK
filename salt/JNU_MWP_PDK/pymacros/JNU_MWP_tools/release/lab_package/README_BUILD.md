@@ -17,6 +17,9 @@ python salt\JNU_MWP_PDK\pymacros\JNU_MWP_tools\release\package_lab_pdk.py `
 ```
 
 若已经 clone，先在器件仓库检查未提交修改，再按实验室流程更新。
+每次修改白盒后，先从完整的 Library `JNU_MWP_gds` 目录运行
+`release/sync_blackboxes_from_library.py --source <Library/JNU_MWP_gds>`，
+确认 30 个黑盒及端口后将对应更新提交到公开 PDK 开发分支。
 脚本不修改本机正在使用的 GDS。省略 `--gds-source` 时使用当前 PDK 的本机 GDS。
 公开仓库自身不带 GDS，因此从公开源码构建完整包时必须提供该参数。
 
@@ -52,6 +55,9 @@ PDK repository. Use the commands above with an existing Python installation.
 `--gds-source` selects a separate library checkout without modifying the active
 development PDK. The output directory and ZIP must not already exist. Omitting
 this argument uses the local PDK's GDS; public source checkouts do not contain it.
+After every whitebox edit, run `release/sync_blackboxes_from_library.py` with
+`--source <Library/JNU_MWP_gds>` and commit the verified fixed blackboxes to
+the PDK branch.
 
 Distribute the complete ZIP internally, not as a public GitHub Release. Recipients
 install with the provided local package-manager launcher and do not need GitHub

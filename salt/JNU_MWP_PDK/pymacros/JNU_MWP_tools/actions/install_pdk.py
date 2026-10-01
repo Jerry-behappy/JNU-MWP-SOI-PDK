@@ -18,10 +18,6 @@ import threading
 PUBLIC_URL = "https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK.git"
 PRIVATE_URL = "https://github.com/Jerry-behappy/JNU-MWP-SOI-Library.git"
 PDK_RELATIVE = Path("salt/JNU_MWP_PDK")
-PUBLIC_EBEAM_GDS = {
-    "ebeam_crossing4.gds", "ebeam_terminator_te1310.gds",
-    "ebeam_terminator_te1550.gds", "ebeam_y_1310.gds", "ebeam_y_1550.gds",
-}
 PRIVATE_SYNC_MANIFEST = ".jnu_private_gds_sync.json"
 
 
@@ -58,15 +54,13 @@ def _sync_private_gds(home, repository, notify=lambda _message: None):
         previous = document["files"]
         if not isinstance(previous, dict) or any(
                 Path(name).name != name or not name.lower().endswith(".gds")
-                or name in PUBLIC_EBEAM_GDS or not isinstance(value, str)
+                or not isinstance(value, str)
                 for name, value in previous.items()):
             raise RuntimeError("私有 GDS 同步记录无效，已保留原文件：%s" % manifest_path)
 
     managed = {}
     conflicts = []
     current_names = {path.name for path in source_files}
-    if current_names & PUBLIC_EBEAM_GDS:
-        raise RuntimeError("私有 GDS 与公开 EBeam 文件同名，已保留原文件。")
     for source_path in source_files:
         target_path = destination_dir / source_path.name
         source_digest = _file_digest(source_path)

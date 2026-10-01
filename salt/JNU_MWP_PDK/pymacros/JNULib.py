@@ -30,8 +30,7 @@ from JNU_MWP_tools.core.fixed_gds import fixed_gds_directory
 from JNU_MWP_tools.core.public_ebeam_cells import PUBLIC_EBEAM_CELLS
 
 GDS_DIR = fixed_gds_directory(SCRIPT_DIR)
-PUBLIC_EBEAM_GDS_DIR = os.path.join(SCRIPT_DIR, "JNU_MWP_gds")
-PUBLIC_EBEAM_SOURCE_NAMES = {source_name for source_name, _ in PUBLIC_EBEAM_CELLS}
+SOURCE_CELL_NAMES = dict(PUBLIC_EBEAM_CELLS)
 
 from JNU_MWP_pcells import (
     Bend90deg,
@@ -69,7 +68,6 @@ class JNULib(pya.Library):
 
         # 先把外部 GDS 中已有的器件加载进库，再注册参数化器件。
         self._load_gds_cells(ly)
-        self._load_public_ebeam_cells(ly)
         self._register_pcells(ly)
 
         self.register(LIBRARY_NAME)
@@ -78,42 +76,29 @@ class JNULib(pya.Library):
         """把 GDS_DIR 目录里的每个 GDS 顶层 cell 复制到 JNULib。"""
 
         if not os.path.isdir(GDS_DIR):
-            print("%s: public PCells ready; private fixed GDS not installed." % LIBRARY_NAME)
+            print("%s: PCells ready; fixed whitebox GDS not installed." % LIBRARY_NAME)
             return
 
         for filename in sorted(os.listdir(GDS_DIR)):
             if not filename.lower().endswith(".gds"):
                 continue
-            # 同一目录中的 EBeam 源 cell 只按 JNU 名称注册一次。
-            if os.path.splitext(filename)[0] in PUBLIC_EBEAM_SOURCE_NAMES:
-                continue
-
             fullpath = os.path.join(GDS_DIR, filename)
             temp = pya.Layout()
             temp.read(fullpath)
+            source_name = os.path.splitext(filename)[0]
+            target_name = SOURCE_CELL_NAMES.get(source_name)
+            if target_name and temp.cell(source_name) is None:
+                raise RuntimeError("白盒 GDS 缺少源 cell：%s" % fullpath)
 
             for top_cell in temp.each_top_cell():
                 # KLayout 不同版本的 each_top_cell 可能返回 cell index 或 cell 对象。
                 cell = temp.cell(top_cell) if isinstance(top_cell, int) else top_cell
-                print("%s loading: %s" % (LIBRARY_NAME, cell.name))
-
-                new_cell = ly.create_cell(cell.name)
+                name = target_name if cell.name == source_name and target_name else cell.name
+                if ly.cell(name) is not None:
+                    raise RuntimeError("白盒器件名冲突：%s" % name)
+                print("%s loading: %s" % (LIBRARY_NAME, name))
+                new_cell = ly.create_cell(name)
                 new_cell.copy_tree(cell)
-
-    def _load_public_ebeam_cells(self, ly):
-        """始终加载公开授权的五份原始 GDS，保留全部文字与端口。"""
-        if not os.path.isdir(PUBLIC_EBEAM_GDS_DIR):
-            raise RuntimeError("缺少公开 EBeam GDS 目录：%s" % PUBLIC_EBEAM_GDS_DIR)
-        for source_name, public_name in PUBLIC_EBEAM_CELLS:
-            filename = source_name + ".gds"
-            temp = pya.Layout()
-            temp.read(os.path.join(PUBLIC_EBEAM_GDS_DIR, filename))
-            cell = temp.cell(source_name)
-            if cell is None:
-                raise RuntimeError("公开 GDS 缺少源 cell：%s" % source_name)
-            if ly.cell(public_name) is not None:
-                raise RuntimeError("白盒器件名冲突：%s" % public_name)
-            ly.create_cell(public_name).copy_tree(cell)
 
     def _register_pcells(self, ly):
         """注册需要出现在 Library 面板中的 PCell。"""

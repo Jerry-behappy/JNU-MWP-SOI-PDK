@@ -2,22 +2,18 @@
 # 创建者: Junyi Zhang
 # 时间: 2026-10
 
-"""优先读取原有白盒目录，兼容独立授权器件目录。"""
+"""优先读取已同步的白盒目录，兼容独立授权器件目录。"""
 
 import os
 from pathlib import Path
 
-from .public_ebeam_cells import PUBLIC_EBEAM_CELLS
-
-
 def fixed_gds_directory(pymacros):
-    """本地白盒优先；仅含公开器件时读取独立授权目录。"""
+    """优先读取安装器同步的白盒；公开安装不要求固定 GDS。"""
     import pya
 
     bundled = Path(pymacros) / "JNU_MWP_gds"
-    public_names = {name for name, _ in PUBLIC_EBEAM_CELLS}
     if bundled.is_dir() and any(
-            path.suffix.lower() == ".gds" and path.stem not in public_names
+            path.suffix.lower() == ".gds"
             for path in bundled.iterdir()):
         return str(bundled)
 

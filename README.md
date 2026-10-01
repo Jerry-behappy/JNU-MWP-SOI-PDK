@@ -14,7 +14,7 @@
 - **参数化器件**：直波导、弯曲、S 弯、Taper、波导长度补偿、微环和螺旋延迟线。支持 Circular、Bezier、Euler 弯曲。
 - **波导绘制与连接**：Path ⇄ Waveguide、单宽度／复合宽度波导、参数预设、器件端口自动连接与吸附。
 - **版图辅助**：生成 PinRec／DevRec 端口与边界、编号文字阵列、图层筛选和当前 Cell 的 DRC 检查。
-- **固定器件**：内置五个可查看结构的公开 EBeam 白盒；黑盒库提供器件占位、端口与名称，便于布局和连线。实验室私有白盒需单独授权。
+- **固定器件**：黑盒库提供 30 个器件的占位、端口与名称。全部固定白盒 GDS 由独立的器件库授权安装。
 
 <a id="克隆仓库安装windows"></a><a id="git-clone-installation-windows"></a>
 
@@ -34,10 +34,10 @@
 
 在 `main` 版本上，每次启动 KLayout 会后台检查更新；若版本不同，可在弹窗中点击 **立即更新**。也可使用 **JNU_MWP_PDK → Check for PDK Updates**。开发分支和无法连接 GitHub 时不弹窗。更新完成后重启 KLayout。
 
-获授权的实验室白盒可通过 **JNU_MWP_PDK → Install / Update Whitebox Library** 安装；公开仓库不包含这些私有 GDS。黑盒只有占位形状，不能作为最终流片的器件结构。
+获授权的白盒可通过 **JNU_MWP_PDK → Install / Update Whitebox Library** 从独立 [JNU-MWP-SOI-Library](https://github.com/Jerry-behappy/JNU-MWP-SOI-Library) 安装。公开 PDK 仓库不包含任何白盒 GDS。黑盒只有占位形状，不能作为最终流片的器件结构。
 
 ## 更多信息
 
 [详细使用说明](docs/USER_GUIDE.md) · [问题反馈](https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK/issues) · [许可证](LICENSE.md)
 
-本项目保留了原项目的 MIT 版权声明。五个公开 EBeam GDS 的来源与许可见 [白盒资源说明](salt/JNU_MWP_PDK/pymacros/JNU_MWP_gds/NOTICE.md)。
+五个 EBeam 派生黑盒的来源与 MIT 许可见 [资源说明](salt/JNU_MWP_PDK/pymacros/JNU_MWP_blackbox_gds/NOTICE.md)。

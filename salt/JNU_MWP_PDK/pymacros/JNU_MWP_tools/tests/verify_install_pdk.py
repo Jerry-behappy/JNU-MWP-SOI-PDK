@@ -55,13 +55,14 @@ def seed(path, private=False):
         layout = pya.Layout()
         layout.create_cell("TEST")
         layout.write(str(target))
+        layout = pya.Layout()
+        layout.create_cell("ebeam_crossing4")
+        layout.write(str(target.with_name("ebeam_crossing4.gds")))
     else:
         target.write_text("<technology><name>JNU_MWP_PDK</name></technology>", encoding="utf-8")
         public_gds = path / installer.PDK_RELATIVE / "pymacros/JNU_MWP_gds"
         public_gds.mkdir(parents=True)
-        (public_gds / "NOTICE.md").write_text("public fixture", encoding="utf-8")
-        for filename in installer.PUBLIC_EBEAM_GDS:
-            (public_gds / filename).write_bytes(b"public fixture")
+        (public_gds / "NOTICE.md").write_text("library fixture", encoding="utf-8")
         (path / ".gitignore").write_text(
             "salt/JNU_MWP_PDK/pymacros/JNU_MWP_gds/*.gds\n"
             "salt/JNU_MWP_PDK/pymacros/JNU_MWP_gds/.jnu_private_gds_sync.json\n",
@@ -124,6 +125,8 @@ def main():
         reject(lambda: installer.update_public(home), "未发布提交")
         installer.install_private(home)
         assert (home / "jnu_private/JNU_MWP_gds/test.gds").is_file()
+        assert (checkout / installer.PDK_RELATIVE /
+                "pymacros/JNU_MWP_gds/ebeam_crossing4.gds").is_file()
         synced = checkout / installer.PDK_RELATIVE / "pymacros/JNU_MWP_gds/test.gds"
         assert synced.is_file()
         assert synced.read_bytes() == (home / "jnu_private/JNU_MWP_gds/test.gds").read_bytes()

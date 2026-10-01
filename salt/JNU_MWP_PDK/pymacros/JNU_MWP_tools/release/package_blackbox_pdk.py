@@ -377,8 +377,7 @@ def _insert_fallback_text(cell, text_index, target_box, dbu, label_text):
 
 
 def _generate_blackbox_gds(package_root):
-    """以仓库发布的黑盒为基线，可选用私有白盒刷新同名旧器件。"""
-    src_dir = PDK_ROOT / "pymacros" / "JNU_MWP_gds"
+    """仅复制已从独立器件库同步并验收的黑盒，不依赖本机私有文件。"""
     bundled_dir = PDK_ROOT / "pymacros" / "JNU_MWP_blackbox_gds"
     dst_dir = package_root / "pymacros" / "JNU_MWP_blackbox_gds"
     dst_dir.mkdir(parents=True, exist_ok=True)
@@ -390,30 +389,6 @@ def _generate_blackbox_gds(package_root):
     notice = bundled_dir / "NOTICE.md"
     if notice.is_file():
         shutil.copy2(str(notice), str(dst_dir / notice.name))
-
-    reserved = {
-        "ebeam_crossing4", "ebeam_terminator_te1310", "ebeam_terminator_te1550",
-        "ebeam_y_1310", "ebeam_y_1550", "Pcell_Waveguide_Bump",
-        "Crossing4", "1310_TE_Terminator", "1550_TE_Terminator",
-        "1310_Ybranch", "1550_Ybranch",
-    }
-    for src_path in sorted(src_dir.glob("*.gds")) if src_dir.is_dir() else ():
-        if src_path.stem in reserved:
-            continue
-        src_layout = pya.Layout()
-        src_layout.read(str(src_path))
-
-        dst_layout = pya.Layout()
-        dst_layout.dbu = LIBRARY_DBU
-        for top_cell in src_layout.each_top_cell():
-            cell_obj = src_layout.cell(top_cell) if isinstance(top_cell, int) else top_cell
-            if not cell_obj.bbox().empty():
-                _draw_blackbox_cell(cell_obj, src_layout, dst_layout)
-
-        if len(list(dst_layout.each_cell())) == 0:
-            continue
-
-        dst_layout.write(str(dst_dir / src_path.name))
 
     return len(list(dst_dir.glob("*.gds")))
 

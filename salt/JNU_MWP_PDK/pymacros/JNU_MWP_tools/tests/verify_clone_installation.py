@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-09
+# 时间: 2026-10
 
 """验证目录联接安装、已有目录保护与真实 KLayout 冷启动。"""
 
@@ -24,10 +24,13 @@ def probe():
     assert white and black
     expected = {"Pcell_Bend_90deg", "Pcell_Microring_DoubleBus", "Pcell_Archimedean_Spiral",
                 "Pcell_Paperclip_Spiral", "Pcell_Paperclip_Spiral_with_Composite_Waveguide",
-                "Pcell_Taper", "Pcell_S_Bend", "Pcell_Straight_Waveguide"}
+                "Pcell_Taper", "Pcell_S_Bend", "Pcell_Straight_Waveguide",
+                "Pcell_Waveguide_Bump"}
     assert set(white.layout().pcell_names()) == expected
     assert not black.layout().pcell_names()
     source = home / "salt" / "JNU_MWP_PDK"
+    assert not list((source / "pymacros" / "JNU_MWP_gds").glob("*.gds")), "公开克隆不应携带白盒 GDS"
+    assert white.layout().cell("Crossing4") is None, "未授权的固定白盒不应加载"
     files = sorted((source / "pymacros" / "JNU_MWP_blackbox_gds").glob("*.gds"))
     assert files
     for path in files:

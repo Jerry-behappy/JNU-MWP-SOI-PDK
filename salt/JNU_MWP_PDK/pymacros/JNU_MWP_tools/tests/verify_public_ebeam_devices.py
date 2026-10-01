@@ -2,10 +2,11 @@
 # 创建者: Junyi Zhang
 # 时间: 2026-10
 
-"""隔离 KLayout 中核对公开 EBeam 原始 GDS 和 JNU bump PCell。"""
+"""隔离 KLayout 中核对独立白盒库的 EBeam GDS 和 JNU bump PCell。"""
 
 from pathlib import Path
 import math
+import os
 import sys
 import tempfile
 
@@ -13,6 +14,7 @@ import pya
 
 
 PYMACROS = Path(__file__).resolve().parents[2]
+SOURCE_GDS = Path(os.environ.get("JNU_WHITEBOX_GDS_DIR", PYMACROS / "JNU_MWP_gds"))
 sys.path.insert(0, str(PYMACROS))
 import JNULib  # noqa: F401
 
@@ -64,7 +66,7 @@ def verify_fixed(library):
     for source_name, name, text_count, port_count in FIXED:
         assert library.layout().cell(source_name) is None, source_name
         source = pya.Layout()
-        source.read(str(PYMACROS / "JNU_MWP_gds" / (source_name + ".gds")))
+        source.read(str(SOURCE_GDS / (source_name + ".gds")))
         original = source.cell(source_name)
         copied = library.layout().cell(name)
         assert original is not None and copied is not None, name

@@ -14,7 +14,7 @@ A KLayout silicon photonics PDK from Jinan University's Optoelectronic Hybrid In
 - **Parametric devices:** straight waveguides, bends, S-bends, tapers, waveguide length compensation, microrings, and spiral delay lines, with Circular, Bezier, and Euler bends.
 - **Waveguide design:** Path ⇄ Waveguide conversion, single-width and composite-width guides, saved parameter presets, automatic device connections, and port snapping.
 - **Layout tools:** PinRec/DevRec generation, numbered text arrays, layer filtering, and DRC for the active cell.
-- **Fixed devices:** five bundled EBeam whiteboxes with visible geometry; the blackbox library supplies footprints, ports, and names for placement and routing. Laboratory whiteboxes require separate authorization.
+- **Fixed devices:** the blackbox library provides footprints, ports, and names for 30 devices. All fixed whitebox GDS files are installed from the separately authorized device library.
 
 ## Installation (Windows)
 
@@ -30,10 +30,10 @@ The macro finds the active KLayout user directory, clones the repository, and cr
 
 On `main`, KLayout checks for updates in the background at startup. If the installed revision differs, click **Update now** in the prompt. You can also use **JNU_MWP_PDK → Check for PDK Updates**. Development branches and GitHub connection failures are skipped silently. Restart KLayout after an update.
 
-Use **JNU_MWP_PDK → Install / Update Whitebox Library** for authorized laboratory whiteboxes. Private GDS files are not included in this public repository. Blackboxes are placement and connectivity placeholders, not final fabrication geometry.
+Use **JNU_MWP_PDK → Install / Update Whitebox Library** to install authorized whiteboxes from the separate [JNU-MWP-SOI-Library](https://github.com/Jerry-behappy/JNU-MWP-SOI-Library). This public PDK repository contains no whitebox GDS files. Blackboxes are placement and connectivity placeholders, not final fabrication geometry.
 
 ## More
 
 [Detailed user guide](docs/USER_GUIDE.md#english-user-guide) · [Report an issue](https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK/issues) · [License](LICENSE.md)
 
-The original MIT copyright notices are retained. See the [whitebox resource notice](salt/JNU_MWP_PDK/pymacros/JNU_MWP_gds/NOTICE.md) for the five public EBeam GDS files.
+See the [resource notice](salt/JNU_MWP_PDK/pymacros/JNU_MWP_blackbox_gds/NOTICE.md) for the provenance and MIT license of five EBeam-derived blackboxes.

@@ -2,7 +2,7 @@
 # 创建者: Junyi Zhang
 # 时间: 2026-10
 
-"""在隔离 KLayout GUI 冷启动后核验公开六器件与语言标签。"""
+"""在隔离 KLayout GUI 冷启动后核验授权白盒与语言标签。"""
 
 import json
 import os
@@ -29,19 +29,25 @@ def _probe():
         assert white.layout().cell(old_name) is None and black.layout().cell(old_name) is None
     assert len(list(black.layout().each_top_cell())) == 30
     assert not list(black.layout().pcell_names())
+    authorized = os.environ.get("JNU_EXPECT_WHITEBOX") == "1"
     for name in names:
-        assert white.layout().cell(name) if name != "Pcell_Waveguide_Bump" else \
-            name in set(white.layout().pcell_names()), name
+        if name == "Pcell_Waveguide_Bump":
+            assert name in set(white.layout().pcell_names()), name
+        else:
+            assert bool(white.layout().cell(name)) == authorized, name
         assert black.layout().cell(name), name
         target = pya.Layout()
         cell = target.create_cell(name, "JNULib_BlackBox")
         assert cell and not cell.bbox(target.layer(1, 0)).empty(), name
-        if name != "Pcell_Waveguide_Bump":
-            source = target.create_cell(name, "JNULib")
-        else:
+        if name == "Pcell_Waveguide_Bump":
             source = target.create_cell(name, "JNULib", {"delta_length": 0.2})
             assert source.is_pcell_variant()
-        assert source and not source.bbox(target.layer(1, 0)).empty(), name
+        elif authorized:
+            source = target.create_cell(name, "JNULib")
+        else:
+            source = None
+        if source is not None:
+            assert not source.bbox(target.layer(1, 0)).empty(), name
 
     declaration = white.layout().pcell_declaration("Pcell_Waveguide_Bump")
     labels = {parameter.name: parameter.description for parameter in declaration.get_parameters()}
@@ -49,7 +55,8 @@ def _probe():
     assert labels["delta_length"] == ("增量长度" if chinese else "Incremental length")
     assert labels["radius"] == ("有效弯曲半径" if chinese else "Effective bend radius")
     assert labels["max_theta"] == ("最大弯曲角度" if chinese else "Maximum angle")
-    result = {"whitebox": list(names), "blackbox_count": 30,
+    result = {"whitebox": list(names) if authorized else ["Pcell_Waveguide_Bump"],
+              "blackbox_count": 30,
               "language": "zh_CN" if chinese else "en", "ebeam_installed": False}
     Path(os.environ["JNU_SIX_REPORT"]).write_text(
         json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")

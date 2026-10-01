@@ -85,9 +85,9 @@
 ### Runtime Naming
 
 - `core/fixed_gds.py` 保留对用户目录 `jnu_private/JNU_MWP_gds` 的读取兼容，避免既有授权数据失效；缺失时使用源码或完整离线包内的固定 GDS。维护代码时不删除用户已安装的数据。
-- 白盒统一目录为 `pymacros/JNU_MWP_gds/`，仓库仅跟踪五个公开 EBeam GDS；私有仓库克隆仍位于 `jnu_private`，安装器用同步记录保护用户手动修改并将授权 GDS 放到统一目录顶层，私有文件被 Git 忽略。同步前仍可从 `jnu_private/JNU_MWP_gds/` 加载。不要创建顶层 `gds/` 或独立 `JNU_MWP_ebeam_gds/`。
+- 白盒规范源为独立 `JNU-MWP-SOI-Library/JNU_MWP_gds/`；公开 PDK 的 `pymacros/JNU_MWP_gds/` 不跟踪任何 GDS。私有仓库克隆仍位于 `jnu_private`，安装器用同步记录保护用户手动修改并将授权 GDS 放到原目录顶层。同步前仍可从 `jnu_private/JNU_MWP_gds/` 加载。不要创建顶层 `gds/` 或独立 `JNU_MWP_ebeam_gds/`。
 - 移动或清理固定 GDS 后，用 `rg` 检查 loader、打包脚本、README 和辅助脚本，确保不存在指向旧 `gds/` 的路径；同时验证 `JNULib.py` 仍指向 `pymacros/JNU_MWP_gds/`。
-- 黑盒生成以 `pymacros/JNU_MWP_gds/` 为白盒输入，跳过公开 EBeam 源文件名并复用已经生成的 JNU 名称黑盒；发布包必须排除该白盒目录和 `JNULib.py`。
+- 固定白盒修改后运行 `release/sync_blackboxes_from_library.py --source <Library/JNU_MWP_gds>`，从全部 29 份白盒生成对应黑盒，再附加默认 bump；核对 30 个黑盒的名称、端口和矩形占位后与白盒分别提交。发布包只复制已同步黑盒，排除白盒目录与 `JNULib.py`。
 - 文档可使用 `JNU_MWP_SOI_PDK` 展示名；代码、Technology、Salt、菜单、安装目录、skill 与黑盒包继续使用 `JNU_MWP_PDK`。
 - 只有执行黑盒打包流程时，才同步修改 `pymacros/README.md` 和 PDK 使用说明；普通开发、维护和单独文档请求不改写这两类文档。若打包流程确需更新 `pymacros/README.md`，保持完整中文章节在前、完整英文章节在后。
 
@@ -136,4 +136,4 @@
 - 用 KLayout 批处理运行 `tests/verify_ebeam_library_bridge_regression.py`，确认五个 EBeam Library 都已绑定到 `JNU_MWP_PDK`、包含 EBeam 器件数据、重复桥接不会创建重复库，并且无需改动原 EBeam Technology。
 - 验收 GUI 实时派生值、三种命名及 `__002/__003` 冲突后缀；GDS 重读后名称和本地 PCell 身份必须保持。
 - 生成黑盒包并检查禁止项；对 canonical skill 运行 UTF-8 `quick_validate.py`，再运行联接脚本 `check`。
-- 检查统一白盒目录至少包含五份公开 EBeam GDS；授权安装后应另有对应数量的私有 GDS，且它们不进入公开 Git。确认顶层旧 `gds/` 和独立 `JNU_MWP_ebeam_gds/` 不存在。
+- 检查公开 Git 的 `pymacros/JNU_MWP_gds/` 无任何被跟踪的 `.gds`；独立 Library 当前有 29 份授权白盒，安装后原目录应能加载全部固定器件。确认顶层旧 `gds/` 和独立 `JNU_MWP_ebeam_gds/` 不存在。
