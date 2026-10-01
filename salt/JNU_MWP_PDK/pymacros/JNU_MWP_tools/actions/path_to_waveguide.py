@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-09
+# 时间: 2026-10
 
 # JNU_MWP_PDK Path to Waveguide 功能。
 # 读取选中图层中的 Path，完成参数设置、端点吸附和波导 cell 创建。
@@ -47,6 +47,7 @@ from JNU_MWP_tools.core.common import (
 from JNU_MWP_tools.core.gui_state import (
     exec_dialog_with_persisted_size,
 )
+from JNU_MWP_tools.core.ui_language import active_language, LANGUAGE_ZH, CHOICE_LABELS_ZH
 
 
 JNULIB_NAME = "JNULib"
@@ -60,6 +61,99 @@ TAB_LABELS = {
     TAB_COMPOSITE: "Composite-Width Waveguide",
     TAB_USER_DEFINED: "User-Defined",
 }
+
+# 界面翻译只处理显示文字；预设 JSON、PCell 参数名及 bend_type 值保持英文。
+_DIALOG_LABELS_ZH = {
+    "JNU Path to Waveguide": "JNU 路径转波导",
+    "User-Defined": "自定义",
+    "Single-Width Waveguide": "单宽度波导",
+    "Composite-Width Waveguide": "复合宽度波导",
+    "Editable Parameters": "可编辑参数",
+    "Calculated Parameters": "计算参数",
+    "Saved Types": "已保存类型",
+    "Selected Parameters": "所选参数",
+    "Note": "备注",
+    "Bend Type：": "弯曲类型：",
+    "Waveguide Width (um)：": "波导宽度（µm）：",
+    "Straight Width (um)：": "直波导宽度（µm）：",
+    "Bend Width (um)：": "弯曲波导宽度（µm）：",
+    "Start Width：": "起始端宽度：",
+    "End Width：": "末端宽度：",
+    "Taper Length (um)：": "渐变段长度（µm）：",
+    "Transition Length (um)：": "过渡段长度（µm）：",
+    "Bend Radius (um)：": "弯曲半径（µm）：",
+    "Bezier B：": "贝塞尔参数 B：",
+    "Euler Rmax (um)：": "欧拉最大半径 Rmax（µm）：",
+    "Euler Rmin (um)：": "欧拉最小半径 Rmin（µm）：",
+    "Bend Points [uneditable]：": "弯曲采样点数 [不可编辑]：",
+    "Bezier Rmax [uneditable] (um)：": "贝塞尔最大半径 [不可编辑]（µm）：",
+    "Bezier Rmin [uneditable] (um)：": "贝塞尔最小半径 [不可编辑]（µm）：",
+    "Euler Reff [uneditable] (um)：": "欧拉有效半径 [不可编辑]（µm）：",
+    "Save as User-Defined": "保存为自定义",
+    "User-Defined Waveguide：": "自定义波导：",
+    "Manage": "管理",
+    "No saved presets.": "暂无已保存的预设。",
+    "Enter notes for the selected preset...": "输入所选预设的备注…",
+    "Preset Name：": "预设名称：",
+    "Waveguide Mode：": "波导模式：",
+    "Straight Width": "直波导宽度",
+    "Bend Width": "弯曲波导宽度",
+    "Manage User-Defined Waveguides": "管理自定义波导",
+    "Single": "单宽度",
+    "Composite": "复合宽度",
+    "Delete Selected": "删除所选",
+    "OK": "确定",
+    "Cancel": "取消",
+}
+
+
+def _dialog_text(english):
+    """按本次 KLayout 启动时确定的语言翻译窗口文字。"""
+    return _DIALOG_LABELS_ZH.get(english, english) if active_language() == LANGUAGE_ZH else english
+
+
+def _bend_type_text(value):
+    return CHOICE_LABELS_ZH.get(value, value) if active_language() == LANGUAGE_ZH else value
+
+
+def _bend_type_from_combo(combo):
+    """界面标题可翻译，计算和持久化始终使用稳定的英文枚举值。"""
+    try:
+        index = int(combo.currentIndex)
+    except Exception:
+        index = 0
+    return ("Circular", "Bezier", "Euler")[index] if 0 <= index < 3 else "Circular"
+
+
+def _dialog_message(english, chinese):
+    return chinese if active_language() == LANGUAGE_ZH else english
+
+
+def _dialog_error(error):
+    """将常见参数校验错误显示为当前语言，保留原始参数键以便定位。"""
+    message = str(error)
+    english = {
+        "弯曲半径必须大于 0.010 um。": "Bend radius must exceed 0.010 um.",
+        "Bezier 值必须大于 0。": "Bezier B must be greater than zero.",
+        "Euler Rmin 必须大于 0 且小于 Euler Rmax。":
+            "Euler Rmin must be greater than zero and less than Euler Rmax.",
+        "波导宽度必须大于0。": "Waveguide width must be greater than zero.",
+        "直波导和弯曲波导宽度必须大于0。":
+            "Straight and bend waveguide widths must be greater than zero.",
+        "taper和transition长度不得小于0。":
+            "Taper and transition lengths cannot be negative.",
+        "Preset Name 不能为空。": "Preset name cannot be empty.",
+        "没有可用的 User-Defined 波导参数。":
+            "No user-defined waveguide preset is available.",
+    }
+    if message.startswith("Preset Name 已存在："):
+        return _dialog_message("Preset name already exists: " + message.split("：", 1)[1], message)
+    if message.endswith(" 必须是有效数字。"):
+        key = message[:-len(" 必须是有效数字。")]
+        return _dialog_message("%s must be a valid number." % key, message)
+    return _dialog_message(english.get(message, message), message)
+
+
 SINGLE_EDITABLE_KEYS = (
     "width", "radius", "bend_type", "bezier", "Euler_Rmax", "Euler_Rmin",
 )
@@ -722,7 +816,7 @@ def _save_waveguide_params(params):
 
 
 def _add_edit(page, page_layout, row, label_text, value, readonly=False):
-    label = pya.QLabel(label_text, page)
+    label = pya.QLabel(_dialog_text(label_text), page)
     edit = pya.QLineEdit(page)
     edit.setText(str(value))
     edit.setReadOnly(readonly)
@@ -732,10 +826,10 @@ def _add_edit(page, page_layout, row, label_text, value, readonly=False):
 
 
 def _add_width_role_combo(page, page_layout, row, label_text, role):
-    label = pya.QLabel(label_text, page)
+    label = pya.QLabel(_dialog_text(label_text), page)
     combo = pya.QComboBox(page)
-    combo.addItem("Straight Width")
-    combo.addItem("Bend Width")
+    combo.addItem(_dialog_text("Straight Width"))
+    combo.addItem(_dialog_text("Bend Width"))
     combo.setCurrentIndex(1 if role == "bend" else 0)
     page_layout.addWidget(label, row, 0)
     page_layout.addWidget(combo, row, 1)
@@ -750,11 +844,15 @@ def _width_role_from_combo(combo):
 
 
 def _set_width_role_combo_labels(combo, straight_width, bend_width):
-    labels = ["Straight Width", "Bend Width"]
+    labels = [_dialog_text("Straight Width"), _dialog_text("Bend Width")]
     try:
         straight = float(straight_width)
         bend = float(bend_width)
-        labels = ["Straight Width (%.3f um)" % straight, "Bend Width (%.3f um)" % bend]
+        labels = ["%s (%.3f µm)" % (_dialog_text("Straight Width"), straight),
+                  "%s (%.3f µm)" % (_dialog_text("Bend Width"), bend)]
+        if active_language() != LANGUAGE_ZH:
+            labels = ["Straight Width (%.3f um)" % straight,
+                      "Bend Width (%.3f um)" % bend]
     except Exception:
         pass
     current = 0
@@ -829,8 +927,17 @@ def _set_widget_font(widget, font):
         return False
 
 
+def _set_regular_dialog_font(dialog):
+    """放大页签、按钮及管理窗口文字；分组标题由独立样式控制。"""
+    font = _qt_property_value(dialog, "font")
+    if font is not None:
+        _set_font_point_size(font, 11)
+        _set_font_bold(font, False)
+        _set_widget_font(dialog, font)
+
+
 def _style_parameter_group_title(group):
-    """只放大分组标题，保持标签和输入框使用 KLayout 默认字体。
+    """分组标题使用 16 pt 加粗，普通标签和输入框使用 11 pt。
 
     部分 KLayout/Qt 组合不会稳定应用 QGroupBox::title 选择器，因此同时
     设置 QGroupBox 自身字体作为标题显示的兜底方案。
@@ -851,7 +958,7 @@ def _restore_parameter_child_fonts(
     default_font,
     group_keys=("editable_group", "calculated_group"),
 ):
-    """把分组内普通控件恢复为默认字体，避免标题字号继承到输入区。"""
+    """普通控件统一使用 11 pt 常规字体，避免继承 16 pt 分组标题。"""
     if default_font is None:
         return
     excluded = set(group_keys)
@@ -867,8 +974,11 @@ def _build_waveguide_page(parent, values, composite, dbu):
     layout = pya.QHBoxLayout(page)
     page.setLayout(layout)
     default_child_font = _qt_property_value(page, "font")
-    editable_group = pya.QGroupBox("Editable Parameters", page)
-    calculated_group = pya.QGroupBox("Calculated Parameters", page)
+    _set_font_point_size(default_child_font, 11)
+    _set_font_bold(default_child_font, False)
+    _set_widget_font(page, default_child_font)
+    editable_group = pya.QGroupBox(_dialog_text("Editable Parameters"), page)
+    calculated_group = pya.QGroupBox(_dialog_text("Calculated Parameters"), page)
     editable_layout = pya.QGridLayout(editable_group)
     calculated_layout = pya.QGridLayout(calculated_group)
     editable_group.setLayout(editable_layout)
@@ -887,11 +997,11 @@ def _build_waveguide_page(parent, values, composite, dbu):
     editable_row = 0
 
     def add_bend_type(row):
-        bend_label = pya.QLabel("Bend Type：", page)
+        bend_label = pya.QLabel(_dialog_text("Bend Type："), page)
         bend_combo = pya.QComboBox(page)
         bend_types = ["Circular", "Bezier", "Euler"]
         for item in bend_types:
-            bend_combo.addItem(item)
+            bend_combo.addItem(_bend_type_text(item))
         bend_combo.setCurrentIndex(bend_types.index(values["bend_type"]))
         editable_layout.addWidget(bend_label, row, 0)
         editable_layout.addWidget(bend_combo, row, 1)
@@ -942,7 +1052,7 @@ def _build_waveguide_page(parent, values, composite, dbu):
     controls["Euler_Rmin_label"], controls["Euler_Rmin"] = _add_edit(page, editable_layout, editable_row, "Euler Rmin (um)：", values["Euler_Rmin"])
     controls["editable_order"].append("Euler_Rmin")
     editable_row += 1
-    save_button = pya.QPushButton("Save as User-Defined", page)
+    save_button = pya.QPushButton(_dialog_text("Save as User-Defined"), page)
     save_button.setObjectName(
         "jnu_save_composite_preset" if composite else "jnu_save_single_preset"
     )
@@ -964,7 +1074,7 @@ def _build_waveguide_page(parent, values, composite, dbu):
     _restore_parameter_child_fonts(controls, default_child_font)
 
     def refresh(_value=None):
-        bend_type = str(bend.currentText)
+        bend_type = _bend_type_from_combo(bend)
         is_bezier, is_euler = bend_type == "Bezier", bend_type == "Euler"
         controls["radius_label"].setVisible(not is_euler)
         controls["radius"].setVisible(not is_euler)
@@ -1026,7 +1136,7 @@ def _parse_waveguide_page(controls, saved_values, composite, dbu):
         values["transition_length"] = controls["transition_length"].text
     else:
         values["width"] = controls["width"].text
-    values["bend_type"] = _normalize_bend_type(str(controls["bend_type"].currentText))
+    values["bend_type"] = _bend_type_from_combo(controls["bend_type"])
     values["radius"] = controls["radius"].text
     values["bezier"] = controls["bezier"].text
     values["Euler_Rmax"] = controls["Euler_Rmax"].text
@@ -1039,9 +1149,12 @@ def _build_user_defined_page(parent):
     layout = pya.QHBoxLayout(page)
     page.setLayout(layout)
     default_child_font = _qt_property_value(page, "font")
-    selection_group = pya.QGroupBox("Saved Types", page)
-    preview_group = pya.QGroupBox("Selected Parameters", page)
-    note_group = pya.QGroupBox("Note", page)
+    _set_font_point_size(default_child_font, 11)
+    _set_font_bold(default_child_font, False)
+    _set_widget_font(page, default_child_font)
+    selection_group = pya.QGroupBox(_dialog_text("Saved Types"), page)
+    preview_group = pya.QGroupBox(_dialog_text("Selected Parameters"), page)
+    note_group = pya.QGroupBox(_dialog_text("Note"), page)
     selection_layout = pya.QVBoxLayout(selection_group)
     preview_layout = pya.QGridLayout(preview_group)
     note_layout = pya.QVBoxLayout(note_group)
@@ -1052,14 +1165,14 @@ def _build_user_defined_page(parent):
     note_group.setLayout(note_layout)
     right_panel.setLayout(right_layout)
     preview_layout.setColumnStretch(1, 1)
-    combo_label = pya.QLabel("User-Defined Waveguide：", page)
+    combo_label = pya.QLabel(_dialog_text("User-Defined Waveguide："), page)
     combo = pya.QComboBox(page)
     combo.setObjectName("jnu_user_defined_preset_combo")
-    manage_button = pya.QPushButton("Manage", page)
-    empty_label = pya.QLabel("No saved presets.", page)
+    manage_button = pya.QPushButton(_dialog_text("Manage"), page)
+    empty_label = pya.QLabel(_dialog_text("No saved presets."), page)
     note_edit = pya.QPlainTextEdit(page)
     note_edit.setObjectName("jnu_user_defined_note")
-    note_edit.setPlaceholderText("Enter notes for the selected preset...")
+    note_edit.setPlaceholderText(_dialog_text("Enter notes for the selected preset..."))
     note_edit.setMinimumHeight(90)
     selection_layout.addWidget(combo_label)
     selection_layout.addWidget(combo)
@@ -1143,24 +1256,24 @@ def _refresh_user_defined_preview(controls, preset, dbu=0.001):
     _set_user_preview_field(controls, "preset_name", preset["name"])
     _set_user_preview_field(
         controls, "mode",
-        "Composite-Width Waveguide" if is_composite else "Single-Width Waveguide",
+        _dialog_text("Composite-Width Waveguide" if is_composite else "Single-Width Waveguide"),
     )
     _set_user_preview_field(controls, "width", "%.3f" % result.get("width", 0.0), not is_composite)
     _set_user_preview_field(controls, "straight_width", "%.3f" % result.get("straight_width", 0.0), is_composite)
     _set_user_preview_field(controls, "bend_width", "%.3f" % result.get("bend_width", 0.0), is_composite)
     _set_user_preview_field(
         controls, "start_width_role",
-        "Bend Width" if result.get("start_width_role") == "bend" else "Straight Width",
+        _dialog_text("Bend Width" if result.get("start_width_role") == "bend" else "Straight Width"),
         is_composite,
     )
     _set_user_preview_field(
         controls, "end_width_role",
-        "Bend Width" if result.get("end_width_role") == "bend" else "Straight Width",
+        _dialog_text("Bend Width" if result.get("end_width_role") == "bend" else "Straight Width"),
         is_composite,
     )
     _set_user_preview_field(controls, "taper_length", "%.3f" % result.get("taper_length", 0.0), is_composite)
     _set_user_preview_field(controls, "transition_length", "%.3f" % result.get("transition_length", 0.0), is_composite)
-    _set_user_preview_field(controls, "bend_type", result["bend_type"])
+    _set_user_preview_field(controls, "bend_type", _bend_type_text(result["bend_type"]))
     _set_user_preview_field(controls, "radius", "%.3f" % result["radius"], not is_euler)
     _set_user_preview_field(controls, "bezier", "%.3f" % result["bezier"], is_bezier)
     _set_user_preview_field(controls, "Euler_Rmax", "%.3f" % result["Euler_Rmax"], is_euler)
@@ -1213,15 +1326,16 @@ def _show_manage_presets_dialog(parent, presets):
     """返回管理窗口确认后的预设列表；取消时返回 None。"""
     staged = copy.deepcopy(presets)
     dialog = pya.QDialog(parent)
-    dialog.setWindowTitle("Manage User-Defined Waveguides")
+    dialog.setWindowTitle(_dialog_text("Manage User-Defined Waveguides"))
+    _set_regular_dialog_font(dialog)
     layout = pya.QVBoxLayout(dialog)
     dialog.setLayout(layout)
     list_widget = pya.QListWidget(dialog)
     list_widget.setSelectionMode(pya.QAbstractItemView.ExtendedSelection)
     for preset in staged:
-        mode_label = "Single" if preset["mode"] == TAB_SINGLE else "Composite"
+        mode_label = _dialog_text("Single" if preset["mode"] == TAB_SINGLE else "Composite")
         list_widget.addItem("[%s] %s" % (mode_label, preset["name"]))
-    delete_button = pya.QPushButton("Delete Selected", dialog)
+    delete_button = pya.QPushButton(_dialog_text("Delete Selected"), dialog)
     layout.addWidget(list_widget)
     layout.addWidget(delete_button)
 
@@ -1236,8 +1350,8 @@ def _show_manage_presets_dialog(parent, presets):
 
     delete_button.clicked(delete_selected)
     buttons = pya.QHBoxLayout(dialog)
-    ok_button = pya.QPushButton("OK", dialog)
-    cancel_button = pya.QPushButton("Cancel", dialog)
+    ok_button = pya.QPushButton(_dialog_text("OK"), dialog)
+    cancel_button = pya.QPushButton(_dialog_text("Cancel"), dialog)
     ok_button.clicked(lambda _checked: dialog.accept())
     cancel_button.clicked(lambda _checked: dialog.reject())
     buttons.addWidget(ok_button)
@@ -1252,7 +1366,8 @@ def _show_manage_presets_dialog(parent, presets):
 def _show_waveguide_dialog(dbu=0.001):
     state = {"saved": _load_waveguide_params()}
     dialog = pya.QDialog(_main_window())
-    dialog.setWindowTitle("JNU Path to Waveguide")
+    dialog.setWindowTitle(_dialog_text("JNU Path to Waveguide"))
+    _set_regular_dialog_font(dialog)
     layout = pya.QVBoxLayout(dialog)
     dialog.setLayout(layout)
     tabs = pya.QTabWidget(dialog)
@@ -1260,9 +1375,9 @@ def _show_waveguide_dialog(dbu=0.001):
     single = _build_waveguide_page(tabs, state["saved"]["single"], False, dbu)
     composite = _build_waveguide_page(tabs, state["saved"]["composite"], True, dbu)
     user_defined = _build_user_defined_page(tabs)
-    tabs.addTab(user_defined["page"], TAB_LABELS[TAB_USER_DEFINED])
-    tabs.addTab(single["page"], TAB_LABELS[TAB_SINGLE])
-    tabs.addTab(composite["page"], TAB_LABELS[TAB_COMPOSITE])
+    tabs.addTab(user_defined["page"], _dialog_text(TAB_LABELS[TAB_USER_DEFINED]))
+    tabs.addTab(single["page"], _dialog_text(TAB_LABELS[TAB_SINGLE]))
+    tabs.addTab(composite["page"], _dialog_text(TAB_LABELS[TAB_COMPOSITE]))
     active_indices = {TAB_USER_DEFINED: 0, TAB_SINGLE: 1, TAB_COMPOSITE: 2}
     tabs.setCurrentIndex(
         active_indices.get(state["saved"]["active_tab"], active_indices[TAB_SINGLE])
@@ -1270,7 +1385,10 @@ def _show_waveguide_dialog(dbu=0.001):
     layout.addWidget(tabs)
 
     buttons = pya.QHBoxLayout(dialog)
-    ok_btn, cancel_btn = pya.QPushButton("OK", dialog), pya.QPushButton("Cancel", dialog)
+    ok_btn, cancel_btn = (
+        pya.QPushButton(_dialog_text("OK"), dialog),
+        pya.QPushButton(_dialog_text("Cancel"), dialog),
+    )
     buttons.addWidget(ok_btn)
     buttons.addWidget(cancel_btn)
     layout.addLayout(buttons)
@@ -1323,7 +1441,7 @@ def _show_waveguide_dialog(dbu=0.001):
             )
         except ValueError as error:
             if force:
-                _message("JNU_MWP_PDK", str(error))
+                _message("JNU_MWP_PDK", _dialog_error(error))
             return False
         if not found:
             name_state["dirty"] = False
@@ -1345,7 +1463,9 @@ def _show_waveguide_dialog(dbu=0.001):
             return True
         except Exception as error:
             name_state["loading"] = False
-            _message("JNU_MWP_PDK", "Preset Name 自动保存失败：\n%s" % error)
+            _message("JNU_MWP_PDK", _dialog_message(
+                "Failed to save preset name:\n%s", "预设名称自动保存失败：\n%s",
+            ) % _dialog_error(error))
             return False
 
     def preset_name_changed(_text=None):
@@ -1390,7 +1510,9 @@ def _show_waveguide_dialog(dbu=0.001):
             note_timer.stop()
             return True
         except Exception as error:
-            _message("JNU_MWP_PDK", "Note 自动保存失败：\n%s" % error)
+            _message("JNU_MWP_PDK", _dialog_message(
+                "Failed to save note:\n%s", "备注自动保存失败：\n%s",
+            ) % _dialog_error(error))
             return False
 
     def note_changed():
@@ -1467,15 +1589,22 @@ def _show_waveguide_dialog(dbu=0.001):
             if created:
                 _message(
                     "JNU_MWP_PDK",
-                    "User-Defined 参数保存成功：\n%s" % preset["name"],
+                    _dialog_message(
+                        "User-defined preset saved:\n%s", "自定义预设已保存：\n%s",
+                    ) % preset["name"],
                 )
             else:
                 _message(
                     "JNU_MWP_PDK",
-                    "User-Defined 参数已存在，已选择现有预设：\n%s" % preset["name"],
+                    _dialog_message(
+                        "Preset already exists; selected existing preset:\n%s",
+                        "预设已存在，已选中现有预设：\n%s",
+                    ) % preset["name"],
                 )
         except Exception as error:
-            _message("JNU_MWP_PDK", "保存 User-Defined 参数失败：\n%s" % error)
+            _message("JNU_MWP_PDK", _dialog_message(
+                "Failed to save user-defined preset:\n%s", "保存自定义预设失败：\n%s",
+            ) % _dialog_error(error))
 
     def manage_presets(_checked=False):
         if not flush_user_fields(True):
@@ -1496,7 +1625,9 @@ def _show_waveguide_dialog(dbu=0.001):
             state["saved"] = candidate
             refresh_user_page()
         except Exception as error:
-            _message("JNU_MWP_PDK", "删除 User-Defined 参数失败：\n%s" % error)
+            _message("JNU_MWP_PDK", _dialog_message(
+                "Failed to delete user-defined preset:\n%s", "删除自定义预设失败：\n%s",
+            ) % _dialog_error(error))
 
     def change_tab(index):
         if (
@@ -1569,7 +1700,9 @@ def _show_waveguide_dialog(dbu=0.001):
             state["saved"] = candidate
             return True
         except Exception as error:
-            _message("JNU_MWP_PDK", "参数配置保存失败：\n%s" % error)
+            _message("JNU_MWP_PDK", _dialog_message(
+                "Failed to save waveguide settings:\n%s", "波导参数保存失败：\n%s",
+            ) % _dialog_error(error))
             return False
 
     while True:
@@ -1596,7 +1729,7 @@ def _show_waveguide_dialog(dbu=0.001):
                 controls, state["saved"][group], is_composite, dbu,
             )
     except (TypeError, ValueError) as error:
-        _message("JNU_MWP_PDK", str(error))
+        _message("JNU_MWP_PDK", _dialog_error(error))
         return None
     return result
 
@@ -1794,12 +1927,17 @@ def _params_with_effective_radius(params, actual_radius_um, dbu=0.001):
 
 def _format_capacity_issues(analyses, requested_radius, dbu=0.001):
     """生成确认框和完成提示共用的问题线段说明。"""
-    lines = ["请求半径：%.3f um" % requested_radius]
+    lines = [_dialog_message("Requested radius: %.3f um", "请求半径：%.3f µm") % requested_radius]
     for analysis in analyses:
         for issue in analysis["issues"]:
             p0, p1 = issue["start"], issue["end"]
             lines.append(
-                "Path %d，线段 %d：(%.3f,%.3f)→(%.3f,%.3f) um，长度 %.3f um，可用半径 %.3f um"
+                _dialog_message(
+                    "Path %d, segment %d: (%.3f,%.3f)→(%.3f,%.3f) um, "
+                    "length %.3f um, available radius %.3f um",
+                    "路径 %d，线段 %d：(%.3f,%.3f)→(%.3f,%.3f) µm，"
+                    "长度 %.3f µm，可用半径 %.3f µm",
+                )
                 % (
                     issue["path_number"], issue["segment_number"],
                     p0.x * dbu, p0.y * dbu, p1.x * dbu, p1.y * dbu,
@@ -1812,10 +1950,21 @@ def _format_capacity_issues(analyses, requested_radius, dbu=0.001):
 def _confirm_radius_reduction(details):
     """用Yes/Cancel确认是否按可行半径继续生成。"""
     message = pya.QMessageBox()
-    message.setWindowTitle("JNU Path to Waveguide")
-    message.setText("部分线段不足以容纳请求的弯曲半径。")
-    message.setInformativeText(details + "\n\n是否降低半径并继续生成？")
+    _set_regular_dialog_font(message)
+    message.setWindowTitle(_dialog_text("JNU Path to Waveguide"))
+    message.setText(_dialog_message(
+        "Some segments cannot fit the requested bend radius.",
+        "部分线段不足以容纳请求的弯曲半径。",
+    ))
+    message.setInformativeText(details + "\n\n" + _dialog_message(
+        "Reduce the radius and continue?", "是否降低半径并继续生成？",
+    ))
     message.setStandardButtons(pya.QMessageBox.Yes | pya.QMessageBox.Cancel)
+    try:
+        message.button(pya.QMessageBox.Yes).setText(_dialog_message("Yes", "是"))
+        message.button(pya.QMessageBox.Cancel).setText(_dialog_text("Cancel"))
+    except Exception:
+        pass
     message.setDefaultButton(pya.QMessageBox.Yes)
     return pya.QMessageBox_StandardButton(message.exec_()) == pya.QMessageBox.Yes
 

@@ -13,8 +13,8 @@
 
 - `corner_points()` 是唯一分发入口；三种点列均保持 `(0,0) -> (R,R)`，量化后首段 `(0,0)->(10,0)`、末段 `(R,R-10)->(R,R)` DBU。
 - Euler 几何、路径检查、点数和长度使用 Reff。普通 radius 在 Euler GUI 中隐藏但不删除。
-- Path to Waveguide 每个 Qt 信号只连接一个聚合刷新器；提交参数、派生显示、几何和名称使用同一计算结果。
-- Path to Waveguide 的页签顺序为 `User-Defined`、`Single-Width Waveguide`、`Composite-Width Waveguide`，主窗口固定从 `1187 × 541 px` 内容区尺寸打开且不保存用户临时缩放。后两页使用 Editable/Calculated 双栏；`Editable Parameters`、`Calculated Parameters`、`Saved Types` 和 `Selected Parameters` 四个分组标题使用16 pt加粗，普通标签、输入框、页签、按钮和 Note 标题保持 KLayout 默认字体。Single 页 Bend Type 是首个可编辑字段，Composite 页 Bend Type 位于 Bend Radius 前。User-Defined 页按所选模式显示全部输入和派生参数，只有 Preset Name 可编辑；名称输入实时更新下拉项，并以500 ms防抖原子保存，名称非空、跨预设唯一且不改变稳定ID。`Save as User-Defined` 立即写入预设但不关闭窗口，成功后区分新建和已存在预设进行提示；主窗口 Cancel 不生成波导，但三个页签的全部有效设置、当前预设和当前页签仍会保存。生成逻辑按页签语义映射，禁止使用随页签顺序变化的硬编码索引。
+- Path to Waveguide 每个 Qt 信号只连接一个聚合刷新器；提交参数、派生显示、几何和名称使用同一计算结果。窗口文字可按启动时语言偏好切换，弯曲类型下拉框的显示文字可翻译，但计算和预设始终保存英文枚举值。
+- Path to Waveguide 的页签顺序为 `User-Defined`、`Single-Width Waveguide`、`Composite-Width Waveguide`，主窗口固定从 `1187 × 541 px` 内容区尺寸打开且不保存用户临时缩放。后两页使用 Editable/Calculated 双栏；`Editable Parameters`、`Calculated Parameters`、`Saved Types` 和 `Selected Parameters` 四个分组标题使用16 pt加粗，普通标签、输入框、页签、按钮和 Note 标题使用11 pt常规字体。Single 页 Bend Type 是首个可编辑字段，Composite 页 Bend Type 位于 Bend Radius 前。User-Defined 页按所选模式显示全部输入和派生参数，只有 Preset Name 可编辑；名称输入实时更新下拉项，并以500 ms防抖原子保存，名称非空、跨预设唯一且不改变稳定ID。`Save as User-Defined` 立即写入预设但不关闭窗口，成功后区分新建和已存在预设进行提示；主窗口 Cancel 不生成波导，但三个页签的全部有效设置、当前预设和当前页签仍会保存。生成逻辑按页签语义映射，禁止使用随页签顺序变化的硬编码索引。
 - 除 Path to Waveguide 主窗口外，JNU 自定义参数窗口通过 `core/gui_state.py` 把每个窗口的实际宽高原子写入用户 `.klayout/jnu_gui_state.json`；OK、Cancel和标题栏关闭均保存，热重载或KLayout重启后恢复。Application配置只作为旧记录回退，不能作为唯一存储。
 - 用户预设保存在 `jnu_waveguide_params.json` 的版本化 `user_defined` 结构中，只保存可编辑参数并在使用时重算派生值。稳定 ID 由模式和规范化参数生成；完全相同参数去重，同名不同参数追加 `_2/_3`。每个预设含独立多行 Note，Note不参与ID、名称和几何；使用500 ms单次定时器防抖保存，并在切换预设/页签、Manage、OK、Cancel及窗口关闭前强制原子写入。管理窗口以暂存列表执行多选删除，只有管理窗口 OK 才原子写入，Cancel 放弃删除。
 - Waveguide PCell 与 Path to Waveguide 的 Si/DevRec 使用同一平滑中心线，并仅写入扫掠后的 Polygon；DevRec 总宽度等于 `wg_width + 2 µm`，确保 Si 两侧各保留 1 µm 净空。TypeShape `path` 与恢复属性继续保存可逆中心线数据，不作为可见图形输出。

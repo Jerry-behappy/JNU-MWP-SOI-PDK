@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-07
+# 时间: 2026-10
 
 """Path to Waveguide 预设数据、持久化和用户参数页回归。"""
 
@@ -191,10 +191,11 @@ def _check_qt_pages_when_available():
     empty_user_page = path_tool._build_user_defined_page(parent)
     path_tool._refresh_user_defined_page(empty_user_page, settings, 0.001)
     _assert(not empty_user_page["note_edit"].isEnabled(), "无预设时 Note 仍可编辑。")
-    _assert(empty_user_page["selection_group"].title == "Saved Types", "Saved Types 标题错误。")
-    _assert(empty_user_page["preview_group"].title == "Selected Parameters", "Selected Parameters 标题错误。")
-    _assert(single["editable_group"].title == "Editable Parameters", "单宽度可编辑栏标题错误。")
-    _assert(single["calculated_group"].title == "Calculated Parameters", "单宽度计算栏标题错误。")
+    label = path_tool._dialog_text
+    _assert(empty_user_page["selection_group"].title == label("Saved Types"), "Saved Types 标题错误。")
+    _assert(empty_user_page["preview_group"].title == label("Selected Parameters"), "Selected Parameters 标题错误。")
+    _assert(single["editable_group"].title == label("Editable Parameters"), "单宽度可编辑栏标题错误。")
+    _assert(single["calculated_group"].title == label("Calculated Parameters"), "单宽度计算栏标题错误。")
     _assert(single["editable_order"][0] == "bend_type", "单宽度 Bend Type 不是首个参数。")
     _assert(
         composite["editable_order"].index("bend_type")
@@ -212,38 +213,32 @@ def _check_qt_pages_when_available():
         _assert("font-size:16pt" in style and "font-weight:bold" in style, "用户页分组标题样式不是16pt加粗。")
         _assert(empty_user_page[key].font.pointSize == 16, "用户页分组标题字号未写入到Qt字体。")
         _assert(empty_user_page[key].font.bold, "用户页分组标题未写入粗体Qt字体。")
-    default_edit = pya.QLineEdit(parent)
-    default_label = pya.QLabel(parent)
-    default_button = pya.QPushButton(parent)
-    default_combo = pya.QComboBox(parent)
-    default_plain_text = pya.QPlainTextEdit(parent)
     for controls, keys in (
         (single, ("bend_type_label", "width_label", "width", "radius_label", "radius", "npoints_label", "npoints", "save_button")),
         (composite, ("straight_width_label", "straight_width", "bend_width_label", "bend_width", "start_width_role_label", "end_width_role_label", "taper_length_label", "transition_length_label")),
     ):
         for key in keys:
             widget = controls[key]
-            reference = default_button if key == "save_button" else default_edit if isinstance(widget, pya.QLineEdit) else default_label
-            _assert(widget.font.pointSize == reference.font.pointSize, "%s 字号继承了分组标题。" % key)
-            _assert(widget.font.bold == reference.font.bold, "%s 错误继承了分组粗体。" % key)
-    for key, reference in (
-        ("combo_label", default_label),
-        ("combo", default_combo),
-        ("manage_button", default_button),
-        ("empty_label", default_label),
-        ("preset_name_label", default_label),
-        ("preset_name", default_edit),
-        ("note_edit", default_plain_text),
+            _assert(widget.font.pointSize == 11, "%s 字号不是11pt。" % key)
+            _assert(not widget.font.bold, "%s 错误继承了分组粗体。" % key)
+    for key in (
+        "combo_label", "combo", "manage_button", "empty_label",
+        "preset_name_label", "preset_name", "note_edit",
     ):
         widget = empty_user_page[key]
-        _assert(widget.font.pointSize == reference.font.pointSize, "%s 字号继承了用户页分组标题。" % key)
-        _assert(widget.font.bold == reference.font.bold, "%s 错误继承了用户页分组粗体。" % key)
-    _assert(empty_user_page["note_group"].font.pointSize != 16 or not empty_user_page["note_group"].font.bold, "Note 标题被错误设置为16pt加粗。")
+        _assert(widget.font.pointSize == 11, "%s 字号不是11pt。" % key)
+        _assert(not widget.font.bold, "%s 错误继承了用户页分组粗体。" % key)
+    _assert(empty_user_page["note_group"].font.pointSize == 11, "备注标题字号不是11pt。")
     _assert(single["layout"].count() == 2 and composite["layout"].count() == 2, "基础页不是双栏布局。")
     _assert(single["npoints"].isReadOnly(), "单宽度派生参数仍可编辑。")
     _assert(composite["Bezier_Rmax"].isReadOnly(), "复合波导派生参数仍可编辑。")
-    _assert(single["save_button"].text == "Save as User-Defined", "单宽度保存按钮文字错误。")
-    _assert(composite["save_button"].text == "Save as User-Defined", "复合波导保存按钮文字错误。")
+    _assert(single["save_button"].text == label("Save as User-Defined"), "单宽度保存按钮文字错误。")
+    _assert(composite["save_button"].text == label("Save as User-Defined"), "复合波导保存按钮文字错误。")
+    _assert(str(single["bend_type"].currentText) == path_tool._bend_type_text(settings["single"]["bend_type"]), "弯曲类型下拉框未翻译。")
+    single["bend_type"].setCurrentIndex(0)
+    _assert(path_tool._parse_waveguide_page(single, settings["single"], False, 0.001)["bend_type"] == "Circular", "翻译后的弯曲类型改变了内部参数值。")
+    single["bend_type"].setCurrentIndex(1)
+    _assert(label("Straight Width") in composite["end_width_role"].itemText(0), "宽度选项未翻译。")
     _assert(path_tool.TAB_LABELS == {
         path_tool.TAB_SINGLE: "Single-Width Waveguide",
         path_tool.TAB_COMPOSITE: "Composite-Width Waveguide",
@@ -255,7 +250,7 @@ def _check_qt_pages_when_available():
     )
     user_page = path_tool._build_user_defined_page(parent)
     path_tool._refresh_user_defined_page(user_page, settings, 0.001)
-    _assert(user_page["mode"].text == "Single-Width Waveguide", "用户页未显示单宽度模式。")
+    _assert(user_page["mode"].text == label("Single-Width Waveguide"), "用户页未显示单宽度模式。")
     _assert(user_page["width"].text == "0.500", "用户页未显示单宽度数值。")
     _assert(user_page["note_edit"].isEnabled(), "存在预设时 Note 未启用。")
     _assert(str(_qt_value(user_page["note_edit"], "toPlainText")) == "", "新预设 Note 默认值错误。")
@@ -282,7 +277,7 @@ def _check_qt_pages_when_available():
     )
     settings["user_defined"]["selected_id"] = composite_preset["id"]
     path_tool._refresh_user_defined_page(user_page, settings, 0.001)
-    _assert(user_page["mode"].text == "Composite-Width Waveguide", "用户页未显示复合模式。")
+    _assert(user_page["mode"].text == label("Composite-Width Waveguide"), "用户页未显示复合模式。")
     _assert(user_page["straight_width"].text == "2.000", "用户页未显示复合直宽。")
     _assert(not user_page["preset_name"].isReadOnly(), "Preset Name 仍不可编辑。")
     for key in (
@@ -342,7 +337,7 @@ def _check_qt_pages_when_available():
             save_timer.start(0)
             path_tool._show_waveguide_dialog(0.001)
             _assert(not callback_errors, "Save 按钮 GUI 回调失败：%s" % callback_errors)
-            _assert(messages and "保存成功" in messages[-1][1], "新预设保存后未提示成功。")
+            _assert(messages and path_tool._dialog_message("saved", "已保存") in messages[-1][1], "新预设保存后未提示成功。")
 
             messages[:] = []
             duplicate_timer = pya.QTimer(parent)
@@ -350,7 +345,7 @@ def _check_qt_pages_when_available():
             duplicate_timer.timeout(save_single_and_close)
             duplicate_timer.start(0)
             path_tool._show_waveguide_dialog(0.001)
-            _assert(messages and "已存在" in messages[-1][1], "重复预设保存后未提示已存在。")
+            _assert(messages and path_tool._dialog_message("already exists", "已存在") in messages[-1][1], "重复预设保存后未提示已存在。")
 
             settings["active_tab"] = path_tool.TAB_USER_DEFINED
             path_tool._save_waveguide_params(settings)
@@ -361,7 +356,7 @@ def _check_qt_pages_when_available():
                     tabs_widget = find_child(
                         dialog, pya.QTabWidget, "jnu_path_to_waveguide_tabs",
                     )
-                    _assert(tabs_widget.tabText(0) == "User-Defined", "User-Defined 不是第一个页签。")
+                    _assert(tabs_widget.tabText(0) == label("User-Defined"), "User-Defined 不是第一个页签。")
                     name_edit = find_child(
                         dialog, pya.QLineEdit, "jnu_user_defined_preset_name",
                     )
