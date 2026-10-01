@@ -222,6 +222,42 @@ def _existing_public_checkout(home):
         "保留白盒 GDS，再重新运行安装宏。" % target)
 
 
+def probe_main_update(home, timeout=8):
+    """只读比较当前 main 与远端 main；开发分支和连接失败时静默跳过。"""
+    try:
+        repository = _existing_public_checkout(home)
+        if repository is None:
+            return None
+        git = find_git()
+        environment = os.environ.copy()
+        environment["GIT_TERMINAL_PROMPT"] = "0"
+        environment["GCM_INTERACTIVE"] = "Never"
+
+        def read(*arguments):
+            result = subprocess.run(
+                [git, "-c", "credential.helper=", "-C", str(repository), *arguments],
+                env=environment, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                text=True, encoding="utf-8", errors="replace", timeout=timeout,
+                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            )
+            return result.stdout.strip() if result.returncode == 0 else None
+
+        if read("branch", "--show-current") != "main":
+            return None
+        if _repo_identity(read("remote", "get-url", "origin") or "") != _repo_identity(PUBLIC_URL):
+            return None
+        local_revision = read("rev-parse", "HEAD")
+        remote_line = read("ls-remote", "--exit-code", PUBLIC_URL, "refs/heads/main")
+        if not local_revision or not remote_line:
+            return None
+        remote_revision, separator, branch = remote_line.partition("\t")
+        if not separator or branch != "refs/heads/main" or remote_revision == local_revision:
+            return None
+        return local_revision, remote_revision
+    except (OSError, RuntimeError, subprocess.TimeoutExpired):
+        return None
+
+
 def _check_legacy(home):
     for relative in ("tech/JNU_MWP_PDK", "pymacros/JNU_MWP_PDK_loader.py",
                      "pymacros/JNU_MWP_PDK_blackbox_loader.py"):
@@ -287,7 +323,7 @@ def install_private(home, notify=lambda _message: None):
     return "白盒器件库安装/更新完成，已同步 %d 个授权 GDS；请重启 KLayout。" % count
 
 
-def show_installer(mode="install", execute=True):
+def show_installer(mode="install", execute=True, auto_start=False):
     import pya
 
     app = pya.Application.instance()
@@ -368,6 +404,8 @@ def show_installer(mode="install", execute=True):
                     self.start_button.setEnabled(kind == "error")
 
     dialog = InstallerDialog()
+    if auto_start:
+        dialog.start()
     if execute:
         dialog.exec_()
     return dialog
