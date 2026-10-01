@@ -4,7 +4,9 @@
 
 ## 中文使用说明
 
-本说明对应当前源码中的 `JNULib`、`JNULib_BlackBox` 与 `JNU_MWP_PDK` 菜单。安装和更新采用 Git 克隆方式，具体命令见 [README 安装说明](../README.md#克隆仓库安装windows)。长度、半径、宽度和间距参数未特别注明时均以 µm 为单位。
+本说明对应当前源码中的 `JNULib`、`JNULib_BlackBox` 与 `JNU_MWP_PDK` 菜单。安装和更新方式见 [README](../README.md#克隆仓库安装windows)。长度、半径、宽度和间距参数未特别注明时均以 µm 为单位。
+
+菜单路径以默认 English 界面为例；选择简体中文后，菜单名称会随之翻译。
 
 ### 1. 开始使用
 
@@ -17,6 +19,7 @@
 
 普通 PCell 的新实例使用内置默认值，不把上次实例的参数作为新建默认值。`Path to Waveguide` 的窗口设置与自定义预设则会保存，二者是不同的使用行为。
 
+<a id="zh-devices"></a>
 ### 2. 器件与参数
 
 `JNULib` 中可直接放置的 9 类 PCell：
@@ -64,11 +67,12 @@
 | `DRC → Run JNU_MWP_DRC` | 未预设 | 对当前编辑 Cell 及其子层级运行已保存的规则。 |
 | `Reload JNU PDK` | 未预设 | 重载 JNU Python 模块、器件库和菜单。 |
 
+<a id="zh-waveguides"></a>
 ### 5. 绘制与修改波导
 
 #### Path to Waveguide
 
-1. 在 `Si (1/0)` 或 `Waveguide (1/99)` 层绘制仅含水平、垂直线段的 Manhattan Path，并选中一个或多个 Path。`1/99` 默认隐藏，使用前可在图层面板中显示。
+1. 在任意图层绘制仅含水平、垂直线段的 Manhattan Path，并选中一个或多个 Path。转换结果使用 JNU Si 层；`1/99` 是默认隐藏的输入引导层，使用前可在图层面板中显示。
 2. 按 `9`，选择 `Single-Width Waveguide`、`Composite-Width Waveguide`，或已保存的 `User-Defined` 预设。
 3. 单宽度模式设置波导宽度和弯曲参数；复合模式还需设置直宽、弯宽、两端宽度、taper 长度与 transition 长度。端部宽度可选择当前直宽或弯宽。
 4. 检查只读采样点数和曲率结果，点击 OK。成功转换的输入 Path 会被对应波导实例替换。
@@ -82,12 +86,14 @@
 
 未选中可识别的波导时，工具会询问是否转换当前 Cell 中的波导；取消即不执行批量转换。普通展平或外部软件处理可能丢失恢复数据，需保留可编辑设计源文件。
 
+<a id="zh-connections"></a>
 ### 6. 连接与吸附器件
 
 **Cell Connect by Waveguide**：恰好选中两个 Cell Instance，按 `6`。工具识别 PinRec 并选择距离最近的可用相向端口，支持水平 `0°/180°` 或垂直 `90°/270°` 配对。端口严格共线时创建与 Path to Waveguide 一致的内部 `Waveguide`；存在侧向偏移时创建可编辑 `S_Bend`。不支持阵列实例直接展开，也不是任意角度或自动避障布线工具。生成后应检查宽度、弯曲空间和与其他结构的间距。
 
 **Snap components**：选中要移动的对象，把鼠标停在未选中的参考对象上，再按 `7`。两侧需有可识别的相向 PinRec；工具整体平移选中组，不旋转、不镜像，也不生成连接波导。吸附成功时静默完成。参考对象依赖 KLayout 的 transient selection，鼠标悬停未命中对象时会提示失败。
 
+<a id="zh-layout-tools"></a>
 ### 7. 端口、文字与图层处理
 
 **Make Pins for Cell**：进入需要加工的 Cell，选择左、右、上、下哪些边生成端口。工具依据边界上的物理图形生成 PinRec；没有 DevRec 时按器件边界补建。操作后检查端口位置、宽度和方向，避免对错误的 Cell 执行。
@@ -96,6 +102,7 @@
 
 **Layer Exclude**：建议只对设计副本使用。当前 layout 存在名为 `TOP` 的 Cell 时优先以它为展平目标，否则使用当前 Cell；弹窗会显示目标名称。勾选表示“保留”图层，不是“删除”图层。未勾选的层会从整个当前 layout 删除，还可选择删除目标以外的 Cell、合并选定层图形或将 Si Path 转为 Polygon。工具不自动保存 GDS，完成后检查并另存输出。
 
+<a id="zh-drc"></a>
 ### 8. DRC 检查
 
 1. 进入要检查的 Cell。检查范围是该 Cell 及其子层级，不是屏幕缩放框或可见区域。
@@ -122,11 +129,12 @@
 - **保存重开后无法还原波导路径**：先确认 JNU PDK 已正常加载，再检查是否展平或经其他软件移除了 PCell/恢复属性；保留原始可编辑文件。
 - **更新后界面未变化**：执行 `Reload JNU PDK` 可更新 Python 功能；涉及启动宏、技术或安装路径时请完全重启。升级前备份重要版图。
 
+<a id="zh-installation"></a>
 ### 10. 安装与维护
 
-首次安装请按 [README 克隆安装说明](../README.md#克隆仓库安装windows)，先查询 KLayout 实际用户配置目录，再运行安装脚本。程序、用户目录和源码可以在不同盘符，不要将 PDK 安装目标误设为程序目录。
+首次安装请按 [README 安装说明](../README.md#克隆仓库安装windows) 使用拖入 KLayout 的安装宏，或将 AI 安装提示词交给能操作本机的代理。安装目标是 KLayout 实际使用的用户配置目录；程序、用户目录和源码可以在不同盘符。
 
-更新时按 [README 更新说明](../README.md#更新与白盒-gds)，在已安装克隆的 `main` 分支执行 `git pull --ff-only origin main`，保留本地修改和私有 GDS。纯 Python 功能更新后可执行 `Reload JNU PDK`；涉及启动宏、Technology 或安装路径时应完全重启。选择 `JNU_MWP_PDK` Technology 后检查菜单、器件库和图层是否正常。
+更新时按 [README 更新说明](../README.md#更新与白盒-gds) 使用菜单检查更新，或用 AI 提示词对当前分支安全快进，保留本地修改和私有 GDS。纯 Python 功能更新后可执行 `Reload JNU PDK`；涉及启动宏、Technology 或安装路径时应完全重启。选择 `JNU_MWP_PDK` Technology 后检查菜单、器件库和图层是否正常。
 
 ---
 
@@ -146,6 +154,7 @@ This guide describes the current `JNULib`, `JNULib_BlackBox`, and `JNU_MWP_PDK` 
 
 New ordinary PCell instances use built-in defaults. Path to Waveguide settings and user-defined presets are saved separately.
 
+<a id="en-devices"></a>
 ### Device Libraries
 
 | Public PCell | Purpose |
@@ -183,9 +192,10 @@ All paths below start at `JNU_MWP_PDK`. User-configured shortcuts take priority 
 | `DRC → Run JNU_MWP_DRC` | None | Run saved rules on the active cell and its descendants. |
 | `Reload JNU PDK` | None | Reload JNU Python code, libraries, and menus. |
 
+<a id="en-waveguides"></a>
 ### Waveguide Workflow
 
-1. Draw horizontal/vertical Manhattan Paths on `Si (1/0)` or `Waveguide (1/99)` and select them. Enable the normally hidden `1/99` layer when needed.
+1. Draw horizontal/vertical Manhattan Paths on any layer and select them. Converted geometry uses the JNU Si layer. The optional `Waveguide (1/99)` input-guide layer is normally hidden; enable it when needed.
 2. Press `9` and choose `Single-Width Waveguide`, `Composite-Width Waveguide`, or a saved `User-Defined` preset.
 3. Set width and bend parameters. Composite mode also sets straight/bend widths, start/end width choices, taper length, and transition length.
 4. Check the calculated fields and confirm. Successful conversions replace their input Paths. Non-Manhattan paths are skipped; insufficient bend space may prompt for a reduced radius. Paths that cannot fit fixed transitions are left unchanged.
@@ -193,18 +203,21 @@ All paths below start at `JNU_MWP_PDK`. User-configured shortcuts take priority 
 
 To revise a route, select its waveguide instance and press `8`, edit the recovered Si Path, then press `9` again. Composite recovery uses the straight width. With no recognized waveguide selected, a confirmation is required before converting the current cell's waveguides. This is not a general polygon-to-centerline tool; flattening or external processing can remove recovery data.
 
+<a id="en-connections"></a>
 ### Connecting and Arranging Devices
 
 For **Cell Connect by Waveguide**, select exactly two non-array cell instances and press `6`. Both need PinRec ports. The tool supports horizontal or vertical facing pairs: collinear pins create an internal `Waveguide`, while lateral offset creates an editable `S_Bend`. It is not an arbitrary-angle or obstacle-avoiding router; inspect widths and clearances after generation.
 
 For **Snap components**, select the moving objects, hover over an unselected reference object, and press `7`. Facing PinRec ports determine the translation. The whole selected group moves without rotation or mirroring, and no connecting waveguide is added. Successful snapping is silent and requires a valid transient selection under the cursor.
 
+<a id="en-layout-tools"></a>
 ### Layout Utilities
 
 For **Make Pins for Cell**, enter the target cell and choose its port sides. Inspect the generated pin positions, widths, directions, and DevRec. For **Numerical text array**, set numbering, direction, layer, spacing, and magnification, then place the array. Labels remain `Basic.TEXT` instances; spacing is between their bounding-box centers.
 
 Use **Layer Exclude** on a copy. It prefers a cell named `TOP` when present, otherwise the active cell. Checked layers are retained; unchecked layers are deleted from the entire current layout. Optional operations remove other cells, merge shapes, or convert Si Paths to polygons. The tool does not save GDS automatically: inspect and save a separate output.
 
+<a id="en-drc"></a>
 ### DRC and Troubleshooting
 
 Enter the cell to check, open `DRC → JNU_MWP_DRC`, edit and save rules in Macro Development, then return to the layout and choose `DRC → Run JNU_MWP_DRC`. Results appear in Marker Browser. The scope is the active cell and its descendants, not the visible viewport. Unsaved rule edits are not used by the run menu. Preserve customized rules before pulling updates.
@@ -220,8 +233,9 @@ Enter the cell to check, open `DRC → JNU_MWP_DRC`, edit and save rules in Macr
 
 A clean DRC report is not a fabrication guarantee. Verify the intended process, enabled rules, layer mapping, device geometry, and optical design requirements before delivery.
 
+<a id="en-installation"></a>
 ### Installation and Maintenance
 
-Follow the [README installation instructions](../README.md#git-clone-installation-windows). Query KLayout's actual user directory before running the installer. The executable, user directory, and source clone may be on different drives; the executable directory is not the PDK installation target.
+Follow the [README installation instructions](../README.md#git-clone-installation-windows). Drop the installer macro into your usual KLayout, or give the AI installation prompt to an agent with local file access. The installer uses KLayout's actual user directory; the executable, user directory, and source clone may be on different drives.
 
-For updates, follow [Updates and Whitebox GDS](../README.md#updates-and-whitebox-gds). Run `git pull --ff-only origin main` on the installed clone's `main` branch, preserving local changes and private GDS. Use `Reload JNU PDK` for Python-only changes; restart KLayout for startup macros, technology, or installation-path changes. Select the `JNU_MWP_PDK` technology and check the menus, libraries, and layers.
+For updates, follow [Updates and Whitebox GDS](../README.md#updates-and-whitebox-gds). Use the update menu or AI prompt to safely fast-forward the installed branch, preserving local changes and private GDS. Use `Reload JNU PDK` for Python-only changes; restart KLayout for startup macros, technology, or installation-path changes. Select the `JNU_MWP_PDK` technology and check the menus, libraries, and layers.
