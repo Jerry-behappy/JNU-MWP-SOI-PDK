@@ -45,11 +45,12 @@ def main():
                     assert (info.layer, info.datatype) in {(1, 0), (1, 10), (68, 0), (10, 0)}
                 if cell.name not in names:
                     assert not shapes or (info.layer, info.datatype) == (10, 0)
-    assert len(names) == 30, "黑盒器件数应为原有 24 个加新增 6 个：%d" % len(names)
+    assert len(names) == 29, "黑盒器件数应为原有 24 个加新增 5 个：%d" % len(names)
     assert {
         "Crossing4", "1310_TE_Terminator", "1550_TE_Terminator",
-        "1310_Ybranch", "1550_Ybranch", "Pcell_Waveguide_Bump",
+        "1310_Ybranch", "1550_Ybranch",
     } <= names
+    assert not any(name.startswith("Pcell_") for name in names)
     assert not {"ebeam_crossing4", "ebeam_terminator_te1310", "ebeam_terminator_te1550",
                 "ebeam_y_1310", "ebeam_y_1550"} & names
     library = pya.Library.library_by_name("JNULib_BlackBox")

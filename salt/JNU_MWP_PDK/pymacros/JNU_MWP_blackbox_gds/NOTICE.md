@@ -12,5 +12,5 @@ License: MIT, <https://github.com/SiEPIC/SiEPIC_EBeam_PDK/blob/master/LICENSE.md
 Copyright (c) 2016-2020, Lukas Chrostowski and contributors.
 The full permission and warranty notice is in the PDK's `LICENSE.md`.
 
-`Pcell_Waveguide_Bump.gds` is a fixed blackbox generated from the JNU-native
-`Pcell_Waveguide_Bump` default variant, not EBeam PCell source code.
+Parametric JNU PCells, including `Pcell_Waveguide_Bump`, are not included in
+this fixed blackbox directory.

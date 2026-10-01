@@ -121,20 +121,15 @@ def verify_bump(library):
 
 
 def verify_blackbox_ports(library):
-    names = [name for _, name, _, _ in FIXED] + ["Pcell_Waveguide_Bump"]
+    names = [name for _, name, _, _ in FIXED]
+    assert not (PYMACROS / "JNU_MWP_blackbox_gds" / "Pcell_Waveguide_Bump.gds").exists()
     for name in names:
         layout = pya.Layout()
         layout.read(str(PYMACROS / "JNU_MWP_blackbox_gds" / (name + ".gds")))
         blackbox = layout.cell(name)
         assert blackbox is not None, name
-        if name == "Pcell_Waveguide_Bump":
-            source_layout = pya.Layout()
-            original = source_layout.create_cell(name, "JNULib", {
-                "delta_length": 0.2, "width": 0.5, "radius": 20.0, "max_theta": 149.0,
-            })
-        else:
-            source_layout = library.layout()
-            original = source_layout.cell(name)
+        source_layout = library.layout()
+        original = source_layout.cell(name)
         assert _port_signature(original, source_layout) == _port_signature(blackbox, layout), name
         assert not _shape_texts(blackbox, layout, pya.LayerInfo(68, 0)), name
 
@@ -145,7 +140,7 @@ def main():
     verify_fixed(library)
     verify_bump(library)
     verify_blackbox_ports(library)
-    print("PASS: five source GDS cells match JNULib; bump PCell survives GDS reopen; six blackboxes preserve ports.")
+    print("PASS: five source GDS cells match JNULib; bump PCell survives GDS reopen; five blackboxes preserve ports.")
 
 
 if __name__ == "__main__":

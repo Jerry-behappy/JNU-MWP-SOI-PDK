@@ -17,12 +17,10 @@ PYMACROS = Path(__file__).resolve().parents[2]
 if str(PYMACROS) not in sys.path:
     sys.path.insert(0, str(PYMACROS))
 
-from JNU_MWP_pcells.waveguide_bump import WaveguideBump
 from JNU_MWP_tools.core.public_ebeam_cells import PUBLIC_EBEAM_CELLS
 from JNU_MWP_tools.release.package_blackbox_pdk import LIBRARY_DBU, _draw_blackbox_cell
 
 
-BUMP_NAME = "Pcell_Waveguide_Bump"
 SOURCE_NAMES = dict(PUBLIC_EBEAM_CELLS)
 
 
@@ -31,20 +29,6 @@ def _write_blackbox(cell, source_layout, destination, target_name=None):
     blackbox.dbu = LIBRARY_DBU
     _draw_blackbox_cell(cell, source_layout, blackbox, target_name=target_name)
     blackbox.write(str(destination))
-
-
-def _write_bump(destination):
-    layout = pya.Layout()
-    layout.dbu = LIBRARY_DBU
-    layout.register_pcell(BUMP_NAME, WaveguideBump())
-    declaration = layout.pcell_declaration(BUMP_NAME)
-    parameters = list(declaration.get_parameters())
-    defaults = {"delta_length": 0.2, "width": 0.5, "radius": 20.0, "max_theta": 149.0}
-    values = [defaults.get(parameter.name, parameter.default) for parameter in parameters]
-    cell = layout.cell(layout.add_pcell_variant(layout.pcell_id(BUMP_NAME), values))
-    if cell is None or cell.bbox().empty():
-        raise RuntimeError("无法生成 bump 默认 PCell")
-    _write_blackbox(cell, layout, destination)
 
 
 def _gds_records_without_dates(path):
@@ -72,7 +56,8 @@ def sync_blackboxes(source, output=PYMACROS / "JNU_MWP_blackbox_gds"):
     output = Path(output).resolve()
     if not source.is_dir() or not output.is_dir():
         raise FileNotFoundError("白盒源目录或黑盒输出目录不存在：%s / %s" % (source, output))
-    source_files = sorted(source.glob("*.gds"))
+    source_files = sorted(path for path in source.glob("*.gds")
+                          if not path.stem.startswith("Pcell_"))
     if len(source_files) < 29 or not all((source / (name + ".gds")).is_file()
                                            for name in SOURCE_NAMES):
         raise RuntimeError("独立器件库白盒不完整，至少需要现有 29 个 GDS（含五个 EBeam）：%s" % source)
@@ -88,6 +73,8 @@ def sync_blackboxes(source, output=PYMACROS / "JNU_MWP_blackbox_gds"):
             if len(tops) != 1:
                 raise RuntimeError("白盒 GDS 顶层 cell 数量应为 1：%s" % path)
             cell = layout.cell(tops[0]) if isinstance(tops[0], int) else tops[0]
+            if cell.name.startswith("Pcell_"):
+                continue
             if cell.bbox().empty() or (path.stem in SOURCE_NAMES and cell.name != path.stem):
                 raise RuntimeError("白盒 GDS 源名称错误或器件为空：%s / %s" % (path, cell.name))
             target_name = SOURCE_NAMES.get(path.stem, cell.name)
@@ -97,11 +84,8 @@ def sync_blackboxes(source, output=PYMACROS / "JNU_MWP_blackbox_gds"):
             target_names.add(target_name)
             output_names.add(output_name)
             _write_blackbox(cell, layout, staged / output_name, target_name=target_name)
-        if BUMP_NAME in target_names:
-            raise RuntimeError("固定白盒与 bump PCell 重名")
-        target_names.add(BUMP_NAME)
-        output_names.add(BUMP_NAME + ".gds")
-        _write_bump(staged / (BUMP_NAME + ".gds"))
+        if len(target_names) < 29:
+            raise RuntimeError("独立器件库中固定白盒不足 29 个：%s" % source)
 
         changed = []
         for path in sorted(staged.glob("*.gds")):

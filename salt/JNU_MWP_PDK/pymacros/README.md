@@ -37,7 +37,7 @@
 | `pymacros/JNULib.py` | 加载固定 GDS 单元并注册白盒 PCell |
 | `pymacros/JNULib_BlackBox.py` | 注册黑盒器件库 |
 | `pymacros/JNU_MWP_gds/` | 原有白盒目录；公开仓库无 GDS，安装器把独立器件库的授权 GDS 同步至此 |
-| `pymacros/JNU_MWP_blackbox_gds/` | 存放 30 个固定黑盒 GDS |
+| `pymacros/JNU_MWP_blackbox_gds/` | 存放 29 个固定黑盒 GDS |
 | `pymacros/JNU_MWP_pcells/` | 存放参数化器件实现 |
 | `pymacros/JNU_MWP_tools/` | 存放波导转换、端口生成、图层处理及回归脚本 |
 | `pymacros/JNU_MWP_PDK_Menu.lym` | 注册 KLayout 顶部菜单及工具入口 |
@@ -61,7 +61,7 @@
 
 五个 EBeam 来源器件在 `JNULib` 和 `JNULib_BlackBox` 中的名称为 `Crossing4`、`1310_TE_Terminator`、`1550_TE_Terminator`、`1310_Ybranch`、`1550_Ybranch`。上游 GDS 文件保留原文件名以便核对来源；白盒保留原始几何、端口、外框和全部 Text，包括两个 Y 分支的说明文字。源文件中的模型文字不表示新增 JNU 仿真模型。
 
-`JNULib_BlackBox` 提供 30 个固定黑盒：原有 24 个加以上五个器件和一个默认参数的 `Pcell_Waveguide_Bump`。每个黑盒只含矩形 Si 占位、端口与端口名、DevRec 外框和器件名标签；原始 EBeam 的其他 Text 和内部物理几何均不进入黑盒。
+`JNULib_BlackBox` 提供 29 个固定黑盒：原有 24 个加以上五个器件。所有 PCell（包括 `Pcell_Waveguide_Bump`）仅在 `JNULib` 中提供，不加入黑盒。每个黑盒只含矩形 Si 占位、端口与端口名、DevRec 外框和器件名标签；原始 EBeam 的其他 Text 和内部物理几何均不进入黑盒。
 
 #### 参数化单元
 
@@ -176,7 +176,7 @@ All paths below are relative to the `JNU_MWP_PDK` package root:
 | `pymacros/JNULib.py` | Loads fixed GDS cells and registers the white-box PCells |
 | `pymacros/JNULib_BlackBox.py` | Registers the black-box library |
 | `pymacros/JNU_MWP_gds/` | Original whitebox directory; the public repo has no GDS, and the installer syncs authorized GDS from the separate library |
-| `pymacros/JNU_MWP_blackbox_gds/` | Contains 30 fixed blackbox GDS files |
+| `pymacros/JNU_MWP_blackbox_gds/` | Contains 29 fixed blackbox GDS files |
 | `pymacros/JNU_MWP_pcells/` | Contains the PCell implementations |
 | `pymacros/JNU_MWP_tools/` | Contains waveguide conversion, pin, layer-processing, and regression tools |
 | `pymacros/JNU_MWP_PDK_Menu.lym` | Registers the KLayout menu and tool actions |
@@ -200,7 +200,7 @@ All paths below are relative to the `JNU_MWP_PDK` package root:
 
 The five EBeam-derived cell names in `JNULib` and `JNULib_BlackBox` are `Crossing4`, `1310_TE_Terminator`, `1550_TE_Terminator`, `1310_Ybranch`, and `1550_Ybranch`. The original GDS filenames are kept for provenance; the whitebox cells preserve their geometry, ports, outlines, and all Text, including Y-branch annotations. Original model annotations do not provide a new JNU simulation model.
 
-`JNULib_BlackBox` contains 30 fixed blackboxes: 24 existing devices plus these five and a static default `Pcell_Waveguide_Bump`. Each blackbox contains a rectangular Si placeholder, PinRec ports and port names, a DevRec outline, and a device-name label. Other EBeam Text and internal physical geometry are omitted.
+`JNULib_BlackBox` contains 29 fixed blackboxes: 24 existing devices plus these five. All PCells, including `Pcell_Waveguide_Bump`, are provided only by `JNULib` and are excluded from the blackbox library. Each blackbox contains a rectangular Si placeholder, PinRec ports and port names, a DevRec outline, and a device-name label. Other EBeam Text and internal physical geometry are omitted.
 
 #### Parameterized cells
 

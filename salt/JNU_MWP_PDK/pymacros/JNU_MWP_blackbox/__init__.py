@@ -1,7 +1,7 @@
 # $autorun
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-09
+# 时间: 2026-10
 
 # JNULib_BlackBox 黑盒器件库初始化脚本。
 # 将固定 GDS 器件替换为 Si 实心矩形块，并保留 PinRec 端口供 SiEPIC 识别。
@@ -276,7 +276,7 @@ def _load_gds_blackbox(ly):
         return
 
     for filename in sorted(os.listdir(gds_dir)):
-        if not filename.lower().endswith(".gds"):
+        if not filename.lower().endswith(".gds") or filename.startswith("Pcell_"):
             continue
 
         fullpath = os.path.join(gds_dir, filename)
@@ -286,6 +286,8 @@ def _load_gds_blackbox(ly):
         for top_cell in temp.each_top_cell():
             cell_obj = temp.cell(top_cell) if isinstance(top_cell, int) else top_cell
             cell_name = cell_obj.name
+            if cell_name.startswith("Pcell_"):
+                continue
             cell_bbox = cell_obj.bbox()
             si_bbox = _get_layer_bbox(cell_obj, temp, SI_LAYER)
             devrec_bbox = _get_layer_bbox(cell_obj, temp, DEVREC_LAYER)

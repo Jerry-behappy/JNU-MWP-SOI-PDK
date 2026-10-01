@@ -384,6 +384,8 @@ def _generate_blackbox_gds(package_root):
     bundled_files = sorted(bundled_dir.glob("*.gds"))
     if not bundled_files:
         raise RuntimeError("未找到仓库自带黑盒 GDS：%s" % bundled_dir)
+    if any(path.stem.startswith("Pcell_") for path in bundled_files):
+        raise RuntimeError("黑盒发布目录不得包含 PCell GDS：%s" % bundled_dir)
     for path in bundled_files:
         shutil.copy2(str(path), str(dst_dir / path.name))
     notice = bundled_dir / "NOTICE.md"
@@ -573,7 +575,7 @@ def _write_install_note(release_root, package_root, tech_root):
         "注意：\n"
         "- 本发布包不包含白盒固定器件 GDS。\n"
         "- 固定器件来自 salt/JNU_MWP_PDK/pymacros/JNU_MWP_blackbox_gds/。\n"
-        "- 当前包含 30 个固定黑盒器件，其中 6 个为新增的 crossing、terminator、Y 分支和默认 bump。\n"
+        "- 当前包含 29 个固定黑盒器件，其中 5 个为新增的 crossing、terminator 和 Y 分支。\n"
         "- 新增器件仅保留端口、器件名与矩形占位，不包含源 GDS 的说明文字或内部几何。\n"
         "- EBeam 派生数据的来源与 MIT 条款见 JNU_MWP_blackbox_gds/NOTICE.md 和包内 LICENSE.md。\n"
         "- 黑盒器件库只包含固定黑盒器件，不生成、不打包 PCell。\n"

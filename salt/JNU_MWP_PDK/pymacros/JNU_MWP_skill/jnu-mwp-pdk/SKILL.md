@@ -57,7 +57,7 @@ description: Use when developing, verifying, or packaging the JNU_MWP_PDK KLayou
 - Paperclip（含 Composite）的 20 nm PinRec 以 Si 端面为中心：内侧 10 nm 与 Si 重叠，外侧 10 nm 露出。Si 端面必须严格位于 pin 中心并与端口主体合并，DRC 只检查 PinRec 是否与 LayerSi 相交，不要求完整包覆。
 - 修改 Bend 后必须回归 Waveguide、Path to Waveguide、Archimedean_Spiral、Paperclip 和 Composite Paperclip。
 - 黑盒包不得包含 `JNU_MWP_skill`、`JNU_MWP_pcells`、`JNU_MWP_gds`、`JNULib.py`、`JNU_MWP_tools/release`、`JNU_MWP_tools/tests` 或 `klayoutrc*`；只携带工具包入口及 `core/actions` 运行时代码。
-- 修改任何固定白盒时，先提交到独立 Library 仓库，再运行 `release/sync_blackboxes_from_library.py --source <Library checkout/JNU_MWP_gds>`，从完整白盒目录重建并提交全部对应固定黑盒（当前 30 个，含默认 bump）。黑盒只保留矩形 Si/DevRec、PinRec 端口及器件名标签，发布包仅复制已验收的黑盒，不从本机白盒静默覆盖。公开 PDK 中不得提交任何白盒 `.gds`。
+- 修改任何固定白盒时，先提交到独立 Library 仓库，再运行 `release/sync_blackboxes_from_library.py --source <Library checkout/JNU_MWP_gds>`，从完整白盒目录重建并提交全部对应固定黑盒（当前 29 个）。所有 PCell（包括 bump）不进入黑盒库。黑盒只保留矩形 Si/DevRec、PinRec 端口及器件名标签，发布包仅复制已验收的黑盒，不从本机白盒静默覆盖。公开 PDK 中不得提交任何白盒 `.gds`。
 - 完整实验室 Salt Package 与黑盒包分开构建：`release/package_lab_pdk.py --gds-source <私有器件 checkout/JNU_MWP_gds>` 从 `Jerry-behappy/JNU-MWP-SOI-Library` 获取的本地 checkout 复制固定 GDS，并包含公开 PCell。完整 ZIP 仅内部交付，不上传公开 PDK 仓库；安装索引只在接收方本地生成，不嵌入凭据。`JNU_MWP_PDK_Startup.lym` 早期只注册技术和内部波导接口，公开库及 EBeam 桥接必须由 `pymacros/__init__.py` 在普通 autorun 阶段加载，避免 SiEPIC 在主窗口建立前被缓存成 batch 环境而丢失菜单。Package 不依赖额外 `tech` 副本；发布前验证独立安装及 SiEPIC/EBeam 共存冷启动。
 - `JNU_MWP_SOI_PDK` 当前仅作为产品文档展示名；Technology、Salt、菜单、安装目录、canonical skill 和黑盒发布包继续使用工程名 `JNU_MWP_PDK`，除非用户明确启动整体迁移。
 - 当前安装仅使用 `salt/JNU_MWP_PDK/JNU_MWP_PDK.lyt`，仓库根目录不再维护 `tech/` 副本；技术及图层由包内启动宏注册。该配置必须保持可搬运：`base-path` 与 `original-base-path` 为空，`layer-properties_file` 为同目录相对路径 `layers.lyp`。运行时代码只可由 `__file__` 推导安装位置，禁止写入 `C:/Users/zjy/...` 等作者机器绝对路径；备用黑盒打包工具生成的 `.lyt` 同样遵守此规则。

@@ -74,7 +74,7 @@ def main():
     output = Path(os.environ["JNU_BLACKBOX_TEST_OUTPUT"])
     assert not output.exists(), "测试包目录必须为新目录"
     count, package, _ = package_blackbox_pdk(output)
-    assert count == 30, count
+    assert count == 29, count
     macros = package / "pymacros"
     assert not (macros / "JNU_MWP_pcells").exists()
     assert not (macros / "JNU_MWP_gds").exists()
@@ -92,15 +92,16 @@ def main():
             names.add(cell.name)
             si = list(cell.shapes(layout.layer(1, 0)).each())
             assert len(si) == 1 and si[0].is_box(), cell.name
-    assert len(names) == 30, len(names)
+    assert len(names) == 29, len(names)
     assert {"Crossing4", "1310_TE_Terminator", "1550_TE_Terminator",
-            "1310_Ybranch", "1550_Ybranch", "Pcell_Waveguide_Bump"} <= names
+            "1310_Ybranch", "1550_Ybranch"} <= names
+    assert not any(name.startswith("Pcell_") for name in names)
     assert not {"ebeam_crossing4", "ebeam_terminator_te1310", "ebeam_terminator_te1550",
                 "ebeam_y_1310", "ebeam_y_1550"} & names
     if os.environ.get("JNU_WHITEBOX_GDS_DIR"):
         _verify_source_ports(Path(os.environ["JNU_WHITEBOX_GDS_DIR"]),
                              macros / "JNU_MWP_blackbox_gds")
-    print("PASS: 30 blackbox cells in standalone package; no whitebox GDS or PCell source.")
+    print("PASS: 29 fixed blackbox cells in standalone package; no whitebox GDS or PCell source.")
 
 
 if __name__ == "__main__":
