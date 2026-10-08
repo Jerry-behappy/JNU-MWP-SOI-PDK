@@ -96,95 +96,95 @@ install_internal_waveguide_registration()
 
 _PATH_TO_WAVEGUIDE_CODE = r"""
 import sys
-_PD = r'%(pymacros_dir)s'
+_PD = %(pymacros_dir)s
 if _PD not in sys.path:
     sys.path.insert(0, _PD)
 from JNU_MWP_tools.actions.path_to_waveguide import path_to_waveguide as _fn
 _fn()
-""" % {"pymacros_dir": _PYMACROS_DIR.replace("\\", "\\\\")}
+""" % {"pymacros_dir": repr(_PYMACROS_DIR)}
 
 _WAVEGUIDE_TO_PATH_CODE = r"""
 import sys
-_PD = r'%(pymacros_dir)s'
+_PD = %(pymacros_dir)s
 if _PD not in sys.path:
     sys.path.insert(0, _PD)
 from JNU_MWP_tools.actions.waveguide_to_path import waveguide_to_path as _fn
 _fn()
-""" % {"pymacros_dir": _PYMACROS_DIR.replace("\\", "\\\\")}
+""" % {"pymacros_dir": repr(_PYMACROS_DIR)}
 
 _CELL_CONNECT_CODE = r"""
 import sys
-_PD = r'%(pymacros_dir)s'
+_PD = %(pymacros_dir)s
 if _PD not in sys.path:
     sys.path.insert(0, _PD)
 from JNU_MWP_tools.actions.cell_connect_by_waveguide import cell_connect_by_waveguide as _fn
 _fn()
-""" % {"pymacros_dir": _PYMACROS_DIR.replace("\\", "\\\\")}
+""" % {"pymacros_dir": repr(_PYMACROS_DIR)}
 
 _MAKE_PINS_CODE = r"""
 import sys
-_PD = r'%(pymacros_dir)s'
+_PD = %(pymacros_dir)s
 if _PD not in sys.path:
     sys.path.insert(0, _PD)
 from JNU_MWP_tools.actions.make_pins_for_cell import make_pins_for_cell as _fn
 _fn()
-""" % {"pymacros_dir": _PYMACROS_DIR.replace("\\", "\\\\")}
+""" % {"pymacros_dir": repr(_PYMACROS_DIR)}
 
 _LAYER_EXCLUDE_CODE = r"""
 import sys
-_PD = r'%(pymacros_dir)s'
+_PD = %(pymacros_dir)s
 if _PD not in sys.path:
     sys.path.insert(0, _PD)
 from JNU_MWP_tools.actions.layer_exclude import layer_exclude as _fn
 _fn()
-""" % {"pymacros_dir": _PYMACROS_DIR.replace("\\", "\\\\")}
+""" % {"pymacros_dir": repr(_PYMACROS_DIR)}
 
 _NUMERICAL_TEXT_ARRAY_CODE = r"""
 import sys
-_PD = r'%(pymacros_dir)s'
+_PD = %(pymacros_dir)s
 if _PD not in sys.path:
     sys.path.insert(0, _PD)
 from JNU_MWP_tools.actions.numerical_text_array import numerical_text_array as _fn
 _fn()
-""" % {"pymacros_dir": _PYMACROS_DIR.replace("\\", "\\\\")}
+""" % {"pymacros_dir": repr(_PYMACROS_DIR)}
 
 _SNAP_COMPONENTS_CODE = r"""
 import sys
-_PD = r'%(pymacros_dir)s'
+_PD = %(pymacros_dir)s
 if _PD not in sys.path:
     sys.path.insert(0, _PD)
 from JNU_MWP_tools.actions.snap_components import snap_components as _fn
 _fn()
-""" % {"pymacros_dir": _PYMACROS_DIR.replace("\\", "\\\\")}
+""" % {"pymacros_dir": repr(_PYMACROS_DIR)}
 
 _RELOAD_PDK_CODE = r"""
 import importlib
 import sys
-_PD = r'%(pymacros_dir)s'
+_PD = %(pymacros_dir)s
 if _PD not in sys.path:
     sys.path.insert(0, _PD)
 _module = importlib.import_module("JNU_MWP_tools.actions.reload_pdk")
 _module = importlib.reload(_module)
 _module.schedule_reload_jnu_pdk()
-""" % {"pymacros_dir": _PYMACROS_DIR.replace("\\", "\\\\")}
+""" % {"pymacros_dir": repr(_PYMACROS_DIR)}
 
 _JNU_DRC_CODE = r"""
 import sys
-_PD = r'%(pymacros_dir)s'
+_PD = %(pymacros_dir)s
 if _PD not in sys.path:
     sys.path.insert(0, _PD)
 from JNU_MWP_tools.actions.drc import open_drc_macro_editor as _fn
 _fn()
-""" % {"pymacros_dir": _PYMACROS_DIR.replace("\\", "\\\\")}
+""" % {"pymacros_dir": repr(_PYMACROS_DIR)}
 
 _RUN_JNU_DRC_CODE = r"""
 import sys
-_PD = r'%(pymacros_dir)s'
+_PD = %(pymacros_dir)s
 if _PD not in sys.path:
     sys.path.insert(0, _PD)
 from JNU_MWP_tools.actions.drc import run_current_cell_drc as _fn
 _fn()
-""" % {"pymacros_dir": _PYMACROS_DIR.replace("\\", "\\\\")}
+""" % {"pymacros_dir": repr(_PYMACROS_DIR)}
 
 
 def _make_action(title, code_string):

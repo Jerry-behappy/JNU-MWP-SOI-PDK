@@ -76,4 +76,4 @@ description: Use when developing, verifying, or packaging the JNU_MWP_PDK KLayou
 3. 对所有改动的 Python 文件运行 `py_compile`，再运行 KLayout 批处理和 GDS 重读验证。
 4. 修改本 skill 后运行 `python scripts/sync_skill_links.py sync` 与 `check`。
 5. `JNU_PDK_CONTEXT_BACKUP.md` 仅保留为历史记录，除非用户明确要求，否则不读取、不写入。
-6. 向 GitHub 发布时遵循用户指定的分支：当前 PDK 开发分支为 `JNU_MWP_PDK_V1.2`，独立 Library 使用其授权仓库的 `main`；未明确指定时不要擅自迁移分支或发布白盒到公开 PDK。
+6. 向 GitHub 发布时遵循用户指定的分支：当前 PDK 开发分支为 `JNU_MWP_PDK_V1.3`，独立 Library 使用其授权仓库的 `main`；未明确指定时不要擅自迁移分支或发布白盒到公开 PDK。
