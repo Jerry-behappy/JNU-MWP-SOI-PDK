@@ -18,6 +18,7 @@
 - `pymacros/JNU_MWP_pcells/s_bend_waveguide.py`: 公开 `S_Bend` PCell；Bezier B 直接映射为 `P2.x/L`，默认 B=0.35；Si/DevRec 为 Polygon 且不写入 1/99。
 - `pymacros/JNU_MWP_pcells/taper.py`: 公开 Taper PCell；支持 Port 1/Port 2 恒宽直段延伸，中间渐变长度由 `length` 独立控制。
 - `pymacros/JNU_MWP_pcells/straight_waveguide.py`: 公开 Straight_Waveguide PCell；生成水平直波导、两端 PinRec、Text 及固定 68/0 DevRec。
+- `pymacros/JNU_MWP_pcells/waveguide_bump.py`: 公开 Pcell_Waveguide_Bump PCell；四段等半径圆弧加两端 20 nm 水平直段，圆弧累计转角按 149° 封顶以避免折回端口平面，并生成 PinRec、增量长度 Text 与 68/0 DevRec。
 - `pymacros/JNU_MWP_tools/actions/sbend_connect.py`: 两实例端口自动连接；初始参数为Bezier、B=0.3、R=30 µm。
 - `pymacros/JNU_MWP_tools/actions/reload_pdk.py`: 运行时重载入口；重建公开 JNULib、替换已打开 layout 的内部波导声明并刷新菜单。
 - `pymacros/JNU_MWP_skill/jnu-mwp-pdk/`: Codex/Claude 共用的 canonical skill；上级 `JNU_MWP_skill` 整体不得进入黑盒包。

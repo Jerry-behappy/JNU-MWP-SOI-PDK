@@ -132,6 +132,7 @@
 - 用 KLayout `-z -e` 运行 `tests/verify_drc_dialog_regression.py`，检查唯一 Technology DRC 文件、规则持久化、当前 Cell source 注入、临时宏 XML，以及原生编辑器的 current/active macro 同步与调试模式关闭。再运行 `tests/verify_drc_execution_regression.py`，用确定违规版图确认原生规则连续执行两次都能新增非空 Marker Database，并确认当前 Cell 菜单入口也能载入报告。
 - 用 `tests/verify_public_pcell_devrec_regression.py` 审计全部公开 PCell 的 `68/0`，覆盖微环两种 drop 总线及三类 Spiral 的 type1/type2/type3，检查单一矩形边界、端口边/非端口边净空、Si 包含关系和 GDS 重读。
 - 用 `tests/verify_straight_waveguide_regression.py` 检查默认 W/L、Si 尺寸、两个水平端口、PinRec 宽度、上下 1 µm DevRec、Text 和 GDS 重读。
+- 用 KLayout 批处理运行 `tests/verify_waveguide_bump_regression.py`，检查两端 20 nm 水平直段在 DBU 量化后仍存在、直弯连接处相切（单步转角不超过 0.25°）、圆弧不折回端口平面、`max_theta` 上限饱和、增量长度与量化后中心线一致、参数分区顺序以及 GDS 重读后的 PCell 身份。
 - 用 `tests/verify_reload_pdk_regression.py` 连续重载三次，确认公开库不重复、Straight_Waveguide 保留、内部两类 Waveguide PCell ID 不变且已有 variant 完成重算。
 - 用 KLayout `-z -e` 运行 `tests/verify_reload_pdk_gui_regression.py`，确认菜单宏和完整重载各重复三次后仍只有 9 个唯一 Action、单一 `JNULib`，并覆盖旧菜单首次升级、当前 Action 快捷键复制及已丢失快捷键从配置恢复。
 - 用 KLayout 批处理运行 `tests/verify_ebeam_library_bridge_regression.py`，确认五个 EBeam Library 都已绑定到 `JNU_MWP_PDK`、包含 EBeam 器件数据、重复桥接不会创建重复库，并且无需改动原 EBeam Technology。

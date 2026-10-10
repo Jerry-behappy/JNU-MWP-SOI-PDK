@@ -123,6 +123,7 @@ def main():
             "Pcell_Taper",
             "Pcell_S_Bend",
             "Pcell_Straight_Waveguide",
+            "Pcell_Waveguide_Bump",
         )
     )
     if public_names != expected_public:
