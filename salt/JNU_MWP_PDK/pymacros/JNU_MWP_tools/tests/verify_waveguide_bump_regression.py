@@ -36,6 +36,7 @@ TEXT_LAYER = pya.LayerInfo(10, 0)
 
 CASES = (
     ("default", 0.001, {"delta_length": 0.2}),
+    ("reported_gds", 0.001, {"delta_length": 141.84, "radius": 30.0}),
     ("large_delta_capped", 0.001, {"delta_length": 300.0, "max_theta": 179.0}),
     ("small_radius", 0.001, {"delta_length": 5.0, "radius": 5.0}),
     ("zero_delta", 0.001, {"delta_length": 0.0}),
@@ -83,26 +84,47 @@ def _pin_records(cell, layout):
     return sorted(records)
 
 
-def _section(cell, layout, x_dbu):
-    region = pya.Region(cell.begin_shapes_rec(layout.layer(SI_LAYER)))
-    probe = pya.Region(pya.Box(x_dbu, -100000, x_dbu + 1, 100000))
-    return (region & probe).bbox()
-
-
 def _check_port_landing(cell, layout, tag):
+    # 检查最终 Si 多边形的两端，而不是只检查尚未转成实体的中心线。
     land = port_land_dbu(layout.dbu)
-    half = int(round(float(cell.pcell_parameters_by_name()["width"])
-                     / layout.dbu / 2.0))
-    for probe in (0, land // 2, land):
-        box = _section(cell, layout, probe)
-        if box.empty():
-            raise RuntimeError("%s: 端口直段在 x=%d DBU 处缺少 Si。" % (tag, probe))
-        if box.bottom != -half or box.top != half:
-            raise RuntimeError(
-                "%s: 端口直段截面不是居中恒宽直波导：%s。" % (tag, box))
-    probe = _section(cell, layout, land + 1)
-    if probe.empty():
-        raise RuntimeError("%s: 端口直段之后缺少 Si。" % tag)
+    pins = _pin_records(cell, layout)
+    width = pins[0][1]
+    lower, upper = width // 2, width - width // 2
+    region = pya.Region(cell.begin_shapes_rec(layout.layer(SI_LAYER)))
+    box = region.bbox()
+    if box.left != pins[0][0] or box.right != pins[1][0]:
+        raise RuntimeError("%s: Si 端面未严格位于两个端口中心。" % tag)
+    for x, _, direction in pins:
+        left, right = (x, x + land) if direction == 180 else (x - land, x)
+        slab = pya.Region(pya.Box(left, box.bottom - 1, right, box.top + 1))
+        expected = pya.Region(pya.Box(left, -lower, right, upper))
+        if not ((region & slab) ^ expected).is_empty():
+            raise RuntimeError("%s: %d° 端口缺少完整恒宽直段或端面倾斜。" % (tag, direction))
+    merged = region.merged()
+    if merged.count() != 1 or next(merged.each()).holes() != 0:
+        raise RuntimeError("%s: Si 存在断接或孔洞。" % tag)
+
+
+def _check_arc_boundaries(cell, layout, tag):
+    # 圆弧首尾的物理边界应落在解析偏移圆上，量化误差允许 1 DBU。
+    params = cell.pcell_parameters_by_name()
+    if float(params["delta_length"]) == 0:
+        return
+    radius = float(params["radius"]) / layout.dbu
+    land = port_land_dbu(layout.dbu)
+    width = int(round(float(params["width"]) / layout.dbu))
+    lower, upper = width // 2, width - width // 2
+    end = _pin_records(cell, layout)[1][0]
+    for point in _si_polygon(cell, layout).each_point_hull():
+        if abs(point.y) > max(width, 1000):
+            continue
+        if not land < point.x < land + 1000 and not end - land - 1000 < point.x < end - land:
+            continue
+        center_x = land if point.x < land + 1000 else end - land
+        distance = math.hypot(point.x - center_x, point.y - radius)
+        error = min(abs(distance - (radius - upper)), abs(distance - (radius + lower)))
+        if error > 1.0:
+            raise RuntimeError("%s: 直弯连接附近 Si 边界偏离圆弧 %.3f DBU。" % (tag, error))
 
 
 def _check_no_fold(polygon, tag):
@@ -164,6 +186,7 @@ def _check_cases():
         polygon = _si_polygon(cell, layout)
         _check_no_fold(polygon, tag)
         _check_port_landing(cell, layout, tag)
+        _check_arc_boundaries(cell, layout, tag)
         _check_tangent(cell, layout, tag, params)
         _check_devrec(cell, layout, tag)
         if len(_pin_records(cell, layout)) != 2:
@@ -208,15 +231,11 @@ def _check_angle_clamp():
     polygon = _si_polygon(cell, layout)
     if polygon.bbox().left < 0:
         raise RuntimeError("Bump Si 折回输入端口。")
-    land = port_land_dbu(layout.dbu)
-    for probe in (0, land // 2, land):
-        box = _section(cell, layout, probe)
-        if box.empty() or box.bottom != -250 or box.top != 250:
-            raise RuntimeError("Bump 最大角度封顶后端口直段被破坏。")
+    _check_port_landing(cell, layout, "angle_clamp")
 
 
 def _check_gds_reopen():
-    layout, cell, params = _materialize(0.001, {"delta_length": 1.0})
+    layout, cell, params = _materialize(0.001, {"delta_length": 141.84, "radius": 30.0})
     top = layout.create_cell("JNU_BUMP_REGRESSION")
     top.insert(pya.CellInstArray(cell.cell_index(), pya.Trans()))
     with tempfile.TemporaryDirectory(prefix="jnu_bump_") as temp_dir:
@@ -231,11 +250,23 @@ def _check_gds_reopen():
                        for child in reopened.cell("JNU_BUMP_REGRESSION").each_inst())
         if not variant.is_pcell_variant():
             raise RuntimeError("Bump GDS 重读后不再是 PCell。")
-        if abs(float(variant.pcell_parameters_by_name()["delta_length"]) - 1.0) > 1e-6:
+        if abs(float(variant.pcell_parameters_by_name()["delta_length"]) - 141.84) > 1e-6:
             raise RuntimeError("Bump GDS 重读后参数丢失。")
         _si_polygon(variant, reopened)
         _check_port_landing(variant, reopened, "reopen")
         _check_no_fold(_si_polygon(variant, reopened), "reopen")
+        # 再去掉恢复上下文重读一次，避免库重生成掩盖文件中保存的坏端面。
+        static_output = str(Path(temp_dir) / "bump_geometry.gds")
+        options = pya.SaveLayoutOptions()
+        options.write_context_info = False
+        layout.write(static_output, options)
+        stored = pya.Layout()
+        stored.read(static_output)
+        stored_variant = next(stored.cell(child.cell_index)
+                              for child in stored.cell("JNU_BUMP_REGRESSION").each_inst())
+        if stored_variant.is_pcell_variant():
+            raise RuntimeError("静态 GDS 几何检查仍触发了 PCell 重生成。")
+        _check_port_landing(stored_variant, stored, "stored_geometry")
 
 
 def main():

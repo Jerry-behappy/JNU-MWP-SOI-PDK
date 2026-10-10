@@ -88,8 +88,8 @@ def bump_dimensions(delta_length, radius, max_theta):
     return theta, 4.0 * radius * math.sin(theta), target
 
 
-def bump_centerline(delta_length, radius, max_theta, dbu):
-    """按 +、-、-、+ 曲率顺序生成四段圆弧及两个水平端口直段。"""
+def _bump_trace(delta_length, radius, max_theta, dbu):
+    """返回未量化的中心坐标、解析切线及增量长度。"""
     dbu = float(dbu)
     theta, arc_length_x, actual_delta = bump_dimensions(
         delta_length, radius, max_theta)
@@ -97,10 +97,9 @@ def bump_centerline(delta_length, radius, max_theta, dbu):
     land = land_dbu * dbu
     if theta < 1e-9:
         length_dbu = max(4 * land_dbu, int(round(2.0 / dbu)))
-        points = [pya.Point(0, 0), pya.Point(length_dbu, 0)]
-        return points, length_dbu * dbu, actual_delta
+        return [(0.0, 0.0, 0.0), (length_dbu * dbu, 0.0, 0.0)], actual_delta
 
-    coordinates = [(0.0, 0.0), (land, 0.0)]
+    coordinates = [(0.0, 0.0, 0.0), (land, 0.0, 0.0)]
     x, y, heading = land, 0.0, 0.0
     for sign in (1.0, -1.0, -1.0, 1.0):
         initial_x, initial_y, initial_heading = x, y, heading
@@ -110,20 +109,47 @@ def bump_centerline(delta_length, radius, max_theta, dbu):
             new_heading = initial_heading + sign * turn
             x = initial_x + radius / sign * (math.sin(new_heading) - math.sin(initial_heading))
             y = initial_y - radius / sign * (math.cos(new_heading) - math.cos(initial_heading))
-            coordinates.append((x, y))
+            coordinates.append((x, y, new_heading))
         heading = initial_heading + sign * theta
 
     end_x = land + arc_length_x
-    coordinates[-1] = (end_x, 0.0)
-    coordinates.append((end_x + land, 0.0))
+    coordinates[-1] = (end_x, 0.0, 0.0)
+    coordinates.append((end_x + land, 0.0, 0.0))
+    return coordinates, actual_delta
+
+
+def bump_centerline(delta_length, radius, max_theta, dbu):
+    """按 +、-、-、+ 曲率顺序生成四段圆弧及两个水平端口直段。"""
+    coordinates, actual_delta = _bump_trace(delta_length, radius, max_theta, dbu)
     points = []
-    for px, py in coordinates:
+    for px, py, _ in coordinates:
         point = pya.Point(int(round(px / dbu)), int(round(py / dbu)))
         if not points or point != points[-1]:
             points.append(point)
     if len(points) < 2:
-        points = [pya.Point(0, 0), pya.Point(2 * land_dbu, 0)]
+        points = [pya.Point(0, 0), pya.Point(2 * port_land_dbu(dbu), 0)]
     return points, points[-1].x * dbu, actual_delta
+
+
+def bump_polygon(delta_length, radius, max_theta, width_dbu, dbu):
+    """用解析法线生成圆弧边界，保持端口直段和端面不被简化。"""
+    coordinates, _ = _bump_trace(delta_length, radius, max_theta, dbu)
+    # 两侧使用整数 DBU 偏移，使奇数宽度也保持准确的端口截面宽度。
+    lower_half = int(width_dbu) // 2
+    upper_half = int(width_dbu) - lower_half
+    sides = []
+    for offset in (upper_half, -lower_half):
+        points = []
+        for x, y, heading in coordinates:
+            point = pya.Point(
+                int(round(x / dbu - offset * math.sin(heading))),
+                int(round(y / dbu + offset * math.cos(heading))),
+            )
+            if not points or point != points[-1]:
+                points.append(point)
+        sides.append(points)
+    # 不调用 Path.polygon()：其宽度相关简化会吞掉短端段，并改变输出端面方向。
+    return pya.Polygon(sides[0] + list(reversed(sides[1])))
 
 
 def centerline_metrics(points, dbu):
@@ -179,7 +205,8 @@ class WaveguideBump(pya.PCellDeclarationHelper):
         si_layer = self.layout.layer(SI_LAYER)
         pin_layer = self.layout.layer(PIN_LAYER)
         text_layer = self.layout.layer(TEXT_LAYER)
-        self.cell.shapes(si_layer).insert(pya.Path(points, width_dbu).polygon())
+        self.cell.shapes(si_layer).insert(bump_polygon(
+            self.delta_length, self.radius, self.max_theta, width_dbu, dbu))
         make_pin(self.cell, "opt1", points[0], width_dbu, pin_layer, 180)
         make_pin(self.cell, "opt2", points[-1], width_dbu, pin_layer, 0)
         text = pya.Text("dL = %.3f um" % actual_delta,
@@ -195,6 +222,7 @@ __all__ = [
     "WaveguideBump",
     "bump_dimensions",
     "bump_centerline",
+    "bump_polygon",
     "centerline_metrics",
     "port_land_dbu",
     "effective_max_theta",
