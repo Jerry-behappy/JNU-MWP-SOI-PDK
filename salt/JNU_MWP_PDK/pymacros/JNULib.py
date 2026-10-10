@@ -60,7 +60,7 @@ class JNULib(pya.Library):
 
     def __init__(self):
         # 库名保持稳定用于 PCell 识别；发行版本放在说明栏，供 Library 面板显示。
-        self.description = "v1.2, JNU MWP PDK components [Technology JNU_MWP_PDK]"
+        self.description = "v1.3, JNU MWP PDK components [Technology JNU_MWP_PDK]"
         # 器件库保持全局可见，不绑定到 JNU_MWP_PDK technology，
         # 这样切换到其他 technology 时仍可同时调用 JNU 和 EBeam 等器件库。
 

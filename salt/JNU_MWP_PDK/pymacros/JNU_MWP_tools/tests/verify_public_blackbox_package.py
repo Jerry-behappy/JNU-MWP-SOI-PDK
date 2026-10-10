@@ -44,7 +44,7 @@ def _ports(cell, layout):
 def _verify_source_ports(source_dir, blackbox_dir):
     mapping = dict(PUBLIC_EBEAM_CELLS)
     files = sorted(source_dir.glob("*.gds"))
-    assert len(files) == 29, len(files)
+    assert len(files) == 31, len(files)
     for path in files:
         source = pya.Layout()
         source.read(str(path))
@@ -74,7 +74,7 @@ def main():
     output = Path(os.environ["JNU_BLACKBOX_TEST_OUTPUT"])
     assert not output.exists(), "测试包目录必须为新目录"
     count, package, _ = package_blackbox_pdk(output)
-    assert count == 29, count
+    assert count == 31, count
     macros = package / "pymacros"
     assert not (macros / "JNU_MWP_pcells").exists()
     assert not (macros / "JNU_MWP_gds").exists()
@@ -92,7 +92,7 @@ def main():
             names.add(cell.name)
             si = list(cell.shapes(layout.layer(1, 0)).each())
             assert len(si) == 1 and si[0].is_box(), cell.name
-    assert len(names) == 29, len(names)
+    assert len(names) == 31, len(names)
     assert {"Crossing4", "1310_TE_Terminator", "1550_TE_Terminator",
             "1310_Ybranch", "1550_Ybranch"} <= names
     assert not any(name.startswith("Pcell_") for name in names)
@@ -101,7 +101,7 @@ def main():
     if os.environ.get("JNU_WHITEBOX_GDS_DIR"):
         _verify_source_ports(Path(os.environ["JNU_WHITEBOX_GDS_DIR"]),
                              macros / "JNU_MWP_blackbox_gds")
-    print("PASS: 29 fixed blackbox cells in standalone package; no whitebox GDS or PCell source.")
+    print("PASS: 31 fixed blackbox cells in standalone package; no whitebox GDS or PCell source.")
 
 
 if __name__ == "__main__":

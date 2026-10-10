@@ -45,7 +45,7 @@ def main():
                     assert (info.layer, info.datatype) in {(1, 0), (1, 10), (68, 0), (10, 0)}
                 if cell.name not in names:
                     assert not shapes or (info.layer, info.datatype) == (10, 0)
-    assert len(names) == 29, "黑盒器件数应为原有 24 个加新增 5 个：%d" % len(names)
+    assert len(names) == 31, "黑盒器件数应为 31 个：%d" % len(names)
     assert {
         "Crossing4", "1310_TE_Terminator", "1550_TE_Terminator",
         "1310_Ybranch", "1550_Ybranch",

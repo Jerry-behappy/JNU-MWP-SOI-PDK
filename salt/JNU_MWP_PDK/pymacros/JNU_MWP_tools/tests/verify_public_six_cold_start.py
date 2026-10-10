@@ -18,7 +18,7 @@ def _probe():
     white = pya.Library.library_by_name("JNULib")
     black = pya.Library.library_by_name("JNULib_BlackBox")
     assert white and black, "公开器件库未自动加载"
-    assert "v1.2" in white.description and "v1.2" in black.description
+    assert "v1.3" in white.description and "v1.3" in black.description
 
     fixed_names = (
         "Crossing4", "1310_TE_Terminator", "1550_TE_Terminator",
@@ -27,7 +27,7 @@ def _probe():
     for old_name in ("ebeam_crossing4", "ebeam_terminator_te1310",
                      "ebeam_terminator_te1550", "ebeam_y_1310", "ebeam_y_1550"):
         assert white.layout().cell(old_name) is None and black.layout().cell(old_name) is None
-    assert len(list(black.layout().each_top_cell())) == 29
+    assert len(list(black.layout().each_top_cell())) == 31
     assert not list(black.layout().pcell_names())
     assert black.layout().cell("Pcell_Waveguide_Bump") is None
     authorized = os.environ.get("JNU_EXPECT_WHITEBOX") == "1"
@@ -58,7 +58,7 @@ def _probe():
     assert labels["max_theta"] == ("最大弯曲角度" if chinese else "Maximum angle")
     result = {"whitebox": list(fixed_names) + ["Pcell_Waveguide_Bump"] if authorized
               else ["Pcell_Waveguide_Bump"],
-              "blackbox_count": 29,
+              "blackbox_count": 31,
               "language": "zh_CN" if chinese else "en", "ebeam_installed": False}
     Path(os.environ["JNU_SIX_REPORT"]).write_text(
         json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")

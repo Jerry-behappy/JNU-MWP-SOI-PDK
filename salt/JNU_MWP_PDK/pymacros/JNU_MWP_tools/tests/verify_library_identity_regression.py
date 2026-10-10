@@ -52,11 +52,11 @@ def main():
     _assert("v1." not in white.name(), "白盒库名仍带发行版本号。")
     _assert("v1." not in blackbox.name(), "黑盒库名仍带发行版本号。")
     _assert(
-        str(white.description).startswith("v1.1,"),
+        str(white.description).startswith("v1.3,"),
         "白盒库未在说明栏显示当前发行版本。",
     )
     _assert(
-        str(blackbox.description).startswith("v1.1,"),
+        str(blackbox.description).startswith("v1.3,"),
         "黑盒库未在说明栏显示当前发行版本。",
     )
 

@@ -558,7 +558,7 @@ def _uninstaller_source():
     )
 
 
-def _write_install_note(release_root, package_root, tech_root):
+def _write_install_note(release_root, package_root, tech_root, count):
     """写入安装说明，明确必须同时安装 salt 和 tech。"""
     note = (
         "JNU_MWP_PDK 黑盒发布包\n"
@@ -575,7 +575,7 @@ def _write_install_note(release_root, package_root, tech_root):
         "注意：\n"
         "- 本发布包不包含白盒固定器件 GDS。\n"
         "- 固定器件来自 salt/JNU_MWP_PDK/pymacros/JNU_MWP_blackbox_gds/。\n"
-        "- 当前包含 29 个固定黑盒器件，其中 5 个为新增的 crossing、terminator 和 Y 分支。\n"
+        f"- 当前包含 {count} 个固定黑盒器件，其中 5 个为 EBeam 衍生器件。\n"
         "- 新增器件仅保留端口、器件名与矩形占位，不包含源 GDS 的说明文字或内部几何。\n"
         "- EBeam 派生数据的来源与 MIT 条款见 JNU_MWP_blackbox_gds/NOTICE.md 和包内 LICENSE.md。\n"
         "- 黑盒器件库只包含固定黑盒器件，不生成、不打包 PCell。\n"
@@ -604,7 +604,7 @@ def package_blackbox_pdk(output_root):
     # Salt 包内也保留相对路径 .lyt，支持直接复制发布包而无需先运行安装脚本。
     _write_portable_technology_file(package_root)
 
-    _write_install_note(release_root, package_root, tech_root)
+    _write_install_note(release_root, package_root, tech_root, count)
     _verify_blackbox_exclusions(release_root, package_root)
     return count, package_root, tech_root
 

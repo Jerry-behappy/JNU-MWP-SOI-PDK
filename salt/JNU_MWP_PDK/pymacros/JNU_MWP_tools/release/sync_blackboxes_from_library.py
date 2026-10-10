@@ -58,9 +58,9 @@ def sync_blackboxes(source, output=PYMACROS / "JNU_MWP_blackbox_gds"):
         raise FileNotFoundError("白盒源目录或黑盒输出目录不存在：%s / %s" % (source, output))
     source_files = sorted(path for path in source.glob("*.gds")
                           if not path.stem.startswith("Pcell_"))
-    if len(source_files) < 29 or not all((source / (name + ".gds")).is_file()
+    if len(source_files) < 31 or not all((source / (name + ".gds")).is_file()
                                            for name in SOURCE_NAMES):
-        raise RuntimeError("独立器件库白盒不完整，至少需要现有 29 个 GDS（含五个 EBeam）：%s" % source)
+        raise RuntimeError("独立器件库白盒不完整，至少需要现有 31 个 GDS（含五个 EBeam）：%s" % source)
 
     with tempfile.TemporaryDirectory(prefix="jnu-blackbox-sync-", dir=output.parent) as temporary:
         staged = Path(temporary)
@@ -84,8 +84,8 @@ def sync_blackboxes(source, output=PYMACROS / "JNU_MWP_blackbox_gds"):
             target_names.add(target_name)
             output_names.add(output_name)
             _write_blackbox(cell, layout, staged / output_name, target_name=target_name)
-        if len(target_names) < 29:
-            raise RuntimeError("独立器件库中固定白盒不足 29 个：%s" % source)
+        if len(target_names) < 31:
+            raise RuntimeError("独立器件库中固定白盒不足 31 个：%s" % source)
 
         changed = []
         for path in sorted(staged.glob("*.gds")):
