@@ -58,7 +58,7 @@ _MENU_TITLES_ZH = {
     "jnu_action_make_pins_for_cell": "为单元生成端口",
     "jnu_action_layer_exclude": "排除图层",
     "jnu_action_numerical_text_array": "数字文本阵列",
-    "jnu_action_snap_components": "对齐器件",
+    "jnu_action_snap_components": "吸附器件",
     "jnu_action_reload_jnu_pdk": "重新加载 JNU PDK",
     "jnu_action_update_pdk": "检查 PDK 更新",
     "jnu_action_install_private": "安装／更新白盒器件库",

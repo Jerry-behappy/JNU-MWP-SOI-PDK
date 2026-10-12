@@ -14,6 +14,7 @@ Updates are listed newest first. Historical dates follow Git commit dates in Bei
 - Bring V1.3 up to date with `main`, including the centered dual-band TE edge-coupler blackbox, and rename the development branch to `JNU_MWP_PDK_V1.4`.
 - Add changelog links to both READMEs and dated Chinese and English update pages with language switching.
 - Update the fixed-device counts in the READMEs and library feature cards to 31.
+- Rename the Simplified Chinese Snap components menu label from “对齐器件” to “吸附器件”.
 
 ## 2026-10-10 · v1.3 libraries and waveguide fixes
 
