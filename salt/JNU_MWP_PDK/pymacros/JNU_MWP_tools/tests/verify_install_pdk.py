@@ -204,7 +204,7 @@ def main():
     actions = app.main_window()._jnu_menu_actions_by_id
     assert "jnu_action_update_pdk" in actions
     assert "jnu_action_install_private" in actions
-    assert len(actions) == 14
+    assert len(actions) == 15
     print("PASS: install/update, startup branch/offline guards, one-click GUI worker, menu reload", flush=True)
 
 

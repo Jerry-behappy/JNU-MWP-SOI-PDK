@@ -23,6 +23,7 @@
 # pya.Action 注册功能项，确保 autorun 宏结束后回调仍然有效：
 #   Waveguides -> Path to Waveguide
 #   Waveguides -> Waveguide to Path
+#   Waveguides -> Calculate Waveguide Length
 #   Waveguides -> Cell Connect by Waveguide
 #   Layout     -> Make Pins for Cell
 #   Layout     -> Layer Exclude
@@ -54,6 +55,7 @@ from JNU_MWP_tools.core.ui_language import LANGUAGE_ZH, active_language
 _MENU_TITLES_ZH = {
     "jnu_action_path_to_waveguide": "路径转波导",
     "jnu_action_waveguide_to_path": "波导转路径",
+    "jnu_action_calculate_waveguide_length": "计算波导长度",
     "jnu_action_sbend_connect_between_two_cells": "通过波导连接器件",
     "jnu_action_make_pins_for_cell": "为单元生成端口",
     "jnu_action_layer_exclude": "排除图层",
@@ -118,6 +120,15 @@ _PD = %(pymacros_dir)s
 if _PD not in sys.path:
     sys.path.insert(0, _PD)
 from JNU_MWP_tools.actions.cell_connect_by_waveguide import cell_connect_by_waveguide as _fn
+_fn()
+""" % {"pymacros_dir": repr(_PYMACROS_DIR)}
+
+_CALCULATE_WAVEGUIDE_LENGTH_CODE = r"""
+import sys
+_PD = %(pymacros_dir)s
+if _PD not in sys.path:
+    sys.path.insert(0, _PD)
+from JNU_MWP_tools.actions.calculate_waveguide_length import calculate_waveguide_length as _fn
 _fn()
 """ % {"pymacros_dir": repr(_PYMACROS_DIR)}
 
@@ -379,6 +390,7 @@ def register_jnu_menu_items():
     action_specs = [
         (waveguide_parent, "jnu_action_path_to_waveguide", "Path to Waveguide", _PATH_TO_WAVEGUIDE_CODE),
         (waveguide_parent, "jnu_action_waveguide_to_path", "Waveguide to Path", _WAVEGUIDE_TO_PATH_CODE),
+        (waveguide_parent, "jnu_action_calculate_waveguide_length", "Calculate Waveguide Length", _CALCULATE_WAVEGUIDE_LENGTH_CODE),
         # 保留旧 Action ID，使已经保存的 SBend connect 快捷键自动迁移到新功能。
         (waveguide_parent, "jnu_action_sbend_connect_between_two_cells", "Cell Connect by Waveguide", _CELL_CONNECT_CODE),
         (layout_parent, "jnu_action_make_pins_for_cell", "Make Pins for Cell", _MAKE_PINS_CODE),

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-09
+# 时间: 2026-10
 
 """在 KLayout 隐藏 GUI 中验证菜单宏和 PDK 重载入口的幂等性。"""
 
@@ -18,7 +18,7 @@ from JNU_MWP_tools.core.ui_language import LANGUAGE_ZH, active_language  # noqa:
 
 
 MENU_MACRO = PYMACROS_DIR / "JNU_MWP_PDK_Menu.lym"
-EXPECTED_ACTION_COUNT = 14
+EXPECTED_ACTION_COUNT = 15
 DEFAULT_SHORTCUTS = {
     "jnu_action_path_to_waveguide": "9",
     "jnu_action_waveguide_to_path": "8",

@@ -15,6 +15,7 @@ Updates are listed newest first. Historical dates follow Git commit dates in Bei
 - Add changelog links to both READMEs and dated Chinese and English update pages with language switching.
 - Update the fixed-device counts in the READMEs and library feature cards to 31.
 - Rename the Simplified Chinese Snap components menu label from “对齐器件” to “吸附器件”.
+- Add Waveguides → Calculate Waveguide Length to total the smoothed centerline lengths of selected single-width Waveguide instances, with instance count and totals in µm/mm. Reject the entire selection if it includes composite-width waveguides or other objects. Both menu and results support English and Simplified Chinese.
 
 ## 2026-10-10 · v1.3 libraries and waveguide fixes
 

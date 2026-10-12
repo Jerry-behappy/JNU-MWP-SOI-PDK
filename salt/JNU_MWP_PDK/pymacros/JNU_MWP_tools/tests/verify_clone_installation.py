@@ -39,7 +39,7 @@ def probe():
         assert all(black.layout().cell(cell.name) for cell in layout.top_cells())
     window = pya.Application.instance().main_window()
     actions = getattr(window, "_jnu_menu_actions_by_id", {})
-    assert len(actions) == 14
+    assert len(actions) == 15
     expected_shortcuts = {
         "jnu_action_path_to_waveguide": "9",
         "jnu_action_waveguide_to_path": "8",
