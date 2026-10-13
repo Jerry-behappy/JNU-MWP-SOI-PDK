@@ -18,7 +18,7 @@ def probe():
 
     home = Path(os.environ["KLAYOUT_HOME"])
     assert not (home / "tech").exists()
-    assert pya.Technology.has_technology("JNU_MWP_PDK")
+    assert pya.Technology.has_technology("JNU_MWP_SOI_PDK")
     white = pya.Library.library_by_name("JNULib")
     black = pya.Library.library_by_name("JNULib_BlackBox")
     assert white and black
@@ -212,7 +212,7 @@ if os.environ.get("JNU_CLONE_PROBE") == "1":
         else:
             pya.Application.instance().exit(0)
 
-    pya.Application.instance().main_window().create_layout("JNU_MWP_PDK", 1)
+    pya.Application.instance().main_window().create_layout("JNU_MWP_SOI_PDK", 1)
     timer = pya.QTimer()
     timer.setSingleShot(True)
     timer.timeout(finish)

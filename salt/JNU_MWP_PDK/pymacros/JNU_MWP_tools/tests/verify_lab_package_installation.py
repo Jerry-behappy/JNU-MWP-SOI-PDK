@@ -22,8 +22,8 @@ def probe():
     package = home / "salt" / "JNU_MWP_PDK"
     assert not (home / "tech").exists(), "测试环境不应依赖外部 tech"
     assert not (package / "tech").exists(), "测试包不应依赖内部 tech"
-    assert pya.Technology.has_technology("JNU_MWP_PDK"), "未自动注册技术"
-    technology = pya.Technology.technology_by_name("JNU_MWP_PDK")
+    assert pya.Technology.has_technology("JNU_MWP_SOI_PDK"), "未自动注册技术"
+    technology = pya.Technology.technology_by_name("JNU_MWP_SOI_PDK")
     assert Path(technology.eff_layer_properties_file()).resolve() == (package / "layers.lyp").resolve()
     assert not any("_v1." in name for name in pya.Library.library_names())
     white = pya.Library.library_by_name("JNULib")
@@ -72,7 +72,7 @@ def probe():
             assert parent + "." + child in menu.items(parent), "EBeam 宏未归入 SiEPIC 子菜单：%s；当前项：%s" % (child, menu.items(parent))
             assert child not in menu.items(""), "EBeam 宏错误地出现在顶层"
         assert pya.Library.library_by_name("EBeam", "EBeam"), "EBeam 原库缺失"
-        assert pya.Library.library_by_name("EBeam", "JNU_MWP_PDK"), "JNU 技术下的 EBeam 桥接缺失"
+        assert pya.Library.library_by_name("EBeam", "JNU_MWP_SOI_PDK"), "JNU 技术下的 EBeam 桥接缺失"
     actions = getattr(window, "_jnu_menu_actions_by_id", {})
     assert len(actions) == 16, "JNU 菜单未完整加载"
     expected_shortcuts = {
@@ -176,7 +176,7 @@ if os.environ.get("JNU_LAB_PROBE") == "1":
             pya.Application.instance().exit(0)
 
     # 等启动结束、宏菜单完成挂载后再检查，而非只看初始菜单框架。
-    _technology = "EBeam" if os.environ.get("JNU_EXPECT_SIEPIC") == "1" else "JNU_MWP_PDK"
+    _technology = "EBeam" if os.environ.get("JNU_EXPECT_SIEPIC") == "1" else "JNU_MWP_SOI_PDK"
     pya.Application.instance().main_window().create_layout(_technology, 1)
     _probe_timer = pya.QTimer()
     _probe_timer.setSingleShot(True)

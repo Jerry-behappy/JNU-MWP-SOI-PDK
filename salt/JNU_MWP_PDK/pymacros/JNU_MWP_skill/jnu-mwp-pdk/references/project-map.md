@@ -26,14 +26,15 @@
 ## Current Names and Layers
 
 - Product/manual display name: `JNU_MWP_SOI_PDK`。
-- Technology: `JNU_MWP_PDK`
-- Salt/package/install directory/menu/skill engineering name: `JNU_MWP_PDK`
+- Technology: `JNU_MWP_SOI_PDK`
+- Top-level menu: `JNU_MWP_SOI_PDK V1.4`；版本和名称由 `core/pdk_identity.py` 统一提供，内部菜单路径及 Action ID 不随展示名变化。
+- Salt/package/install directory/skill engineering name: `JNU_MWP_PDK`
 - White library: `JNULib`
 - Blackbox library: `JNULib_BlackBox`
 - Blackbox output directory: `JNU_MWP_PDK_blackbox_v1.1`
 - Si `1/0`; PinRec `1/10`; input/legacy waveguide path `1/99`（默认隐藏）; DevRec `68/0`; Text `10/0`。
 
-在用户明确启动整体迁移前，不要把工程内部名称改成 `JNU_MWP_SOI_PDK`。
+Technology 与菜单已按用户要求更名；Salt、目录、文件及 Library 注册名保持稳定，不作无关的整体目录迁移。
 
 ## Documentation State
 

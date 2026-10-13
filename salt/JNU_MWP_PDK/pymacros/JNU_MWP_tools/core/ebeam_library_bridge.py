@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-07
+# 时间: 2026-10
 
 """把已安装 EBeam PDK 的器件库同时注册到 JNU 技术视图。"""
 
 import os
 
 import pya
+from JNU_MWP_tools.core.pdk_identity import TECHNOLOGY_NAME as JNU_TECHNOLOGY_NAME
 
 
-JNU_TECHNOLOGY_NAME = "JNU_MWP_PDK"
 EBEAM_TECHNOLOGY_NAME = "EBeam"
 
 # 每项都与 EBeam PDK 的启动加载器使用的目录对应。Library 名称保持不变，
@@ -44,13 +44,13 @@ def _ebeam_base_path():
 
 
 def register_ebeam_libraries_for_jnu():
-    """为 JNU_MWP_PDK 技术注册已安装 EBeam PDK 的同名 Library 视图。
+    """为 JNU_MWP_SOI_PDK 技术注册已安装 EBeam PDK 的同名 Library 视图。
 
     该函数不改变原 EBeam Technology 或其已注册 Library。若 EBeam PDK 尚未
     安装或尚未加载，静默跳过；JNU PDK 仍可以独立工作。
     """
 
-    if pya.Technology.technology_by_name(JNU_TECHNOLOGY_NAME) is None:
+    if not pya.Technology.has_technology(JNU_TECHNOLOGY_NAME):
         raise RuntimeError("未加载 %s Technology。" % JNU_TECHNOLOGY_NAME)
 
     ebeam_root = _ebeam_base_path()

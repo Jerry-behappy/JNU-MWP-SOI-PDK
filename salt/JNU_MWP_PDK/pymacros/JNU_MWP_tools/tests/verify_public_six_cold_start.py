@@ -13,7 +13,7 @@ import pya
 
 
 def _probe():
-    assert pya.Technology.has_technology("JNU_MWP_PDK")
+    assert pya.Technology.has_technology("JNU_MWP_SOI_PDK")
     assert pya.Library.library_by_name("EBeam") is None, "隔离环境意外加载 EBeam"
     white = pya.Library.library_by_name("JNULib")
     black = pya.Library.library_by_name("JNULib_BlackBox")
@@ -75,7 +75,7 @@ def _finish():
         pya.Application.instance().exit(0)
 
 
-pya.Application.instance().main_window().create_layout("JNU_MWP_PDK", 1)
+pya.Application.instance().main_window().create_layout("JNU_MWP_SOI_PDK", 1)
 _timer = pya.QTimer()
 _timer.setSingleShot(True)
 _timer.timeout(_finish)

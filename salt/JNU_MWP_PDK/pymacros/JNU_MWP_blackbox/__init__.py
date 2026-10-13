@@ -26,6 +26,7 @@ LIBRARY_NAME = "JNULib_BlackBox"
 LEGACY_LIBRARY_NAMES = ("JNULib_BlackBox_v1.1", "JNULib_BlackBox_v1.0")
 BLACKBOX_GDS_DIR = os.path.join(PYMACROS_DIR, "JNU_MWP_blackbox_gds")
 from JNU_MWP_tools.core.fixed_gds import fixed_gds_directory
+from JNU_MWP_tools.core.pdk_identity import TECHNOLOGY_NAME
 
 WHITEBOX_GDS_DIR = fixed_gds_directory(PYMACROS_DIR)
 SI_LAYER = pya.LayerInfo(1, 0)       # Si 波导层。
@@ -328,7 +329,7 @@ class JNULibBlackBox(pya.Library):
 
     def __init__(self):
         # 黑盒库同样保持稳定身份，并在 Library 面板说明栏显示发行版本。
-        self.description = "v1.3, JNU MWP PDK black-box components [Technology JNU_MWP_PDK]"
+        self.description = "v1.3, JNU MWP PDK black-box components [Technology %s]" % TECHNOLOGY_NAME
 
         ly = self.layout()
 

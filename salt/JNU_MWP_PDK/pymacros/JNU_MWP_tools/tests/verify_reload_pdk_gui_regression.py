@@ -15,6 +15,7 @@ if str(PYMACROS_DIR) not in sys.path:
     sys.path.insert(0, str(PYMACROS_DIR))
 
 from JNU_MWP_tools.core.ui_language import LANGUAGE_ZH, active_language  # noqa: E402
+from JNU_MWP_tools.core.pdk_identity import MENU_TITLE  # noqa: E402
 
 
 MENU_MACRO = PYMACROS_DIR / "JNU_MWP_PDK_Menu.lym"
@@ -28,6 +29,8 @@ DEFAULT_SHORTCUTS = {
 EXPECTED_SHORTCUTS = {
     "jnu_action_path_to_waveguide": "9",
     "jnu_action_waveguide_to_path": "8",
+    "jnu_action_calculate_waveguide_length": "",
+    "jnu_action_calculate_waveguide_length_difference": "",
     "jnu_action_sbend_connect_between_two_cells": "7",
     "jnu_action_snap_components": "6",
     "jnu_action_make_pins_for_cell": "Ctrl+Alt+M",
@@ -56,6 +59,7 @@ def _assert(condition, message):
 
 
 def _check_menu(main_window):
+    _assert(main_window.menu().action("jnu_mwp_pdk_menu").title == MENU_TITLE, "根菜单名称或版本错误。")
     actions = getattr(main_window, "_jnu_menu_actions", [])
     _assert(len(actions) == EXPECTED_ACTION_COUNT, "JNU 菜单 Action 数量错误：%d。" % len(actions))
     titles = sorted(str(action.title) for action in actions)
@@ -141,6 +145,8 @@ def _set_configured_shortcuts(app):
     parent_by_id = {
         "jnu_action_path_to_waveguide": "jnu_mwp_pdk_menu.waveguides",
         "jnu_action_waveguide_to_path": "jnu_mwp_pdk_menu.waveguides",
+        "jnu_action_calculate_waveguide_length": "jnu_mwp_pdk_menu.waveguides",
+        "jnu_action_calculate_waveguide_length_difference": "jnu_mwp_pdk_menu.waveguides",
         "jnu_action_sbend_connect_between_two_cells": "jnu_mwp_pdk_menu.waveguides",
         "jnu_action_snap_components": "jnu_mwp_pdk_menu.layout",
         "jnu_action_make_pins_for_cell": "jnu_mwp_pdk_menu.layout",

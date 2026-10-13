@@ -35,14 +35,14 @@
 
 ## Runtime Reload
 
-- `JNU_MWP_PDK → Reload JNU PDK` 在当前菜单回调退出后异步执行，避免重建菜单时销毁正在触发的 Action。待触发的单次 timer 只能由 `reload_pdk` 模块级引用保存，禁止写入或读取 `MainWindow` 的动态 Python 属性；重复触发必须合并为一次。
+- `JNU_MWP_SOI_PDK V1.4 → Reload JNU PDK` 在当前菜单回调退出后异步执行，避免重建菜单时销毁正在触发的 Action。待触发的单次 timer 只能由 `reload_pdk` 模块级引用保存，禁止写入或读取 `MainWindow` 的动态 Python 属性；重复触发必须合并为一次。
 - 清除 `JNU_MWP_pcells`、`JNU_MWP_tools` 与 `JNULib` 模块缓存后从磁盘重新导入；同名公开库只保留一个，并调用 `Library.refresh()` 更新全部 client layout。
 - 对已打开 layout 中现存的 `Waveguide` / `Composite_Waveguide` 以同名新声明调用 `register_pcell`，保持 PCell ID 不变，再调用 `Layout.refresh()` 重算已有 variant。
 - 菜单宏注册必须幂等：删除全部已知 action item、替换主窗口持久 action 列表后再插入。重建前以稳定 action ID 保存当前 `pya.Action.shortcut`；若当前值已为空，则从 `Application.get_config("key-bindings")` 中相同完整菜单路径恢复，且不得改写用户配置。成功只写短暂状态栏消息，失败弹窗且不得删除用户布局对象。
 
 ## EBeam Library Visibility in JNU Technology
 
-- EBeam 的标准库由 SiEPIC 加载器绑定到 `EBeam` Technology，因此不能只依赖原库在 `JNU_MWP_PDK` 的 Library 面板中显示。JNU 启动时调用 `core/ebeam_library_bridge.py`，为 JNU 额外注册 EBeam、EBeam_Beta、EBeam-Dream、EBeam-SiN、EBeam-ANT 五个同名 Library；它们读取 EBeam 安装目录中的既有 GDS 与 PCell，原 EBeam Library 保持不变。
+- EBeam 的标准库由 SiEPIC 加载器绑定到 `EBeam` Technology，因此不能只依赖原库在 `JNU_MWP_SOI_PDK` 的 Library 面板中显示。JNU 启动时调用 `core/ebeam_library_bridge.py`，为 JNU 额外注册 EBeam、EBeam_Beta、EBeam-Dream、EBeam-SiN、EBeam-ANT 五个同名 Library；它们读取 EBeam 安装目录中的既有 GDS 与 PCell，原 EBeam Library 保持不变。
 - 桥接仅在 EBeam Technology、其安装根目录与 SiEPIC 加载器均存在时生效；缺少任何依赖时返回不可用状态而不影响 JNULib 注册。重复调用必须复用现有 JNU 绑定 Library，禁止重复注册或删除 EBeam 原库。
 
 ## Paperclip
@@ -89,7 +89,7 @@
 - 移动或清理固定 GDS 后，用 `rg` 检查 loader、打包脚本、README 和辅助脚本，确保不存在指向旧 `gds/` 的路径；同时验证 `JNULib.py` 仍指向 `pymacros/JNU_MWP_gds/`。
 - 固定白盒修改后运行 `release/sync_blackboxes_from_library.py --source <Library/JNU_MWP_gds>`，从全部 31 份白盒生成对应黑盒；核对 31 个黑盒的名称、端口和矩形占位后与白盒分别提交。PCell 不进入黑盒库；发布包只复制已同步黑盒，排除白盒目录与 `JNULib.py`。
 - 若系统 Python 没有 `pya`，用 KLayout 自带 Python 运行同步脚本：先设置环境变量 `JNU_WHITEBOX_GDS_DIR=<Library/JNU_MWP_gds>`，再执行 `klayout_app.exe -z -e -r <PDK/pymacros/JNU_MWP_tools/release/sync_blackboxes_from_library.py>`；必须在输出中确认同步数量为 31 且没有 `ERROR:`，因为部分 KLayout 版本的宏错误不会使进程返回非零退出码。
-- 文档可使用 `JNU_MWP_SOI_PDK` 展示名；代码、Technology、Salt、菜单、安装目录、skill 与黑盒包继续使用 `JNU_MWP_PDK`。
+- Technology 使用 `JNU_MWP_SOI_PDK`，菜单使用同名加发行版本；统一由 `core/pdk_identity.py` 加载技术并迁移旧选择。Salt、安装目录、skill 路径和发布包目录仍为 `JNU_MWP_PDK`，菜单内部路径和 Library 名称保持稳定。
 - 只有执行黑盒打包流程时，才同步修改 `pymacros/README.md` 和 PDK 使用说明；普通开发、维护和单独文档请求不改写这两类文档。若打包流程确需更新 `pymacros/README.md`，保持完整中文章节在前、完整英文章节在后。
 
 ## Numerical Text Array
@@ -135,7 +135,7 @@
 - 用 KLayout 批处理运行 `tests/verify_waveguide_bump_regression.py`，检查最终 Si 多边形两端的 20 nm 恒宽直段、垂直端面与 PinRec 中心对齐、直弯附近的边界落在解析圆弧上、圆弧不折回端口平面、`max_theta` 上限饱和、增量长度与量化后中心线一致、参数分区顺序以及 GDS 重读后的 PCell 身份。另以不带恢复上下文的 GDS 重读检查存储几何，防止库自动重生成掩盖旧的坏端面。
 - 用 `tests/verify_reload_pdk_regression.py` 连续重载三次，确认公开库不重复、Straight_Waveguide 保留、内部两类 Waveguide PCell ID 不变且已有 variant 完成重算。
 - 用 KLayout `-z -e` 运行 `tests/verify_reload_pdk_gui_regression.py`，确认菜单宏和完整重载各重复三次后仍只有 9 个唯一 Action、单一 `JNULib`，并覆盖旧菜单首次升级、当前 Action 快捷键复制及已丢失快捷键从配置恢复。
-- 用 KLayout 批处理运行 `tests/verify_ebeam_library_bridge_regression.py`，确认五个 EBeam Library 都已绑定到 `JNU_MWP_PDK`、包含 EBeam 器件数据、重复桥接不会创建重复库，并且无需改动原 EBeam Technology。
+- 用 KLayout 批处理运行 `tests/verify_ebeam_library_bridge_regression.py`，确认五个 EBeam Library 都已绑定到 `JNU_MWP_SOI_PDK`、包含 EBeam 器件数据、重复桥接不会创建重复库，并且无需改动原 EBeam Technology。
 - 验收 GUI 实时派生值、三种命名及 `__002/__003` 冲突后缀；GDS 重读后名称和本地 PCell 身份必须保持。
 - 生成黑盒包并检查禁止项；对 canonical skill 运行 UTF-8 `quick_validate.py`，再运行联接脚本 `check`。
 - 检查公开 Git 的 `pymacros/JNU_MWP_gds/` 无任何被跟踪的 `.gds`；独立 Library 当前有 31 份授权白盒，安装后原目录应能加载全部固定器件。确认顶层旧 `gds/` 和独立 `JNU_MWP_ebeam_gds/` 不存在。

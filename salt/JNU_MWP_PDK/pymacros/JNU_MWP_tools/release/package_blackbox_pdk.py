@@ -8,6 +8,7 @@
 
 import argparse
 import shutil
+import sys
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
@@ -15,10 +16,12 @@ import pya
 
 
 PDK_ROOT = Path(__file__).resolve().parents[3]
+if str(PDK_ROOT / "pymacros") not in sys.path:
+    sys.path.insert(0, str(PDK_ROOT / "pymacros"))
+from JNU_MWP_tools.core.pdk_identity import TECHNOLOGY_NAME as TECH_NAME
 DEFAULT_OUTPUT = Path.home() / "Desktop" / "JNU_MWP_PDK_blackbox_v1.1"
 
 TECH_FOLDER_NAME = "JNU_MWP_PDK"
-TECH_NAME = "JNU_MWP_PDK"
 SALT_PACKAGE_NAME = "JNU_MWP_PDK"
 LOADER_MACRO_NAME = "JNU_MWP_PDK_blackbox_loader.py"
 
@@ -65,33 +68,19 @@ def _write_blackbox_pymacros_init(pymacros_dst):
         "# $autorun\n"
         "# -*- coding: utf-8 -*-\n"
         "# 创建者: Junyi Zhang\n"
-        "# 时间: 2026-09\n\n"
+        "# 时间: 2026-10\n\n"
         "# 初始化 JNU MWP 黑盒器件库。Technology 主要由 tech/JNU_MWP_PDK 注册，"
         "这里保留 Salt 场景下的辅助加载逻辑。\n"
         "print(\"JNU MWP BlackBox PDK: load JNULib_BlackBox\")\n\n"
-        "import os\n\n"
-        "import pya\n\n\n"
-        "TECH_NAME = \"JNU_MWP_PDK\"\n"
+        "import os\n"
+        "import sys\n\n"
         "SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__)) if \"__file__\" in globals() else os.getcwd()\n"
         "PDK_ROOT = os.path.dirname(SCRIPT_DIR)\n"
-        "TECH_FILE = os.path.join(PDK_ROOT, \"JNU_MWP_PDK.lyt\")\n"
-        "\n"
-        "def _load_jnu_technology():\n"
-        "    \"\"\"加载相对路径 Technology，支持直接复制发布包到任意用户目录。\"\"\"\n"
-        "    if not os.path.isfile(TECH_FILE):\n"
-        "        print(\"JNU MWP BlackBox PDK: technology file not found:\", TECH_FILE)\n"
-        "        return\n"
-        "    try:\n"
-        "        if not pya.Technology().has_technology(TECH_NAME):\n"
-        "            tech = pya.Technology().create_technology(TECH_NAME)\n"
-        "        else:\n"
-        "            tech = pya.Technology.technology_by_name(TECH_NAME)\n"
-        "        tech.load(TECH_FILE)\n"
-        "        print(\"JNU MWP BlackBox PDK: technology loaded from\", TECH_FILE)\n"
-        "    except Exception as error:\n"
-        "        print(\"JNU MWP BlackBox PDK: technology load failed:\", error)\n\n\n"
-        "_load_jnu_technology()\n\n"
-        "from . import JNULib_BlackBox  # 只加载黑盒器件库。\n"
+        "if SCRIPT_DIR not in sys.path:\n"
+        "    sys.path.insert(0, SCRIPT_DIR)\n"
+        "from JNU_MWP_tools.core.pdk_identity import load_jnu_technology\n"
+        "load_jnu_technology(PDK_ROOT)\n\n"
+        "import JNULib_BlackBox  # 只加载黑盒器件库。\n"
     )
     (pymacros_dst / "__init__.py").write_text(content, encoding="utf-8", newline="\n")
 
@@ -141,7 +130,7 @@ def _loader_source():
         "# $autorun\n"
         "# -*- coding: utf-8 -*-\n"
         "# 创建者: Junyi Zhang\n"
-        "# 时间: 2026-06\n\n"
+        "# 时间: 2026-10\n\n"
         "# 根目录加载器：KLayout 会自动扫描 %USERPROFILE%/KLayout/pymacros。\n"
         "# 该文件负责把 salt/JNU_MWP_PDK 中的黑盒库和功能菜单加载出来。\n\n"
         "import os\n"
@@ -164,7 +153,7 @@ def _loader_source():
         "    except Exception as error:\n"
         "        print(\"JNU_MWP_PDK blackbox loader: library load failed:\", error)\n\n\n"
         "def _load_menu():\n"
-        "    \"\"\"运行菜单宏，创建 JNU_MWP_PDK 顶部功能菜单。\"\"\"\n"
+        "    \"\"\"运行菜单宏，创建带版本号的 JNU_MWP_SOI_PDK 顶部功能菜单。\"\"\"\n"
         "    if not os.path.isfile(MENU_MACRO):\n"
         "        print(\"JNU_MWP_PDK blackbox loader: menu macro not found:\", MENU_MACRO)\n"
         "        return\n"
@@ -447,13 +436,13 @@ def _installer_source():
     return (
         "# -*- coding: utf-8 -*-\n"
         "# 创建者: Junyi Zhang\n"
-        "# 时间: 2026-06\n\n"
+        "# 时间: 2026-10\n\n"
         "# 可选安装脚本：把本发布包中的 salt 和 tech 目录安装到当前用户 KLayout 目录，"
         "并重写 Technology 路径。\n\n"
         "import shutil\n"
         "from pathlib import Path\n"
         "import xml.etree.ElementTree as ET\n\n\n"
-        "TECH_NAME = \"JNU_MWP_PDK\"\n"
+        f"TECH_NAME = {TECH_NAME!r}\n"
         "PACKAGE_NAME = \"JNU_MWP_PDK\"\n"
         "LOADER_MACRO_NAME = \"JNU_MWP_PDK_blackbox_loader.py\"\n\n\n"
         "def _rewrite_lyt(lyt_root, base_path, original_base_path, layer_path):\n"

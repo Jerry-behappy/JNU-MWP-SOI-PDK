@@ -7,7 +7,7 @@
 
 # JNU-MWP-SOI-PDK
 
-A KLayout silicon photonics PDK from Jinan University's Optoelectronic Hybrid Integration Laboratory. It provides the `JNU_MWP_PDK` technology, parametric `JNULib`, fixed-device `JNULib_BlackBox`, waveguide tools, and DRC. The public repository works independently with nine PCell types and 31 fixed blackboxes; 31 fixed whitebox GDS files are available through a separately authorized library.
+A KLayout silicon photonics PDK from Jinan University's Optoelectronic Hybrid Integration Laboratory. It provides the `JNU_MWP_SOI_PDK` technology, parametric `JNULib`, fixed-device `JNULib_BlackBox`, waveguide tools, and DRC. The top-level menu shows `JNU_MWP_SOI_PDK V1.4`. The public repository works independently with nine PCell types and 31 fixed blackboxes; 31 fixed whitebox GDS files are available through a separately authorized library.
 
 **[Changelog and update dates](CHANGELOG.en.md)**
 
@@ -20,7 +20,7 @@ Install KLayout and [Git](https://git-scm.com/downloads) first.
 
 1. **[Download Install_JNU_PDK.lym](https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK/releases/download/installer-macro/Install_JNU_PDK.lym)**.
 2. Drop the `.lym` file into the KLayout you normally use. In **Macro Development**, select **Install JNU PDK**, click the green **Run** button, then **安装 (Install)**.
-3. Restart KLayout, select the `JNU_MWP_PDK` technology, and confirm the top-level menu and both libraries appear.
+3. Restart KLayout, select the `JNU_MWP_SOI_PDK` technology, and confirm the top-level menu and both libraries appear.
 
 The macro reads KLayout's actual user directory, clones the default branch, and creates a directory junction; KLayout and the source clone may reside on different drives. You can also use the AI installation prompt below.
 
@@ -39,9 +39,9 @@ Copy these prompts into an AI agent **that can access local files and run comman
 <a id="updates-and-whitebox-gds"></a>
 ### Updates, language, and whiteboxes
 
-- A `main` installation checks GitHub for updates at startup. Click **Update now** in the prompt or use **JNU_MWP_PDK → Check for PDK Updates**. Development branches do not show automatic update prompts. Restart KLayout after updating.
-- Choose **JNU_MWP_PDK → Language → English / 简体中文** to change menu and PCell parameter labels; the change takes effect **after a restart**. **Reload JNU PDK** can reload Python tools, but changes to startup macros, technology, or installation paths still require a restart.
-- Authorized users can choose **JNU_MWP_PDK → Install / Update Whitebox Library** to install 31 fixed whiteboxes from the separate [JNU-MWP-SOI-Library](https://github.com/Jerry-behappy/JNU-MWP-SOI-Library). This public PDK repository contains no whitebox GDS.
+- A `main` installation checks GitHub for updates at startup. Click **Update now** in the prompt or use **JNU_MWP_SOI_PDK V1.4 → Check for PDK Updates**. Development branches do not show automatic update prompts. Restart KLayout after updating.
+- Choose **JNU_MWP_SOI_PDK V1.4 → Language → English / 简体中文** to change menu and PCell parameter labels; the change takes effect **after a restart**. **Reload JNU PDK** can reload Python tools, but changes to startup macros, technology, or installation paths still require a restart.
+- Authorized users can choose **JNU_MWP_SOI_PDK V1.4 → Install / Update Whitebox Library** to install 31 fixed whiteboxes from the separate [JNU-MWP-SOI-Library](https://github.com/Jerry-behappy/JNU-MWP-SOI-Library). This public PDK repository contains no whitebox GDS.
 
 ## Features and user guide
 

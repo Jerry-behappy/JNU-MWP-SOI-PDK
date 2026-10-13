@@ -59,7 +59,7 @@ def seed(path, private=False):
         layout.create_cell("ebeam_crossing4")
         layout.write(str(target.with_name("ebeam_crossing4.gds")))
     else:
-        target.write_text("<technology><name>JNU_MWP_PDK</name></technology>", encoding="utf-8")
+        target.write_text("<technology><name>JNU_MWP_SOI_PDK</name></technology>", encoding="utf-8")
         public_gds = path / installer.PDK_RELATIVE / "pymacros/JNU_MWP_gds"
         public_gds.mkdir(parents=True)
         (public_gds / "NOTICE.md").write_text("library fixture", encoding="utf-8")

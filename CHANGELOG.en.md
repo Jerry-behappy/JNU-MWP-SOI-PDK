@@ -11,6 +11,7 @@ Updates are listed newest first. Historical dates follow Git commit dates in Bei
 
 ## 2026-10-13 · Waveguide lengths and parameter details
 
+- Rename the top-level menu to `JNU_MWP_SOI_PDK V1.4` and the technology to `JNU_MWP_SOI_PDK`. Update startup loading, library technology associations and release tools; migrate the previous technology selection and recent-file associations while retaining shortcuts.
 - Add Waveguides → Calculate Waveguide Length Difference. Select exactly two Waveguide instances to show their lengths, absolute difference and parameters. Composite comparisons exclude tapers and report constant-width sections separately by physical width. Support bilingual results, reopened GDS and a separate persisted window size.
 - Support composite Waveguides by totaling constant-width sections separately for each physical width. Exclude taper sections, include constant-width transitions, and explain the exclusion in the results with the omitted length. Single-width and composite Waveguides can be selected together.
 - Show each Waveguide's width, bend type and relevant parameters: Circular radius; Bezier radius, B and maximum/minimum curvature radii; Euler maximum/minimum curvature radii and effective radius.

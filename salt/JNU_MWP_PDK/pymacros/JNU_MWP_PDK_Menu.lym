@@ -19,7 +19,7 @@
 # 时间: 2026-10
 
 # JNU_MWP_PDK GUI 菜单初始化宏。
-# 该宏在 KLayout 顶部菜单创建 JNU_MWP_PDK 入口，并使用持久化的
+# 该宏在 KLayout 顶部菜单创建带版本号的 JNU_MWP_SOI_PDK 入口，并使用持久化的
 # pya.Action 注册功能项，确保 autorun 宏结束后回调仍然有效：
 #   Waveguides -> Path to Waveguide
 #   Waveguides -> Waveguide to Path
@@ -52,6 +52,7 @@ if _PYMACROS_DIR not in sys.path:
     sys.path.insert(0, _PYMACROS_DIR)
 _PDK_ROOT = os.path.dirname(_PYMACROS_DIR)
 from JNU_MWP_tools.core.ui_language import LANGUAGE_ZH, active_language
+from JNU_MWP_tools.core.pdk_identity import MENU_TITLE, load_jnu_technology
 
 _MENU_TITLES_ZH = {
     "jnu_action_path_to_waveguide": "路径转波导",
@@ -353,7 +354,7 @@ def _persist_missing_default_shortcuts(app, action_specs):
 
 
 def register_jnu_menu_items():
-    """创建 JNU_MWP_PDK 顶层菜单，并注册各功能项。"""
+    """创建带版本号的顶层菜单，并注册各功能项。"""
     app = pya.Application.instance()
     main_window = app.main_window()
     if main_window is None:
@@ -365,11 +366,14 @@ def register_jnu_menu_items():
 
     menu = main_window.menu()
     chinese = active_language() == LANGUAGE_ZH
+    load_jnu_technology(_PDK_ROOT)
 
     # ---- 顶层菜单 ----
     root_menu = "jnu_mwp_pdk_menu"
     if not menu.is_menu(root_menu):
-        menu.insert_menu("help_menu", root_menu, "JNU_MWP_PDK")
+        menu.insert_menu("help_menu", root_menu, MENU_TITLE)
+    else:
+        menu.action(root_menu).title = MENU_TITLE
 
     # ---- Waveguides 子菜单 ----
     waveguide_parent = root_menu + ".waveguides"
