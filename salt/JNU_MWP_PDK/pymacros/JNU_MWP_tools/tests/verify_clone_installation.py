@@ -39,7 +39,7 @@ def probe():
         assert all(black.layout().cell(cell.name) for cell in layout.top_cells())
     window = pya.Application.instance().main_window()
     actions = getattr(window, "_jnu_menu_actions_by_id", {})
-    assert len(actions) == 15
+    assert len(actions) == 16
     expected_shortcuts = {
         "jnu_action_path_to_waveguide": "9",
         "jnu_action_waveguide_to_path": "8",
@@ -109,7 +109,7 @@ def probe():
         assert active_language() == LANGUAGE_EN, "语言切换在重启前错误生效"
         pya.Macro(str(source / "pymacros" / "JNU_MWP_PDK_Menu.lym")).run()
         assert str(window._jnu_menu_actions_by_id["jnu_action_path_to_waveguide"].title) == "Path to Waveguide"
-    report = {"pcells": len(expected), "blackbox_files": len(files), "menu_actions": 14,
+    report = {"pcells": len(expected), "blackbox_files": len(files), "menu_actions": len(window._jnu_menu_actions),
               "default_shortcuts": expected_shortcuts,
               "no_external_tech": True, "gds_roundtrip": True}
     (home / "probe.json").write_text(json.dumps(report), encoding="utf-8")

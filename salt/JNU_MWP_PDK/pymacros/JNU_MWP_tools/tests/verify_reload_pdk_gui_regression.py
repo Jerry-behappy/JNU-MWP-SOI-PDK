@@ -18,7 +18,7 @@ from JNU_MWP_tools.core.ui_language import LANGUAGE_ZH, active_language  # noqa:
 
 
 MENU_MACRO = PYMACROS_DIR / "JNU_MWP_PDK_Menu.lym"
-EXPECTED_ACTION_COUNT = 15
+EXPECTED_ACTION_COUNT = 16
 DEFAULT_SHORTCUTS = {
     "jnu_action_path_to_waveguide": "9",
     "jnu_action_waveguide_to_path": "8",

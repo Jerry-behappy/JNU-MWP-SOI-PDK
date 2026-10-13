@@ -26,6 +26,16 @@ def _format_parameter(value, unit=" µm"):
     return _ui("Not stored", "未保存") if value is None else "%.3f%s" % (value, unit)
 
 
+def _taper_note():
+    """总长与长度差共用同一渐变段排除说明。"""
+    return _ui(
+        "Note: taper lengths are excluded from every width subtotal and the total.\n"
+        "Constant-width transition sections are included at their actual width.",
+        "说明：taper（宽度渐变段）长度不计入各宽度小计及总长度。\n"
+        "恒宽 transition 段计入对应宽度的长度。",
+    )
+
+
 def _result_message(details):
     """按实例列出宽度、弯曲类型及对应参数，并汇总全部选中副本。"""
     count = sum(item["copies"] for item in details)
@@ -38,12 +48,7 @@ def _result_message(details):
         else "波导数量：%d\n总波导长度：%.3f µm（%.6f mm）",
     ) % (count, length_um, length_um / 1000.0)]
     if has_composite:
-        lines.extend(["", _ui(
-            "Note: taper lengths are excluded from every width subtotal and the total.\n"
-            "Constant-width transition sections are included at their actual width.",
-            "说明：taper（宽度渐变段）长度不计入各宽度小计及总长度。\n"
-            "恒宽 transition 段计入对应宽度的长度。",
-        )])
+        lines.extend(["", _taper_note()])
         excluded = math.fsum(item["excluded_taper_length_um"] * item["copies"] for item in details)
         lines.append(_ui("Excluded taper length: ", "已排除的 taper 总长度：") + _format_parameter(excluded))
     totals = {}
@@ -56,6 +61,13 @@ def _result_message(details):
             lines.append(_ui("Width %s: %.3f µm", "宽度 %s：%.3f µm") % (
                 _format_parameter(width), totals[width],
             ))
+    lines.extend(_waveguide_detail_lines(details))
+    return "\n".join(lines)
+
+
+def _waveguide_detail_lines(details):
+    """共用实例参数明细，确保总长与长度差界面显示相同参数。"""
+    lines = []
     for index, item in enumerate(details, 1):
         params = item["parameters"]
         lines.extend(["", "%d. %s" % (index, item["cell_name"])])
@@ -102,10 +114,10 @@ def _result_message(details):
                 "Euler Rmin: " + _format_parameter(params["Euler_Rmin"]),
                 _ui("Effective radius Reff: ", "有效半径 Reff：") + _format_parameter(params.get("Euler_Reff")),
             ])
-    return "\n".join(lines)
+    return lines
 
 
-def _show_results(title, message):
+def _show_results(title, message, dialog_key="calculate_waveguide_length"):
     """可滚动、可复制的只读结果，避免多选时弹窗内容超出屏幕。"""
     dialog = pya.QDialog(_main_window())
     dialog.setWindowTitle(title)
@@ -121,7 +133,7 @@ def _show_results(title, message):
     close = pya.QPushButton(_ui("Close", "关闭"), dialog)
     close.clicked.connect(dialog.accept)
     layout.addWidget(close)
-    exec_dialog_with_persisted_size(dialog, "calculate_waveguide_length", (800, 520))
+    exec_dialog_with_persisted_size(dialog, dialog_key, (800, 520))
 
 
 def calculate_waveguide_length():

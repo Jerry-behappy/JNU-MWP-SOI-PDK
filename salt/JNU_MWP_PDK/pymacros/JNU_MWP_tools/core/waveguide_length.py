@@ -230,3 +230,11 @@ def measure_selected_waveguides(selection, cellview_index):
     return sum(item["copies"] for item in details), math.fsum(
         item["total_length_um"] for item in details
     )
+
+
+def compare_selected_waveguides(selection, cellview_index):
+    """比较两个独立实例，返回明细及绝对长度差；整组阵列不得代替单个波导。"""
+    details = describe_selected_waveguides(selection, cellview_index)
+    if len(details) != 2 or any(item["copies"] != 1 for item in details):
+        raise WaveguideLengthError("not_two")
+    return details, abs(details[0]["length_um"] - details[1]["length_um"])
