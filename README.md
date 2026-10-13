@@ -64,3 +64,5 @@
 </table>
 
 [问题反馈](https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK/issues) · [许可证](LICENSE.md)
+
+本项目参考自 [SiEPIC PDK](https://github.com/SiEPIC/SiEPIC_EBeam_PDK) 与 [SiEPIC-Tools](https://github.com/SiEPIC/SiEPIC-Tools)。

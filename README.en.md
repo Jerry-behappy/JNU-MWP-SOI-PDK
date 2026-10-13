@@ -64,3 +64,5 @@ Copy these prompts into an AI agent **that can access local files and run comman
 </table>
 
 [Report an issue](https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK/issues) · [License](LICENSE.md)
+
+This project was developed with reference to [SiEPIC PDK](https://github.com/SiEPIC/SiEPIC_EBeam_PDK) and [SiEPIC-Tools](https://github.com/SiEPIC/SiEPIC-Tools).
