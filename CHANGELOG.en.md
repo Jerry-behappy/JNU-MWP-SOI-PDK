@@ -9,6 +9,12 @@
 
 Updates are listed newest first. Historical dates follow Git commit dates in Beijing time (UTC+8). Related changes on the same day are grouped; the full commit history shows the content and timestamp of every commit.
 
+## 2026-10-13 · Waveguide lengths and parameter details
+
+- Show each Waveguide's width, bend type and relevant parameters: Circular radius; Bezier radius, B and maximum/minimum curvature radii; Euler maximum/minimum curvature radii and effective radius.
+- Retain the total and individual lengths for multiple selections, with copy counts and subtotals for arrays. Results support scrolling, copying, English and Simplified Chinese.
+- Recover historical parameters from cell names and Text after reopening GDS. Missing parameters are shown as “Not stored” rather than replaced by current defaults.
+
 ## 2026-10-12 · V1.4 development branch
 
 - Bring V1.3 up to date with `main`, including the centered dual-band TE edge-coupler blackbox, and rename the development branch to `JNU_MWP_PDK_V1.4`.

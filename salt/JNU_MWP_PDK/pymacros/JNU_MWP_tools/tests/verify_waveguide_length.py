@@ -2,7 +2,7 @@
 # 创建者: Junyi Zhang
 # 时间: 2026-10
 
-"""验证单宽度波导多选长度、错误选择、GDS 重读及实际菜单回调。"""
+"""验证单宽度波导长度、参数明细、GDS 重读与实际双语菜单回调。"""
 
 import builtins
 import math
@@ -22,6 +22,7 @@ from JNU_MWP_tools.actions.path_to_waveguide import _create_waveguide_cell  # no
 from JNU_MWP_tools.core.common import _value  # noqa: E402
 from JNU_MWP_tools.core.waveguide_length import (  # noqa: E402
     WaveguideLengthError,
+    describe_selected_waveguides,
     measure_selected_waveguides,
 )
 
@@ -79,6 +80,11 @@ def _database_checks():
     assert count == 3 and abs(total - expected) < 0.02, (count, total, expected)
     assert measure_selected_waveguides(chosen[:2], 0) == (2, 200.0)
     assert measure_selected_waveguides(chosen + [chosen[0].dup()], 0) == (count, total)
+    details = describe_selected_waveguides(chosen, 0)
+    assert len(details) == 3
+    assert all(item["parameters"]["width"] == 0.5 for item in details)
+    assert details[2]["parameters"]["bend_type"] == "Circular"
+    assert details[2]["parameters"]["radius"] == 20.0
 
     # 相同 variant 的副本分别计入；层级缩放改变长度而旋转镜像不改变。
     wrapper = layout.create_cell("SCALED_PARENT")
@@ -87,12 +93,37 @@ def _database_checks():
     obj = _selection(top, [parent])[0]
     obj.append_path(pya.InstElement(nested))
     assert measure_selected_waveguides([obj], 0) == (1, 200.0)
+    scaled = describe_selected_waveguides([obj], 0)[0]
+    assert scaled["parameters"]["width"] == 1.0
+    assert scaled["parameters"]["radius"] == 40.0
 
+    array = top.insert(pya.CellInstArray(
+        instances[0].cell_index, pya.Trans(), pya.Vector(150000, 0),
+        pya.Vector(0, 10000), 2, 3,
+    ))
+    array_obj = pya.ObjectInstPath()
+    array_obj.top = top.cell_index()
+    array_obj.cv_index = 0
+    array_obj.append_path(pya.InstElement(array, -1, -1))
+    array_details = describe_selected_waveguides([array_obj], 0)[0]
+    assert array_details["copies"] == 6
+    assert array_details["length_um"] == 100.0 and array_details["total_length_um"] == 600.0
+
+    curved_instances = []
     for bend in ("Bezier", "Euler"):
         cell = _variant(layout, [(0, 0), (80, 0), (80, 60)], bend)
         instance = top.insert(pya.CellInstArray(cell.cell_index(), pya.Trans()))
         number, length = measure_selected_waveguides(_selection(top, [instance]), 0)
         assert number == 1 and 100.0 < length < 140.0, (bend, length)
+        curved_instances.append(instance)
+        params = describe_selected_waveguides(_selection(top, [instance]), 0)[0]["parameters"]
+        if bend == "Bezier":
+            assert params["bezier_k"] == 0.35
+            assert abs(params["Bezier_Rmax"] - 36.214286) < 0.000001
+            assert abs(params["Bezier_Rmin"] - 14.869640) < 0.000001
+        else:
+            assert params["Euler_Rmax"] == 30.0 and params["Euler_Rmin"] == 10.0
+            assert 10.0 < params["Euler_Reff"] < 30.0
 
     # 复合波导、普通 cell、普通 Path 以及空选择均拒绝，不返回部分总长。
     composite = _variant(layout, [(0, 0), (100, 0)], composite=True)
@@ -124,7 +155,26 @@ def _database_checks():
         saved_instances = list(saved_top.each_inst())[:3]
         assert not saved_instances[0].cell.is_pcell_variant()
         assert measure_selected_waveguides(_selection(saved_top, saved_instances), 0) == (count, total)
-    print("PASS: single-width multi-selection, copies, curves, transforms, strict errors and stored GDS", flush=True)
+        for instance in curved_instances:
+            saved_cell = reread.cell(instance.cell.name)
+            saved_instance = next(i for i in saved_top.each_inst() if i.cell == saved_cell)
+            params = describe_selected_waveguides(_selection(saved_top, [saved_instance]), 0)[0]["parameters"]
+            if params["bend_type"] == "Bezier":
+                assert params["bezier_k"] == 0.35 and params["radius"] == 20.0
+            else:
+                assert params["Euler_Rmax"] == 30.0 and params["Euler_Rmin"] == 10.0
+                # Euler 的隐藏 radius 不代表其有效半径，不能用它替代 Reff。
+                assert abs(params["Euler_Reff"] - 20.0) > 0.1
+
+    legacy = layout.create_cell("Waveguide_legacy_without_B")
+    legacy.shapes(layout.layer(10, 0)).insert(pya.Text(
+        "Waveguide width=0.350um radius=10.000um bend=Bezier length=50.000um", pya.Trans(),
+    ))
+    instance = top.insert(pya.CellInstArray(legacy.cell_index(), pya.Trans()))
+    legacy_detail = describe_selected_waveguides(_selection(top, [instance]), 0)[0]
+    assert legacy_detail["parameters"]["bezier_k"] is None
+    assert legacy_detail["length_um"] == 50.0
+    print("PASS: lengths, bend parameters, copies, transforms, strict errors and stored GDS", flush=True)
 
 
 def _gui_checks():
@@ -139,6 +189,9 @@ def _gui_checks():
     # 隔离进程中捕获弹窗文字，使真实菜单回调可以自动验收而不会阻塞。
     messages = []
     original_pya = action.pya
+    original_show_results = action._show_results
+    original_exec = action.exec_dialog_with_persisted_size
+    action._show_results = lambda title, text: messages.append(("info", title, text))
     action.pya = SimpleNamespace(MessageBox=SimpleNamespace(
         Ok=1,
         info=lambda title, text, _buttons: messages.append(("info", title, text)),
@@ -164,8 +217,24 @@ def _gui_checks():
             menu_action.trigger()
             assert messages[-1][0:2] == ("info", title)
             assert "200.000" in messages[-1][2]
+            assert ("Waveguide width: 0.500 µm" if language == "en" else "波导宽度：0.500 µm") in messages[-1][2]
+            assert ("Bend radius R: 20.000 µm" if language == "en" else "弯曲半径 R：20.000 µm") in messages[-1][2]
             assert len(view.object_selection) == len(chosen)
             assert all(obj in view.object_selection for obj in chosen)
+            for bend in ("Bezier", "Euler"):
+                curve = _variant(cellview.layout(), [(0, 0), (80, 0), (80, 60)], bend)
+                curve_instance = top.insert(pya.CellInstArray(curve.cell_index(), pya.Trans()))
+                view.object_selection = _selection(top, [curve_instance], cv_index)
+                menu_action.trigger()
+                report = messages[-1][2]
+                assert messages[-1][0:2] == ("info", title)
+                if bend == "Bezier":
+                    assert "Bezier B: 0.350" in report and "36.214 µm" in report
+                else:
+                    assert "Euler Rmax: 30.000 µm" in report and "Euler Rmin: 10.000 µm" in report
+                    assert ("Effective radius Reff: " if language == "en" else "有效半径 Reff：") in report
+                    assert ("Bend radius R: " if language == "en" else "弯曲半径 R：") not in report
+            view.object_selection = chosen
             composite = _variant(cellview.layout(), [(0, 0), (100, 0)], composite=True)
             invalid = top.insert(pya.CellInstArray(composite.cell_index(), pya.Trans()))
             mixed = chosen + _selection(top, [invalid], cv_index)
@@ -174,9 +243,28 @@ def _gui_checks():
             assert messages[-1][0:2] == ("warning", title)
             assert len(view.object_selection) == len(mixed)
             assert all(obj in view.object_selection for obj in mixed)
-        print("PASS: real English/Chinese menu callbacks, repeated registration and mixed-selection error", flush=True)
+        action.pya = original_pya
+
+        def check_dialog(dialog, key, default_size):
+            output = dialog.findChild("waveguide_length_output")
+            assert _value(output, "readOnly")
+            assert output.toPlainText() == report
+            assert _value(_value(output, "font"), "pointSize") == 11
+            assert key == "calculate_waveguide_length"
+            dialog.resize(*default_size)
+            timer = pya.QTimer(dialog)
+            timer.setSingleShot(True)
+            timer.timeout(dialog.accept)
+            timer.start(0)
+            return dialog.exec_()
+
+        action.exec_dialog_with_persisted_size = check_dialog
+        original_show_results("计算波导长度", report)
+        print("PASS: English/Chinese menu reports, strict errors and actual read-only Qt result dialog", flush=True)
     finally:
         action.pya = original_pya
+        action._show_results = original_show_results
+        action.exec_dialog_with_persisted_size = original_exec
 
 
 if __name__ == "__main__":
