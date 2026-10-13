@@ -2,7 +2,7 @@
 # 创建者: Junyi Zhang
 # 时间: 2026-10
 
-"""验证单宽度波导长度、参数明细、GDS 重读与实际双语菜单回调。"""
+"""验证各宽度波导长度、taper 排除、GDS 重读及双语菜单回调。"""
 
 import builtins
 import math
@@ -19,7 +19,7 @@ if str(PYMACROS) not in sys.path:
     sys.path.insert(0, str(PYMACROS))
 
 from JNU_MWP_tools.actions.path_to_waveguide import _create_waveguide_cell  # noqa: E402
-from JNU_MWP_tools.core.common import _value  # noqa: E402
+from JNU_MWP_tools.core.common import RAW_PATH_GDS_PROPERTY, RAW_PATH_PROPERTY, _value  # noqa: E402
 from JNU_MWP_tools.core.waveguide_length import (  # noqa: E402
     WaveguideLengthError,
     describe_selected_waveguides,
@@ -38,7 +38,7 @@ def _selection(top, instances, cv_index=0):
     return selected
 
 
-def _variant(layout, points, bend="Circular", composite=False):
+def _variant(layout, points, bend="Circular", composite=False, **overrides):
     params = {
         "mode": "composite" if composite else "single",
         "width": 0.5, "radius": 20.0, "bend_type": bend, "bezier": 0.35,
@@ -46,6 +46,7 @@ def _variant(layout, points, bend="Circular", composite=False):
         "straight_width": 2.0, "start_width": 2.0, "end_width": 2.0,
         "bend_width": 0.5, "taper_length": 20.0, "transition_length": 2.0,
     }
+    params.update(overrides)
     return _create_waveguide_cell(
         layout, pya.DPath([pya.DPoint(*xy) for xy in points], 0.5), params, 1
     )
@@ -125,11 +126,13 @@ def _database_checks():
             assert params["Euler_Rmax"] == 30.0 and params["Euler_Rmin"] == 10.0
             assert 10.0 < params["Euler_Reff"] < 30.0
 
-    # 复合波导、普通 cell、普通 Path 以及空选择均拒绝，不返回部分总长。
+    # 单宽度与复合波导允许混选；普通 cell、Path 和空选择仍拒绝。
     composite = _variant(layout, [(0, 0), (100, 0)], composite=True)
     other = layout.create_cell("OTHER_DEVICE")
     missing = layout.create_cell("Waveguide_legacy_missing_length")
-    for cell, reason in ((composite, "unsupported"), (other, "unsupported"), (missing, "missing_length")):
+    composite_instance = top.insert(pya.CellInstArray(composite.cell_index(), pya.Trans()))
+    assert measure_selected_waveguides(chosen[:1] + _selection(top, [composite_instance]), 0) == (2, 200.0)
+    for cell, reason in ((other, "unsupported"), (missing, "missing_length")):
         instance = top.insert(pya.CellInstArray(cell.cell_index(), pya.Trans()))
         _reject(chosen[:1] + _selection(top, [instance]), reason)
     shape = top.shapes(layout.layer(1, 0)).insert(pya.Path([pya.Point(0, 0), pya.Point(1000, 0)], 500))
@@ -175,6 +178,103 @@ def _database_checks():
     assert legacy_detail["parameters"]["bezier_k"] is None
     assert legacy_detail["length_um"] == 50.0
     print("PASS: lengths, bend parameters, copies, transforms, strict errors and stored GDS", flush=True)
+
+
+def _composite_checks():
+    """用已知直段长度核对 transition、端宽、压缩 taper 和保存重开。"""
+    layout = pya.Layout()
+    layout.dbu = 0.001
+    top = layout.create_cell("COMPOSITE_LENGTH_TEST")
+    selected = []
+
+    def measure(points, **params):
+        cell = _variant(layout, points, composite=True, **params)
+        instance = top.insert(pya.CellInstArray(cell.cell_index(), pya.Trans()))
+        obj = _selection(top, [instance])[0]
+        selected.append(obj)
+        return describe_selected_waveguides([obj], 0)[0]
+
+    route = [(0, 0), (100, 0), (100, 100)]
+    detail = measure(route)
+    assert detail["kind"] == "composite"
+    assert detail["excluded_taper_length_um"] == 40.0
+    assert detail["length_by_width_um"][2.0] == 116.0
+    assert abs(detail["length_by_width_um"][0.5] - (4.0 + 20.0 * math.pi / 2.0)) < 0.02
+    full = detail["length_um"] + 40.0
+
+    narrow_start = measure(route, start_width=0.5)
+    assert narrow_start["excluded_taper_length_um"] == 20.0
+    assert narrow_start["length_by_width_um"][2.0] == 58.0
+    assert abs(narrow_start["length_um"] - (full - 20.0)) < 0.001
+    narrow_ports = measure(route, start_width=0.5, end_width=0.5)
+    assert narrow_ports["excluded_taper_length_um"] == 0.0
+    assert set(narrow_ports["length_by_width_um"]) == {0.5}
+    assert abs(narrow_ports["length_um"] - full) < 0.001
+
+    no_taper = measure(route, taper_length=0.0)
+    assert no_taper["excluded_taper_length_um"] == 0.0
+    assert no_taper["length_by_width_um"][2.0] == 156.0
+    equal = measure(route, bend_width=2.0)
+    assert equal["excluded_taper_length_um"] == 0.0
+    assert set(equal["length_by_width_um"]) == {2.0}
+    assert abs(equal["length_um"] - full) < 0.001
+
+    terminal = measure([(0, 0), (100, 0)], start_width=0.5)
+    assert terminal["length_by_width_um"] == {2.0: 80.0}
+    assert terminal["excluded_taper_length_um"] == 20.0
+    narrow_straight = measure([(0, 0), (100, 0)], start_width=0.5, end_width=0.5)
+    assert narrow_straight["length_by_width_um"] == {0.5: 100.0}
+    compressed = measure([(0, 0), (25, 0), (25, 25)])
+    assert abs(compressed["excluded_taper_length_um"] - 8.332) < 1e-9
+    assert abs(compressed["length_by_width_um"][2.0] - 0.836) < 1e-9
+
+    for bend in ("Bezier", "Euler"):
+        curve = measure(route, bend=bend)
+        assert curve["excluded_taper_length_um"] == 40.0
+        assert set(curve["length_by_width_um"]) == {0.5, 2.0}
+        assert all(length > 0 for length in curve["length_by_width_um"].values())
+
+    # 层级缩放同时改变宽度及长度，不改变 taper 的排除规则。
+    cell = selected[0].inst().cell
+    scaled = top.insert(pya.CellInstArray(cell.cell_index(), pya.ICplxTrans(2.0, 90, True, 0, 0)))
+    scaled_detail = describe_selected_waveguides(_selection(top, [scaled]), 0)[0]
+    assert scaled_detail["excluded_taper_length_um"] == 80.0
+    assert scaled_detail["length_by_width_um"][4.0] == 232.0
+    assert abs(scaled_detail["length_um"] - detail["length_um"] * 2.0) < 0.001
+
+    before = describe_selected_waveguides(selected, 0)
+    with tempfile.TemporaryDirectory(prefix="jnu_composite_length_") as directory:
+        path = Path(directory) / "composite_lengths.gds"
+        options = pya.SaveLayoutOptions()
+        options.set_format_from_filename(str(path))
+        options.gds2_write_cell_properties = True
+        options.write_context_info = False
+        layout.write(str(path), options)
+        reread = pya.Layout()
+        reread.read(str(path))
+        saved_top = reread.cell(top.name)
+        saved_selection = _selection(saved_top, list(saved_top.each_inst())[:len(selected)])
+        after = describe_selected_waveguides(saved_selection, 0)
+        for first, saved in zip(before, after):
+            assert first["length_by_width_um"] == saved["length_by_width_um"]
+            assert first["excluded_taper_length_um"] == saved["excluded_taper_length_um"]
+        # PCell 展开后 cell 属性可能丢失，实际转换动作还在实例上保存恢复数据。
+        saved_instance = saved_selection[0].inst()
+        for key in (RAW_PATH_PROPERTY, RAW_PATH_GDS_PROPERTY):
+            value = saved_instance.cell.property(key)
+            if value is not None:
+                saved_instance.set_property(key, value)
+                saved_instance.cell.delete_property(key)
+        # 修改实例属性会更新 KLayout 的实例句柄，重新构造选择路径再读取。
+        saved_instance = next(
+            i for i in saved_top.each_inst()
+            if i.cell.name == before[0]["cell_name"] and any(
+                i.property(key) is not None for key in (RAW_PATH_PROPERTY, RAW_PATH_GDS_PROPERTY)
+            )
+        )
+        restored = describe_selected_waveguides(_selection(saved_top, [saved_instance]), 0)[0]
+        assert restored["length_by_width_um"] == before[0]["length_by_width_um"]
+    print("PASS: composite width totals, transitions, taper exclusion, endpoint widths, compression and GDS", flush=True)
 
 
 def _gui_checks():
@@ -235,8 +335,18 @@ def _gui_checks():
                     assert ("Effective radius Reff: " if language == "en" else "有效半径 Reff：") in report
                     assert ("Bend radius R: " if language == "en" else "弯曲半径 R：") not in report
             view.object_selection = chosen
-            composite = _variant(cellview.layout(), [(0, 0), (100, 0)], composite=True)
-            invalid = top.insert(pya.CellInstArray(composite.cell_index(), pya.Trans()))
+            composite = _variant(cellview.layout(), [(0, 0), (100, 0), (100, 100)], composite=True)
+            composite_instance = top.insert(pya.CellInstArray(composite.cell_index(), pya.Trans()))
+            mixed = chosen + _selection(top, [composite_instance], cv_index)
+            view.object_selection = mixed
+            menu_action.trigger()
+            report = messages[-1][2]
+            assert messages[-1][0:2] == ("info", title)
+            assert ("taper lengths are excluded" if language == "en" else "taper（宽度渐变段）长度不计入") in report
+            assert "116.000 µm" in report and "40.000 µm" in report
+            assert len(view.object_selection) == len(mixed)
+            other = cellview.layout().create_cell("OTHER_DEVICE")
+            invalid = top.insert(pya.CellInstArray(other.cell_index(), pya.Trans()))
             mixed = chosen + _selection(top, [invalid], cv_index)
             view.object_selection = mixed
             menu_action.trigger()
@@ -269,5 +379,6 @@ def _gui_checks():
 
 if __name__ == "__main__":
     _database_checks()
+    _composite_checks()
     if hasattr(pya, "Application"):
         _gui_checks()

@@ -11,6 +11,7 @@ Updates are listed newest first. Historical dates follow Git commit dates in Bei
 
 ## 2026-10-13 · Waveguide lengths and parameter details
 
+- Support composite Waveguides by totaling constant-width sections separately for each physical width. Exclude taper sections, include constant-width transitions, and explain the exclusion in the results with the omitted length. Single-width and composite Waveguides can be selected together.
 - Show each Waveguide's width, bend type and relevant parameters: Circular radius; Bezier radius, B and maximum/minimum curvature radii; Euler maximum/minimum curvature radii and effective radius.
 - Retain the total and individual lengths for multiple selections, with copy counts and subtotals for arrays. Results support scrolling, copying, English and Simplified Chinese.
 - Recover historical parameters from cell names and Text after reopening GDS. Missing parameters are shown as “Not stored” rather than replaced by current defaults.

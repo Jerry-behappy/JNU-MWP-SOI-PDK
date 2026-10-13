@@ -2,8 +2,9 @@
 # 创建者: Junyi Zhang
 # 时间: 2026-10
 
-"""只读汇总选中单宽度 Waveguide 实例的中心线长度与弯曲参数。"""
+"""只读汇总单宽度及复合波导，按宽度计长并排除渐变段。"""
 
+import json
 import math
 import re
 
@@ -11,10 +12,13 @@ import pya
 
 from JNU_MWP_tools.core.bend_curvature import bezier_Rmax_Rmin, euler_Reff
 from JNU_MWP_tools.core.common import (
+    RAW_PATH_GDS_PROPERTY,
+    RAW_PATH_PROPERTY,
     WAVEGUIDE_KIND_GDS_PROPERTY,
     WAVEGUIDE_KIND_PROPERTY,
     _value,
 )
+from JNU_MWP_tools.core.composite_profile import build_route_skeleton, profile_length_breakdown
 
 
 class WaveguideLengthError(ValueError):
@@ -25,16 +29,20 @@ class WaveguideLengthError(ValueError):
         super().__init__(reason)
 
 
-def _is_single_waveguide(cell):
-    """按 PCell 声明、恢复标记和旧版名称识别单宽度波导。"""
+def _waveguide_kind(cell):
+    """按 PCell 声明、恢复标记和旧版名称识别波导种类。"""
     declaration = cell.pcell_declaration()
     if declaration is not None:
-        return declaration.name() == "Waveguide"
+        return {"Waveguide": "single", "Composite_Waveguide": "composite"}.get(declaration.name())
     for key in (WAVEGUIDE_KIND_PROPERTY, WAVEGUIDE_KIND_GDS_PROPERTY):
         kind = cell.property(key)
         if kind in ("single", "composite"):
-            return kind == "single"
-    return bool(re.match(r"^(?:Waveguide(?:$|[_$])|JNU_WG_)", cell.name))
+            return kind
+    if cell.name.startswith("Composite_Waveguide"):
+        return "composite"
+    if re.match(r"^(?:Waveguide(?:$|[_$])|JNU_WG_)", cell.name):
+        return "single"
+    return None
 
 
 def _stored_annotation(cell):
@@ -46,7 +54,7 @@ def _stored_annotation(cell):
             if not shape.is_text():
                 continue
             text = shape.text.string
-            if not text.startswith("Waveguide width="):
+            if not text.startswith(("Waveguide width=", "Composite Waveguide ")):
                 continue
             match = re.search(r"\blength=([0-9]+(?:\.[0-9]+)?)um\b", text)
             if match:
@@ -71,9 +79,14 @@ def _number(value):
 def _waveguide_parameters(cell, annotation, scale):
     """优先读取 PCell 参数；无上下文的 GDS 从标注和参数化名称恢复。"""
     params = dict(cell.pcell_parameters_by_name())
-    for key in ("width", "radius"):
+    fields = {
+        "width": "width", "radius": "radius", "straight_width": "ws",
+        "bend_width": "wb", "start_width": "wstart", "end_width": "wend",
+        "taper_length": "taper", "transition_length": "transition",
+    }
+    for key, token in fields.items():
         if _number(params.get(key)) is None:
-            match = re.search(r"\b%s=([0-9]+(?:\.[0-9]+)?)um\b" % key, annotation)
+            match = re.search(r"\b%s=([0-9]+(?:\.[0-9]+)?)um\b" % token, annotation)
             params[key] = float(match.group(1)) if match else None
     if not params.get("bend_type"):
         match = re.search(r"\bbend=(Circular|Bezier|Euler)\b", annotation)
@@ -86,7 +99,7 @@ def _waveguide_parameters(cell, annotation, scale):
             params[key] = float(match.group(1)) if match else None
 
     result = {"bend_type": params.get("bend_type")}
-    for key in ("width", "radius", "bezier_k", "Euler_Rmax", "Euler_Rmin"):
+    for key in (*fields, "bezier_k", "Euler_Rmax", "Euler_Rmin"):
         value = _number(params.get(key))
         result[key] = value * scale if value is not None and key != "bezier_k" else value
     if result["bend_type"] == "Bezier" and result["radius"] is not None and result["bezier_k"] is not None:
@@ -96,6 +109,58 @@ def _waveguide_parameters(cell, annotation, scale):
     if result["bend_type"] == "Euler" and result["Euler_Rmax"] is not None and result["Euler_Rmin"] is not None:
         result["Euler_Reff"] = euler_Reff(result["Euler_Rmax"], result["Euler_Rmin"])
     return result
+
+
+def _composite_length_data(cell, instance, annotation, total_length_um, params):
+    """使用已保存的路径及实际宽度分段，不重生成或修改选中波导。"""
+    dbu = cell.layout().dbu
+    metadata = {}
+    for target in (cell, instance):
+        for key in (RAW_PATH_PROPERTY, RAW_PATH_GDS_PROPERTY):
+            value = target.property(key)
+            if value:
+                try:
+                    data = json.loads(str(value))
+                except (ValueError, TypeError):
+                    continue
+                if isinstance(data, dict) and data.get("points_um"):
+                    metadata = data
+                    break
+        if metadata:
+            break
+    native = cell.pcell_parameters_by_name()
+    path = native.get("path")
+    if isinstance(path, pya.DPath):
+        points = [pya.Point(int(round(p.x / dbu)), int(round(p.y / dbu))) for p in path.each_point()]
+    elif isinstance(path, pya.Path):
+        points = list(path.each_point())
+    else:
+        points = [pya.Point(int(round(x / dbu)), int(round(y / dbu))) for x, y in metadata.get("points_um", [])]
+    if len(points) < 2:
+        raise WaveguideLengthError("missing_profile")
+    keys = ("straight_width", "bend_width", "taper_length", "transition_length", "start_width", "end_width")
+    for key in keys:
+        if params.get(key) is None:
+            params[key] = _number(metadata.get(key + "_um"))
+        if params[key] is None:
+            raise WaveguideLengthError("missing_profile")
+    # 普通 GDS 的标注已经保存 Euler 有效半径，不能使用隐藏的普通 radius。
+    if native and params["bend_type"] == "Euler":
+        radius = params.get("Euler_Reff")
+    else:
+        match = re.search(r"\bradius=([0-9]+(?:\.[0-9]+)?)um\b", annotation)
+        radius = float(match.group(1)) if match else params.get("radius")
+    if radius is None:
+        raise WaveguideLengthError("missing_profile")
+    dimensions = {key: max(0 if "length" in key else 1, int(round(params[key] / dbu))) for key in keys}
+    primitives, _ = build_route_skeleton(points, max(1, int(round(radius / dbu))))
+    try:
+        return profile_length_breakdown(
+            primitives, total_length_um, dbu,
+            *(dimensions[key] for key in keys),
+        )
+    except ValueError as error:
+        raise WaveguideLengthError("missing_profile") from error
 
 
 def describe_selected_waveguides(selection, cellview_index):
@@ -112,7 +177,8 @@ def describe_selected_waveguides(selection, cellview_index):
         if not obj.is_cell_inst() or obj.cv_index != cellview_index:
             raise WaveguideLengthError("unsupported")
         instance = obj.inst()
-        if instance is None or instance.cell is None or not _is_single_waveguide(instance.cell):
+        kind = _waveguide_kind(instance.cell) if instance is not None and instance.cell is not None else None
+        if kind is None:
             raise WaveguideLengthError("unsupported")
 
         # 完整层级变换中的缩放影响物理长度，旋转、镜像和平移不影响。
@@ -128,12 +194,32 @@ def describe_selected_waveguides(selection, cellview_index):
             ):
                 copies *= int(parent_instance.na) * int(parent_instance.nb)
         length, annotation = _stored_annotation(instance.cell)
+        params = _waveguide_parameters(instance.cell, annotation, 1.0)
+        if kind == "composite":
+            lengths, excluded = _composite_length_data(instance.cell, instance, annotation, length, params)
+        else:
+            width = params["width"]
+            if width is not None:
+                dbu = instance.cell.layout().dbu
+                width = max(1, int(round(width / dbu))) * dbu
+            lengths, excluded = {width: length}, 0.0
+        scaled_lengths = {
+            round(width * scale, 12) if width is not None else None: value * scale
+            for width, value in lengths.items()
+        }
+        counted_length = math.fsum(scaled_lengths.values())
         details.append({
             "cell_name": instance.cell.name,
+            "kind": kind,
             "copies": copies,
-            "length_um": length * scale,
-            "total_length_um": length * scale * copies,
-            "parameters": _waveguide_parameters(instance.cell, annotation, scale),
+            "length_um": counted_length,
+            "total_length_um": counted_length * copies,
+            "length_by_width_um": scaled_lengths,
+            "excluded_taper_length_um": excluded * scale,
+            "parameters": {
+                key: value * scale if isinstance(value, (int, float)) and key != "bezier_k" else value
+                for key, value in params.items()
+            },
         })
     return details
 

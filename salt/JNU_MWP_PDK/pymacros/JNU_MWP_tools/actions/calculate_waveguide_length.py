@@ -2,7 +2,7 @@
 # 创建者: Junyi Zhang
 # 时间: 2026-10
 
-"""显示选中单宽度 Waveguide 的总长度和逐项参数明细。"""
+"""显示波导按宽度汇总的长度与参数，复合波导排除 taper。"""
 
 import math
 
@@ -30,19 +30,57 @@ def _result_message(details):
     """按实例列出宽度、弯曲类型及对应参数，并汇总全部选中副本。"""
     count = sum(item["copies"] for item in details)
     length_um = math.fsum(item["total_length_um"] for item in details)
+    has_composite = any(item["kind"] == "composite" for item in details)
     lines = [_ui(
-        "Single-width Waveguides: %d\nTotal length: %.3f µm (%.6f mm)",
-        "单宽度波导数量：%d\n总波导长度：%.3f µm（%.6f mm）",
+        "Waveguides: %d\nTotal length (excluding tapers): %.3f µm (%.6f mm)" if has_composite
+        else "Waveguides: %d\nTotal length: %.3f µm (%.6f mm)",
+        "波导数量：%d\n总波导长度（不含 taper）：%.3f µm（%.6f mm）" if has_composite
+        else "波导数量：%d\n总波导长度：%.3f µm（%.6f mm）",
     ) % (count, length_um, length_um / 1000.0)]
+    if has_composite:
+        lines.extend(["", _ui(
+            "Note: taper lengths are excluded from every width subtotal and the total.\n"
+            "Constant-width transition sections are included at their actual width.",
+            "说明：taper（宽度渐变段）长度不计入各宽度小计及总长度。\n"
+            "恒宽 transition 段计入对应宽度的长度。",
+        )])
+        excluded = math.fsum(item["excluded_taper_length_um"] * item["copies"] for item in details)
+        lines.append(_ui("Excluded taper length: ", "已排除的 taper 总长度：") + _format_parameter(excluded))
+    totals = {}
+    for item in details:
+        for width, length in item["length_by_width_um"].items():
+            totals[width] = totals.get(width, 0.0) + length * item["copies"]
+    if has_composite or len(totals) > 1:
+        lines.extend(["", _ui("Lengths by width:", "按宽度汇总：")])
+        for width in sorted(totals, key=lambda value: (value is None, value or 0)):
+            lines.append(_ui("Width %s: %.3f µm", "宽度 %s：%.3f µm") % (
+                _format_parameter(width), totals[width],
+            ))
     for index, item in enumerate(details, 1):
         params = item["parameters"]
         lines.extend(["", "%d. %s" % (index, item["cell_name"])])
-        lines.append(_ui("Length: ", "长度：") + _format_parameter(item["length_um"]))
+        composite = item["kind"] == "composite"
+        lines.append((
+            _ui("Length (excluding tapers): ", "长度（不含 taper）：") if composite else _ui("Length: ", "长度：")
+        ) + _format_parameter(item["length_um"]))
         if item["copies"] > 1:
             lines.append(_ui("Copies: %d; subtotal: %.3f µm", "副本数量：%d；小计：%.3f µm") % (
                 item["copies"], item["total_length_um"],
             ))
-        lines.append(_ui("Waveguide width: ", "波导宽度：") + _format_parameter(params["width"]))
+        if composite:
+            for width, length in sorted(item["length_by_width_um"].items()):
+                lines.append(_ui("Width %s: %.3f µm", "宽度 %s：%.3f µm") % (_format_parameter(width), length))
+            for key, english, chinese in (
+                ("straight_width", "Straight width: ", "直波导宽度："),
+                ("bend_width", "Bend width: ", "弯曲波导宽度："),
+                ("start_width", "Start width: ", "起始端宽度："),
+                ("end_width", "End width: ", "终止端宽度："),
+                ("transition_length", "Transition length: ", "恒宽 transition 设置长度："),
+            ):
+                lines.append(_ui(english, chinese) + _format_parameter(params[key]))
+            lines.append(_ui("Excluded taper length: ", "已排除的 taper 长度：") + _format_parameter(item["excluded_taper_length_um"]))
+        else:
+            lines.append(_ui("Waveguide width: ", "波导宽度：") + _format_parameter(params["width"]))
         bend = params["bend_type"]
         bend_label = {
             "Circular": _ui("Circular", "圆弧（Circular）"),
@@ -97,21 +135,25 @@ def calculate_waveguide_length():
     except WaveguideLengthError as error:
         messages = {
             "empty": _ui(
-                "Select one or more single-width Waveguide instances first.",
-                "请先选中一个或多个单宽度 Waveguide 实例。",
+                "Select one or more Waveguide or Composite_Waveguide instances first.",
+                "请先选中一个或多个单宽度或复合宽度 Waveguide 实例。",
             ),
             "unsupported": _ui(
-                "Only single-width Waveguide instances are supported.\n"
-                "The selection contains a composite-width waveguide or another object.\n"
-                "No total was calculated. Please select only single-width Waveguides.",
-                "只支持单宽度 Waveguide 实例。\n"
-                "选择中包含复合宽度波导或其他对象，已停止计算。\n"
-                "请仅选中单宽度 Waveguide 后重试。",
+                "Only Waveguide and Composite_Waveguide instances are supported.\n"
+                "The selection contains another object, so no total was calculated.",
+                "只支持单宽度和复合宽度 Waveguide 实例。\n"
+                "选择中包含其他对象，已停止计算；请仅选中波导后重试。",
             ),
             "missing_length": _ui(
                 "A selected Waveguide has missing or ambiguous length data.\n"
                 "No total was calculated. Regenerate that Waveguide and try again.",
                 "选中的 Waveguide 缺少有效长度数据或存在重复长度标注，已停止计算。\n"
+                "请重新生成该波导后重试。",
+            ),
+            "missing_profile": _ui(
+                "A composite Waveguide has incomplete or inconsistent path/width data.\n"
+                "No total was calculated. Regenerate that Waveguide and try again.",
+                "选中的复合波导缺少完整的路径／宽度数据，或数据不一致，已停止计算。\n"
                 "请重新生成该波导后重试。",
             ),
         }

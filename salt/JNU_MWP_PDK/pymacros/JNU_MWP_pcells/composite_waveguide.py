@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-09
+# 时间: 2026-10
 
 """直段与弯曲采用不同宽度的可逆 Waveguide PCell。"""
 
@@ -24,6 +24,7 @@ if PYMACROS_DIR not in sys.path:
 
 from JNU_MWP_tools.core.bend_curvature import bezier_Rmax_Rmin, euler_Reff
 from JNU_MWP_tools.core.bend_sampling import AUTO_SAMPLE_COUNT, effective_points_per_90
+from JNU_MWP_tools.core.composite_profile import build_route_skeleton, profile_sections
 from JNU_MWP_tools.core.waveguide_variant_names import name_waveguide_variant
 
 from .bend_90deg import _normalize_bend_type, corner_points
@@ -58,76 +59,27 @@ DEFAULT_EULER_RMAX = 30.0
 DEFAULT_EULER_RMIN = 10.0
 
 
-def _canonical_points(points):
-    """去除重复点和同向共线点，保留真正的Manhattan转角。"""
-    clean = _dedupe_points(points)
-    result = []
-    for point in clean:
-        result.append(point)
-        while len(result) >= 3:
-            a, b, c = result[-3:]
-            ab = _unit_step(b - a)
-            bc = _unit_step(c - b)
-            if ab == bc:
-                result.pop(-2)
-            else:
-                break
-    return result
-
-
 def build_route_primitives(points, radius_dbu, bend_type, npoints, bezier_k, euler_rmax, euler_rmin):
-    """把Manhattan中心线拆成顺序明确的straight/bend primitive。"""
-    points = _canonical_points(points)
-    if len(points) < 2:
-        return [], []
-    if len(points) == 2:
-        return [{"type": "straight", "start": points[0], "end": points[1]}], points
-
-    primitives = []
+    """按共享切点规则分段，再用公共 Bend 填充每段圆滑曲线。"""
+    primitives, points = build_route_skeleton(points, radius_dbu)
+    if not primitives:
+        return [], points
     rounded = [points[0]]
-    straight_start = points[0]
-    for index in range(1, len(points) - 1):
-        previous, corner, following = points[index - 1], points[index], points[index + 1]
-        unit_in = _unit_step(corner - previous)
-        unit_out = _unit_step(following - corner)
-        cross = unit_in.x * unit_out.y - unit_in.y * unit_out.x
-        if cross == 0:
-            raise ValueError("Path包含180度折返或无效共线转角。")
-
-        entry = corner - unit_in * int(radius_dbu)
-        exit_point = corner + unit_out * int(radius_dbu)
-        if straight_start != entry:
-            primitives.append({"type": "straight", "start": straight_start, "end": entry})
-            if rounded[-1] != entry:
-                rounded.append(entry)
-
-        local = corner_points(
-            int(radius_dbu), bend_type, npoints, bezier_k, euler_rmax, euler_rmin
-        )
+    for primitive in primitives:
+        if primitive["type"] == "straight":
+            if rounded[-1] != primitive["end"]:
+                rounded.append(primitive["end"])
+            continue
+        entry = primitive["start"]
+        if rounded[-1] != entry:
+            rounded.append(entry)
+        local = corner_points(int(radius_dbu), bend_type, npoints, bezier_k, euler_rmax, euler_rmin)
         arc = [entry]
         for x, y in local[1:]:
-            arc.append(_local_to_global(entry, unit_in, 1 if cross > 0 else -1, x, y))
-        arc = _dedupe_points(arc)
-        primitives.append({"type": "bend", "points": arc})
-        rounded.extend(arc[1:])
-        straight_start = exit_point
-
-    if straight_start != points[-1]:
-        primitives.append({"type": "straight", "start": straight_start, "end": points[-1]})
-        if rounded[-1] != points[-1]:
-            rounded.append(points[-1])
+            arc.append(_local_to_global(entry, primitive["unit_in"], primitive["turn"], x, y))
+        primitive["points"] = _dedupe_points(arc)
+        rounded.extend(primitive["points"][1:])
     return primitives, _dedupe_points(rounded)
-
-
-def _point_along(start, end, distance):
-    total = _distance(start, end)
-    if total <= 0:
-        return pya.Point(start.x, start.y)
-    ratio = float(distance) / total
-    return pya.Point(
-        int(round(start.x + (end.x - start.x) * ratio)),
-        int(round(start.y + (end.y - start.y) * ratio)),
-    )
 
 
 def _insert_taper(region, start, end, width_start, width_end):
@@ -162,128 +114,20 @@ def _draw_width_part(region, start, end, width_start, width_end):
         _insert_taper(region, start, end, int(width_start), int(width_end))
 
 
-def _bend_transition_parts(boundary_width, straight_width, taper_length, transition_length, reverse=False):
-    """返回直宽与弯宽之间的恒宽-transition/taper/恒宽-transition片段。
-
-    reverse=False 用于从弯曲切点走向直波导主体；
-    reverse=True 用于从直波导主体走向弯曲切点。
-    """
-    if int(boundary_width) == int(straight_width):
-        return []
-    parts = [
-        {"length": int(transition_length), "w0": int(boundary_width), "w1": int(boundary_width)},
-        {"length": int(taper_length), "w0": int(boundary_width), "w1": int(straight_width)},
-        {"length": int(transition_length), "w0": int(straight_width), "w1": int(straight_width)},
-    ]
-    if reverse:
-        return [
-            {"length": part["length"], "w0": part["w1"], "w1": part["w0"]}
-            for part in reversed(parts)
-        ]
-    return parts
-
-
-def _terminal_taper_parts(boundary_width, straight_width, taper_length, reverse=False):
-    """返回端口宽度与直波导宽度之间的端部taper片段。"""
-    if int(boundary_width) == int(straight_width):
-        return []
-    if reverse:
-        return [{"length": int(taper_length), "w0": int(straight_width), "w1": int(boundary_width)}]
-    return [{"length": int(taper_length), "w0": int(boundary_width), "w1": int(straight_width)}]
-
-
-def _scale_part_lengths(parts, scale):
-    """直接编辑PCell导致直段不足时，按比例压缩所有局部过渡片段。"""
-    scaled = []
-    for part in parts:
-        item = dict(part)
-        item["length"] = max(0, int(math.floor(int(part["length"]) * scale)))
-        scaled.append(item)
-    return scaled
-
-
 def _draw_profile(
     region, primitives, straight_width, bend_width, taper_length,
     transition_length=None, start_width=None, end_width=None,
 ):
-    """用同一primitive集合绘制端部、直段、弯曲及其局部taper。
-
-    taper_length 是实际变宽/变窄的taper长度；
-    transition_length 是taper两端保持恒定直宽或弯宽的直波导长度。
-    """
-    start_width = straight_width if start_width is None else start_width
-    end_width = straight_width if end_width is None else end_width
-    transition_length = taper_length if transition_length is None else transition_length
-    for index, primitive in enumerate(primitives):
-        if primitive["type"] == "bend":
-            # 端点沿公共Bend的10 nm landing重叠，闭合Path在切点量化时的楔形缝隙。
-            region.insert(pya.Path(primitive["points"], bend_width, 10, 10))
-            continue
-
-        start, end = primitive["start"], primitive["end"]
-        has_bend_before = index > 0 and primitives[index - 1]["type"] == "bend"
-        has_bend_after = index + 1 < len(primitives) and primitives[index + 1]["type"] == "bend"
-        is_single_straight = len(primitives) == 1
-        if is_single_straight and int(start_width) == int(end_width):
-            region.insert(pya.Path([start, end], start_width))
-            continue
-        if index == 0 and has_bend_after and int(start_width) == int(bend_width):
-            region.insert(pya.Path([start, end], bend_width))
-            continue
-        if index == len(primitives) - 1 and has_bend_before and int(end_width) == int(bend_width):
-            region.insert(pya.Path([start, end], bend_width))
-            continue
-
-        if has_bend_before:
-            start_parts = _bend_transition_parts(bend_width, straight_width, taper_length, transition_length)
-        elif index == 0:
-            start_parts = _terminal_taper_parts(start_width, straight_width, taper_length)
+    """按共用宽度分段绘图，使长度统计与局部 taper 裁剪规则一致。"""
+    for points, width_start, width_end, is_bend in profile_sections(
+        primitives, straight_width, bend_width, taper_length,
+        transition_length, start_width, end_width,
+    ):
+        if is_bend:
+            # 保留公共 Bend 端点处的 10 nm 重叠，闭合 DBU 量化后的楔形缝隙。
+            region.insert(pya.Path(points, bend_width, 10, 10))
         else:
-            start_parts = []
-        if has_bend_after:
-            end_parts = _bend_transition_parts(bend_width, straight_width, taper_length, transition_length, reverse=True)
-        elif index == len(primitives) - 1:
-            end_parts = _terminal_taper_parts(end_width, straight_width, taper_length, reverse=True)
-        else:
-            end_parts = []
-
-        start_taper = sum(part["length"] for part in start_parts)
-        end_taper = sum(part["length"] for part in end_parts)
-        straight_length = _distance(start, end)
-        total_taper = start_taper + end_taper
-        if total_taper > straight_length and total_taper > 0:
-            # 直接编辑PCell参数时可能绕过菜单容量检查；此处按比例裁剪，
-            # 保持端面宽度语义并避免两个taper在同一直段内交叠。
-            scale = float(straight_length) / float(total_taper)
-            start_parts = _scale_part_lengths(start_parts, scale)
-            end_parts = _scale_part_lengths(end_parts, scale)
-            start_taper = sum(part["length"] for part in start_parts)
-            end_taper = sum(part["length"] for part in end_parts)
-
-        cursor = start
-        consumed = 0
-        for part in start_parts:
-            if part["length"] <= 0:
-                continue
-            next_point = _point_along(start, end, consumed + part["length"])
-            _draw_width_part(region, cursor, next_point, part["w0"], part["w1"])
-            cursor = next_point
-            consumed += part["length"]
-
-        center_end = end
-        if end_taper > 0:
-            center_end = _point_along(end, start, end_taper)
-        if cursor != center_end:
-            region.insert(pya.Path([cursor, center_end], straight_width))
-        cursor = center_end
-        consumed = 0
-        for part in end_parts:
-            if part["length"] <= 0:
-                continue
-            next_point = _point_along(center_end, end, consumed + part["length"])
-            _draw_width_part(region, cursor, next_point, part["w0"], part["w1"])
-            cursor = next_point
-            consumed += part["length"]
+            _draw_width_part(region, points[0], points[-1], width_start, width_end)
 
 
 def draw_composite_waveguide_geometry(
