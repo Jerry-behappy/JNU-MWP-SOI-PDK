@@ -9,6 +9,10 @@
 
 Updates are listed newest first. Historical dates follow Git commit dates in Beijing time (UTC+8). Related changes on the same day are grouped; the full commit history shows the content and timestamp of every commit.
 
+## 2026-10-14 · PinRec in Layer Exclude
+
+- Add a PinRec (1/10) keep option to Layer Exclude, checked by default on first use and after upgrading. Subsequent uses remember the selection. Keeping the layer preserves port Paths and port-name Text; unchecking it removes the layer.
+
 ## 2026-10-13 · Waveguide lengths and parameter details
 
 - Rename the top-level menu to `JNU_MWP_SOI_PDK V1.4` and the technology to `JNU_MWP_SOI_PDK`. Update startup loading, library technology associations and release tools; migrate the previous technology selection and recent-file associations while retaining shortcuts.
