@@ -2,7 +2,7 @@
 # 创建者: Junyi Zhang
 # 时间: 2026-10
 
-"""只读汇总单宽度及复合波导，按宽度计长并排除渐变段。"""
+"""只读汇总波导及普通 Spiral，按宽度计长并排除渐变段。"""
 
 import json
 import math
@@ -45,6 +45,71 @@ def _waveguide_kind(cell):
     return None
 
 
+def _spiral_kind(cell):
+    """识别普通及复合回形针，兼容公开 PCell 名和无上下文的旧 GDS。"""
+    declaration = cell.pcell_declaration()
+    name = declaration.name() if declaration is not None else cell.name
+    name = re.sub(r"^(?:<defunct>)?(?:JNULib\.)?(?:Pcell_)?", "", name)
+    if name.startswith(("Paperclip_Spiral_with_Composite_Waveguide", "CompPclip(")):
+        return "composite_spiral"
+    for prefix, kind in (("Paperclip_Spiral", "paperclip"), ("Archimedean_Spiral", "archimedean")):
+        if re.match(r"^%s(?:$|[(_$])" % prefix, name):
+            return kind
+    return None
+
+
+def _spiral_data(cell, kind):
+    """使用实际 L 标注；绝不把 Paperclip 内直段或 Spiral 目标 length 当成总长。"""
+    layer = cell.layout().find_layer(10, 0)
+    texts = [shape.text.string for shape in cell.shapes(layer).each() if shape.is_text()] if layer is not None else []
+    prefix = "Paperclip type=" if kind == "paperclip" else "L="
+    lengths = []
+    for text in texts:
+        if text.startswith(prefix):
+            match = re.search(r"\bL=([0-9]+(?:\.[0-9]+)?)um\b", text)
+            if match and 0 < float(match.group(1)) < math.inf:
+                lengths.append(float(match.group(1)))
+    native = dict(cell.pcell_parameters_by_name())
+    if len(lengths) > 1:
+        raise WaveguideLengthError("missing_length")
+    length = lengths[0] if lengths else _number(native.get("total_length"))
+    if length is None or length <= 0:
+        raise WaveguideLengthError("missing_length")
+
+    annotation = "\n".join(texts)
+    stored = annotation + "\n" + cell.name
+
+    def parameter(key, token):
+        value = _number(native.get(key))
+        if value is None:
+            match = re.search(r"\b%s=([0-9]+(?:\.[0-9]+)?)(?:um)?(?=[,\s|)]|$)" % token, stored)
+            value = float(match.group(1)) if match else None
+        return value
+
+    bend = native.get("bend_type")
+    if not bend:
+        match = re.search(r"(?:\bbend=|,)(Circular|Bezier|Euler)(?=[,\s|)]|$)", stored)
+        bend = match.group(1) if match else None
+    width = parameter("wg_width", "w")
+    if width is None:
+        # 旧 Paperclip Text 没有宽度；同宽的两个光学端口可恢复实际波导宽度。
+        pin_layer = cell.layout().find_layer(1, 10)
+        widths = {shape.path.width for shape in cell.shapes(pin_layer).each() if shape.is_path()} if pin_layer is not None else set()
+        if len(widths) == 1:
+            width = next(iter(widths)) * cell.layout().dbu
+    params = {
+        "width": width,
+        "radius": parameter("bend_radius" if kind == "paperclip" else "min_radius", "R"),
+        "bend_type": bend,
+        "bezier_k": parameter("bezier", "B"),
+        "Euler_Rmax": parameter("Euler_Rmax", "Rmax") if bend == "Euler" else None,
+        "Euler_Rmin": parameter("Euler_Rmin", "Rmin") if bend == "Euler" else None,
+        "Bezier_Rmax": parameter("Bezier_Rmax", "Rmax") if bend == "Bezier" else None,
+        "Bezier_Rmin": parameter("Bezier_Rmin", "Rmin") if bend == "Bezier" else None,
+    }
+    return length, annotation, params
+
+
 def _stored_annotation(cell):
     """读取唯一有效的长度标注，同时保留其中的波导参数。"""
     layer = cell.layout().find_layer(pya.LayerInfo(10, 0))
@@ -76,9 +141,10 @@ def _number(value):
     return result if math.isfinite(result) and result >= 0 else None
 
 
-def _waveguide_parameters(cell, annotation, scale):
+def _waveguide_parameters(cell, annotation, scale, overrides=None):
     """优先读取 PCell 参数；无上下文的 GDS 从标注和参数化名称恢复。"""
     params = dict(cell.pcell_parameters_by_name())
+    params.update(overrides or {})
     fields = {
         "width": "width", "radius": "radius", "straight_width": "ws",
         "bend_width": "wb", "start_width": "wstart", "end_width": "wend",
@@ -99,7 +165,7 @@ def _waveguide_parameters(cell, annotation, scale):
             params[key] = float(match.group(1)) if match else None
 
     result = {"bend_type": params.get("bend_type")}
-    for key in (*fields, "bezier_k", "Euler_Rmax", "Euler_Rmin"):
+    for key in (*fields, "bezier_k", "Euler_Rmax", "Euler_Rmin", "Bezier_Rmax", "Bezier_Rmin"):
         value = _number(params.get(key))
         result[key] = value * scale if value is not None and key != "bezier_k" else value
     if result["bend_type"] == "Bezier" and result["radius"] is not None and result["bezier_k"] is not None:
@@ -163,7 +229,7 @@ def _composite_length_data(cell, instance, annotation, total_length_um, params):
         raise WaveguideLengthError("missing_profile") from error
 
 
-def describe_selected_waveguides(selection, cellview_index):
+def describe_selected_waveguides(selection, cellview_index, include_spirals=False):
     """返回每个选中实例的长度、数量与参数；混入其他对象时整批报错。"""
     selected = []
     for obj in selection:
@@ -178,7 +244,9 @@ def describe_selected_waveguides(selection, cellview_index):
             raise WaveguideLengthError("unsupported")
         instance = obj.inst()
         kind = _waveguide_kind(instance.cell) if instance is not None and instance.cell is not None else None
-        if kind is None:
+        if kind is None and include_spirals and instance is not None and instance.cell is not None:
+            kind = _spiral_kind(instance.cell)
+        if kind is None or kind == "composite_spiral":
             raise WaveguideLengthError("unsupported")
 
         # 完整层级变换中的缩放影响物理长度，旋转、镜像和平移不影响。
@@ -193,8 +261,12 @@ def describe_selected_waveguides(selection, cellview_index):
                 and _value(element, "ib") < 0
             ):
                 copies *= int(parent_instance.na) * int(parent_instance.nb)
-        length, annotation = _stored_annotation(instance.cell)
-        params = _waveguide_parameters(instance.cell, annotation, 1.0)
+        overrides = None
+        if kind in ("paperclip", "archimedean"):
+            length, annotation, overrides = _spiral_data(instance.cell, kind)
+        else:
+            length, annotation = _stored_annotation(instance.cell)
+        params = _waveguide_parameters(instance.cell, annotation, 1.0, overrides)
         if kind == "composite":
             lengths, excluded = _composite_length_data(instance.cell, instance, annotation, length, params)
         else:
@@ -222,6 +294,24 @@ def describe_selected_waveguides(selection, cellview_index):
             },
         })
     return details
+
+
+def describe_selected_length_objects(selection, cellview_index):
+    """总长功能纳入两种普通 Spiral，跳过复合 Spiral 并返回其名称供界面说明。"""
+    included, excluded, unique = [], [], []
+    for obj in selection:
+        if any(obj == existing for existing in unique):
+            continue
+        unique.append(obj)
+        if obj.is_cell_inst() and obj.cv_index == cellview_index:
+            instance = obj.inst()
+            if instance is not None and instance.cell is not None and _spiral_kind(instance.cell) == "composite_spiral":
+                excluded.append(instance.cell.name)
+                continue
+        included.append(obj)
+    if not included and excluded:
+        return [], excluded
+    return describe_selected_waveguides(included, cellview_index, include_spirals=True), excluded
 
 
 def measure_selected_waveguides(selection, cellview_index):

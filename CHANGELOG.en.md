@@ -9,8 +9,9 @@
 
 Updates are listed newest first. Historical dates follow Git commit dates in Beijing time (UTC+8). Related changes on the same day are grouped; the full commit history shows the content and timestamp of every commit.
 
-## 2026-10-15 · Bilingual function menus
+## 2026-10-15 · Bilingual menus and Spiral lengths
 
+- Calculate Waveguide Length now includes ordinary `Paperclip_Spiral` and `Archimedean_Spiral` instances alongside Waveguides, reporting actual centerline lengths, widths and bend parameters. Inner straight lengths and target lengths are not treated as totals. Composite-width Spirals are skipped with a notice and excluded from the count and total.
 - Match the TFLN PDK menu style by showing Chinese / English together on each line for Waveguides, Layout, DRC and maintenance actions. Remove the Language switch and clean up its old entries during reload while preserving shortcuts.
 
 ## 2026-10-14 · PinRec in Layer Exclude

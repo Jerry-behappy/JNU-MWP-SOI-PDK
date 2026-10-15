@@ -2,7 +2,7 @@
 # 创建者: Junyi Zhang
 # 时间: 2026-10
 
-"""验证各宽度波导长度、taper 排除、GDS 重读及双语菜单回调。"""
+"""验证波导及普通 Spiral 的实际长度、复合 Spiral 排除、GDS 和菜单回调。"""
 
 import builtins
 import math
@@ -22,6 +22,8 @@ from JNU_MWP_tools.actions.path_to_waveguide import _create_waveguide_cell  # no
 from JNU_MWP_tools.core.common import RAW_PATH_GDS_PROPERTY, RAW_PATH_PROPERTY, _value  # noqa: E402
 from JNU_MWP_tools.core.waveguide_length import (  # noqa: E402
     WaveguideLengthError,
+    compare_selected_waveguides,
+    describe_selected_length_objects,
     describe_selected_waveguides,
     measure_selected_waveguides,
 )
@@ -277,6 +279,106 @@ def _composite_checks():
     print("PASS: composite width totals, transitions, taper exclusion, endpoint widths, compression and GDS", flush=True)
 
 
+def _spiral_fixture(layout, top):
+    from JNU_MWP_pcells.paperclip_spiral import PaperclipSpiral
+    from JNU_MWP_pcells.Archimedean_spiral import ArchimedeanSpiral
+    from JNU_MWP_pcells.paperclip_spiral_composite import PaperclipSpiralWithCompositeWaveguide
+
+    instances = []
+    for name, cls in (("Pcell_Paperclip_Spiral", PaperclipSpiral), ("Pcell_Archimedean_Spiral", ArchimedeanSpiral)):
+        layout.register_pcell(name, cls())
+        for bend in ("Circular", "Bezier", "Euler"):
+            cell = layout.create_cell(name, {
+                "length": 1000.0 if "Archimedean" in name else 100.0,
+                "wg_width": 0.7, "bend_type": bend, "bezier": 0.4,
+                "bend_radius": 14.0, "min_radius": 16.0,
+                "Euler_Rmax": 30.0, "Euler_Rmin": 10.0,
+                "loops": 2, "gap": 2.0, "ports_type": "type1", "vertical_stretch": 0.0,
+            })
+            instances.append(top.insert(pya.CellInstArray(cell.cell_index(), pya.Trans())))
+    name = "Pcell_Paperclip_Spiral_with_Composite_Waveguide"
+    layout.register_pcell(name, PaperclipSpiralWithCompositeWaveguide())
+    composite = layout.create_cell(name, {})
+    excluded = top.insert(pya.CellInstArray(composite.cell_index(), pya.Trans()))
+    return instances, excluded
+
+
+def _spiral_checks():
+    layout = pya.Layout()
+    top, waveguides = _fixture(layout)
+    spirals, excluded = _spiral_fixture(layout, top)
+    chosen = _selection(top, waveguides[:1] + spirals + [excluded])
+    details, skipped = describe_selected_length_objects(chosen + [chosen[-1].dup(), chosen[1].dup()], 0)
+    assert len(details) == 7 and skipped == [excluded.cell.name]
+    assert {item["kind"] for item in details} == {"single", "paperclip", "archimedean"}
+    expected = math.fsum(item["total_length_um"] for item in details)
+    for item, instance in zip(details[1:], spirals):
+        params = item["parameters"]
+        assert params["width"] == 0.7 and item["length_um"] > instance.cell.pcell_parameters_by_name()["length"]
+        assert item["excluded_taper_length_um"] == 0
+        if params["bend_type"] == "Bezier":
+            assert params["bezier_k"] == 0.4 and params["Bezier_Rmax"] > params["Bezier_Rmin"] > 0
+        elif params["bend_type"] == "Euler":
+            assert params["Euler_Rmax"] == 30 and params["Euler_Rmin"] == 10
+            assert 10 < params["Euler_Reff"] < 30
+    assert describe_selected_length_objects(_selection(top, [excluded]), 0) == ([], [excluded.cell.name])
+
+    # 总长功能纳入 Spiral，不扩大“两个 Waveguide 长度差”的原有选择范围。
+    try:
+        compare_selected_waveguides(_selection(top, spirals[:2]), 0)
+    except WaveguideLengthError as error:
+        assert error.reason == "unsupported"
+    else:
+        raise AssertionError("长度差功能意外纳入了 Spiral")
+
+    wrapper = layout.create_cell("SPIRAL_SCALED_PARENT")
+    child = wrapper.insert(pya.CellInstArray(spirals[0].cell_index, pya.Trans()))
+    parent = top.insert(pya.CellInstArray(wrapper.cell_index(), pya.ICplxTrans(2, 90, True, 0, 0)))
+    obj = _selection(top, [parent])[0]
+    obj.append_path(pya.InstElement(child))
+    scaled = describe_selected_length_objects([obj], 0)[0][0]
+    assert scaled["length_um"] == 2 * details[1]["length_um"] and scaled["parameters"]["width"] == 1.4
+    array = top.insert(pya.CellInstArray(spirals[0].cell_index, pya.Trans(), pya.Vector(200000, 0), pya.Vector(0, 200000), 2, 3))
+    obj = pya.ObjectInstPath()
+    obj.top = top.cell_index()
+    obj.cv_index = 0
+    obj.append_path(pya.InstElement(array, -1, -1))
+    array_detail = describe_selected_length_objects([obj], 0)[0][0]
+    assert array_detail["copies"] == 6 and array_detail["total_length_um"] == 6 * details[1]["length_um"]
+
+    with tempfile.TemporaryDirectory(prefix="jnu_spiral_length_") as directory:
+        for context in (True, False):
+            path = Path(directory) / ("context.gds" if context else "plain.gds")
+            options = pya.SaveLayoutOptions()
+            options.set_format_from_filename(str(path))
+            options.write_context_info = context
+            layout.write(str(path), options)
+            saved = pya.Layout()
+            saved.read(str(path))
+            saved_top = saved.cell(top.name)
+            restored, removed = describe_selected_length_objects(_selection(saved_top, list(saved_top.each_inst())[:len(waveguides) + len(spirals) + 1]), 0)
+            # 前三个普通 Waveguide 比初始混选多两个，预期增加它们的长度。
+            extra = sum(item["total_length_um"] for item in describe_selected_waveguides(_selection(top, waveguides[1:]), 0))
+            assert len(restored) == 9 and len(removed) == 1
+            assert abs(math.fsum(item["total_length_um"] for item in restored) - expected - extra) < 1e-6
+            assert all(math.isclose(item["parameters"]["width"], 0.7, abs_tol=1e-12) for item in restored[3:])
+            assert all(item["parameters"]["bend_type"] in ("Circular", "Bezier", "Euler") for item in restored[3:])
+
+    # 有重复实际 L 标注时不得用目标长度或只读字段掩盖错误。
+    cell = spirals[0].cell
+    text_layer = layout.layer(10, 0)
+    annotation = next(shape.text.string for shape in cell.shapes(text_layer).each() if shape.is_text())
+    duplicate = cell.shapes(text_layer).insert(pya.Text(annotation, pya.Trans()))
+    try:
+        describe_selected_length_objects(_selection(top, spirals[:1]), 0)
+    except WaveguideLengthError as error:
+        assert error.reason == "missing_length"
+    else:
+        raise AssertionError("重复 Spiral 总长标注未报错")
+    duplicate.delete()
+    print("PASS: ordinary Spirals, actual not target length, composite Spiral exclusion, copies, scaling and GDS context/plain reopen", flush=True)
+
+
 def _gui_checks():
     app = pya.Application.instance()
     window = app.main_window()
@@ -304,6 +406,7 @@ def _gui_checks():
         cellview.cell = top
         view = window.current_view()
         cv_index = _value(view, "active_cellview_index")
+        spirals, excluded_spiral = _spiral_fixture(cellview.layout(), top)
         chosen = _selection(top, instances[:2], cv_index)
         menu_macro = pya.Macro(str(PYMACROS / "JNU_MWP_PDK_Menu.lym"))
         for language, title in (("en", "Calculate Waveguide Length"), ("zh_CN", "计算波导长度")):
@@ -353,6 +456,19 @@ def _gui_checks():
             assert messages[-1][0:2] == ("warning", title)
             assert len(view.object_selection) == len(mixed)
             assert all(obj in view.object_selection for obj in mixed)
+            mixed_spirals = chosen[:1] + _selection(top, [spirals[1], spirals[5], excluded_spiral], cv_index)
+            view.object_selection = mixed_spirals
+            menu_action.trigger()
+            report = messages[-1][2]
+            assert messages[-1][0:2] == ("info", title)
+            assert ("Paperclip Spiral" if language == "en" else "回形针 Spiral") in report
+            assert ("Archimedean Spiral" if language == "en" else "阿基米德 Spiral") in report
+            assert ("Skipped composite-width Spirals: 1" if language == "en" else "已跳过 1 个复合宽度 Spiral") in report
+            assert "0.700 µm" in report and "Euler Rmax: 30.000 µm" in report
+            assert len(view.object_selection) == len(mixed_spirals)
+            view.object_selection = _selection(top, [excluded_spiral], cv_index)
+            menu_action.trigger()
+            assert messages[-1][0:2] == ("warning", title)
         action.pya = original_pya
 
         def check_dialog(dialog, key, default_size):
@@ -380,5 +496,6 @@ def _gui_checks():
 if __name__ == "__main__":
     _database_checks()
     _composite_checks()
+    _spiral_checks()
     if hasattr(pya, "Application"):
         _gui_checks()

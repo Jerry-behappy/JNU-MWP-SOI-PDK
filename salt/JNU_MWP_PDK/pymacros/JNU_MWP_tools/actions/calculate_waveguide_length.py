@@ -2,7 +2,7 @@
 # 创建者: Junyi Zhang
 # 时间: 2026-10
 
-"""显示波导按宽度汇总的长度与参数，复合波导排除 taper。"""
+"""显示波导及普通 Spiral 的总长与参数；复合波导排除 taper，复合 Spiral 跳过。"""
 
 import math
 
@@ -13,7 +13,7 @@ from JNU_MWP_tools.core.gui_state import exec_dialog_with_persisted_size
 from JNU_MWP_tools.core.ui_language import LANGUAGE_ZH, active_language
 from JNU_MWP_tools.core.waveguide_length import (
     WaveguideLengthError,
-    describe_selected_waveguides,
+    describe_selected_length_objects,
 )
 
 
@@ -36,7 +36,7 @@ def _taper_note():
     )
 
 
-def _result_message(details):
+def _result_message(details, excluded_spirals=()):
     """按实例列出宽度、弯曲类型及对应参数，并汇总全部选中副本。"""
     count = sum(item["copies"] for item in details)
     length_um = math.fsum(item["total_length_um"] for item in details)
@@ -47,6 +47,12 @@ def _result_message(details):
         "波导数量：%d\n总波导长度（不含 taper）：%.3f µm（%.6f mm）" if has_composite
         else "波导数量：%d\n总波导长度：%.3f µm（%.6f mm）",
     ) % (count, length_um, length_um / 1000.0)]
+    if excluded_spirals:
+        lines.extend(["", _ui(
+            "Skipped composite-width Spirals: %d selected item(s); excluded from the count and total.",
+            "已跳过 %d 个复合宽度 Spiral 选中项，不计入数量及总长度。",
+        ) % len(excluded_spirals)])
+        lines.extend("  " + name for name in excluded_spirals)
     if has_composite:
         lines.extend(["", _taper_note()])
         excluded = math.fsum(item["excluded_taper_length_um"] * item["copies"] for item in details)
@@ -93,13 +99,19 @@ def _waveguide_detail_lines(details):
             lines.append(_ui("Excluded taper length: ", "已排除的 taper 长度：") + _format_parameter(item["excluded_taper_length_um"]))
         else:
             lines.append(_ui("Waveguide width: ", "波导宽度：") + _format_parameter(params["width"]))
+        if item["kind"] in ("paperclip", "archimedean"):
+            lines.append(_ui("Device type: ", "器件类型：") + {
+                "paperclip": _ui("Paperclip Spiral", "回形针 Spiral"),
+                "archimedean": _ui("Archimedean Spiral", "阿基米德 Spiral"),
+            }[item["kind"]])
         bend = params["bend_type"]
         bend_label = {
             "Circular": _ui("Circular", "圆弧（Circular）"),
             "Bezier": _ui("Bezier", "贝塞尔（Bezier）"),
             "Euler": _ui("Euler", "欧拉（Euler）"),
         }.get(bend, _ui("Not stored", "未保存"))
-        lines.append(_ui("Bend type: ", "弯曲类型：") + bend_label)
+        bend_title = _ui("Center bend type: ", "中心弯曲类型：") if item["kind"] == "archimedean" else _ui("Bend type: ", "弯曲类型：")
+        lines.append(bend_title + bend_label)
         if bend in ("Circular", "Bezier"):
             lines.append(_ui("Bend radius R: ", "弯曲半径 R：") + _format_parameter(params["radius"]))
         if bend == "Bezier":
@@ -141,26 +153,26 @@ def calculate_waveguide_length():
     title = _ui("Calculate Waveguide Length", "计算波导长度")
     try:
         view, _layout, _cell = _active_context()
-        details = describe_selected_waveguides(
+        details, excluded_spirals = describe_selected_length_objects(
             view.object_selection, _value(view, "active_cellview_index")
         )
     except WaveguideLengthError as error:
         messages = {
             "empty": _ui(
-                "Select one or more Waveguide or Composite_Waveguide instances first.",
-                "请先选中一个或多个单宽度或复合宽度 Waveguide 实例。",
+                "Select Waveguide, Composite_Waveguide, Paperclip Spiral or Archimedean Spiral instances first.",
+                "请先选中 Waveguide、复合宽度 Waveguide、普通回形针或阿基米德 Spiral 实例。",
             ),
             "unsupported": _ui(
-                "Only Waveguide and Composite_Waveguide instances are supported.\n"
+                "Only Waveguide, Composite_Waveguide, Paperclip Spiral and Archimedean Spiral instances are supported.\n"
                 "The selection contains another object, so no total was calculated.",
-                "只支持单宽度和复合宽度 Waveguide 实例。\n"
+                "只支持 Waveguide、复合宽度 Waveguide、普通回形针和阿基米德 Spiral 实例。\n"
                 "选择中包含其他对象，已停止计算；请仅选中波导后重试。",
             ),
             "missing_length": _ui(
-                "A selected Waveguide has missing or ambiguous length data.\n"
-                "No total was calculated. Regenerate that Waveguide and try again.",
-                "选中的 Waveguide 缺少有效长度数据或存在重复长度标注，已停止计算。\n"
-                "请重新生成该波导后重试。",
+                "A selected waveguide or Spiral has missing or ambiguous actual length data.\n"
+                "No total was calculated. Regenerate that device and try again.",
+                "选中的波导或 Spiral 缺少有效的实际长度数据或存在重复长度标注，已停止计算。\n"
+                "请重新生成该器件后重试。",
             ),
             "missing_profile": _ui(
                 "A composite Waveguide has incomplete or inconsistent path/width data.\n"
@@ -179,4 +191,10 @@ def calculate_waveguide_length():
         )
         return
 
-    _show_results(title, _result_message(details))
+    if not details:
+        pya.MessageBox.warning(title, _ui(
+            "Only composite-width Spirals were selected. They are excluded; no length was calculated.",
+            "选中的均为复合宽度 Spiral，不纳入统计，本次未计算长度。",
+        ), pya.MessageBox.Ok)
+        return
+    _show_results(title, _result_message(details, excluded_spirals))
