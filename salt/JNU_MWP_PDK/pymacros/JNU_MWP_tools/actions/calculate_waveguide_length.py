@@ -2,7 +2,7 @@
 # 创建者: Junyi Zhang
 # 时间: 2026-10
 
-"""显示波导及普通 Spiral 的总长与参数；复合波导排除 taper，复合 Spiral 跳过。"""
+"""显示波导及普通 Spiral 的总长与参数；复合波导排除 taper，复合 Spiral 整批拒绝。"""
 
 import math
 
@@ -36,7 +36,7 @@ def _taper_note():
     )
 
 
-def _result_message(details, excluded_spirals=()):
+def _result_message(details):
     """按实例列出宽度、弯曲类型及对应参数，并汇总全部选中副本。"""
     count = sum(item["copies"] for item in details)
     length_um = math.fsum(item["total_length_um"] for item in details)
@@ -47,12 +47,6 @@ def _result_message(details, excluded_spirals=()):
         "波导数量：%d\n总波导长度（不含 taper）：%.3f µm（%.6f mm）" if has_composite
         else "波导数量：%d\n总波导长度：%.3f µm（%.6f mm）",
     ) % (count, length_um, length_um / 1000.0)]
-    if excluded_spirals:
-        lines.extend(["", _ui(
-            "Skipped composite-width Spirals: %d selected item(s); excluded from the count and total.",
-            "已跳过 %d 个复合宽度 Spiral 选中项，不计入数量及总长度。",
-        ) % len(excluded_spirals)])
-        lines.extend("  " + name for name in excluded_spirals)
     if has_composite:
         lines.extend(["", _taper_note()])
         excluded = math.fsum(item["excluded_taper_length_um"] * item["copies"] for item in details)
@@ -153,11 +147,17 @@ def calculate_waveguide_length():
     title = _ui("Calculate Waveguide Length", "计算波导长度")
     try:
         view, _layout, _cell = _active_context()
-        details, excluded_spirals = describe_selected_length_objects(
+        details = describe_selected_length_objects(
             view.object_selection, _value(view, "active_cellview_index")
         )
     except WaveguideLengthError as error:
         messages = {
+            "composite_spiral": _ui(
+                "The selection contains a composite-width Spiral. The entire calculation was cancelled.\n"
+                "No partial total was calculated. Deselect composite-width Spirals and try again.",
+                "选择中包含复合宽度 Spiral，已取消整次计算，不显示部分总长。\n"
+                "请取消选中复合宽度 Spiral 后重试。",
+            ),
             "empty": _ui(
                 "Select Waveguide, Composite_Waveguide, Paperclip Spiral or Archimedean Spiral instances first.",
                 "请先选中 Waveguide、复合宽度 Waveguide、普通回形针或阿基米德 Spiral 实例。",
@@ -191,10 +191,4 @@ def calculate_waveguide_length():
         )
         return
 
-    if not details:
-        pya.MessageBox.warning(title, _ui(
-            "Only composite-width Spirals were selected. They are excluded; no length was calculated.",
-            "选中的均为复合宽度 Spiral，不纳入统计，本次未计算长度。",
-        ), pya.MessageBox.Ok)
-        return
-    _show_results(title, _result_message(details, excluded_spirals))
+    _show_results(title, _result_message(details))

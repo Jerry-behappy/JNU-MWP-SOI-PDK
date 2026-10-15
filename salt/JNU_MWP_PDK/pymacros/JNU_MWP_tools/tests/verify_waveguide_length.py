@@ -2,7 +2,7 @@
 # 创建者: Junyi Zhang
 # 时间: 2026-10
 
-"""验证波导及普通 Spiral 的实际长度、复合 Spiral 排除、GDS 和菜单回调。"""
+"""验证波导及普通 Spiral 的实际长度、复合 Spiral 整批拒绝、GDS 和菜单回调。"""
 
 import builtins
 import math
@@ -307,9 +307,9 @@ def _spiral_checks():
     layout = pya.Layout()
     top, waveguides = _fixture(layout)
     spirals, excluded = _spiral_fixture(layout, top)
-    chosen = _selection(top, waveguides[:1] + spirals + [excluded])
-    details, skipped = describe_selected_length_objects(chosen + [chosen[-1].dup(), chosen[1].dup()], 0)
-    assert len(details) == 7 and skipped == [excluded.cell.name]
+    chosen = _selection(top, waveguides[:1] + spirals)
+    details = describe_selected_length_objects(chosen + [chosen[-1].dup(), chosen[1].dup()], 0)
+    assert len(details) == 7
     assert {item["kind"] for item in details} == {"single", "paperclip", "archimedean"}
     expected = math.fsum(item["total_length_um"] for item in details)
     for item, instance in zip(details[1:], spirals):
@@ -321,7 +321,18 @@ def _spiral_checks():
         elif params["bend_type"] == "Euler":
             assert params["Euler_Rmax"] == 30 and params["Euler_Rmin"] == 10
             assert 10 < params["Euler_Reff"] < 30
-    assert describe_selected_length_objects(_selection(top, [excluded]), 0) == ([], [excluded.cell.name])
+    def reject_composite(selection):
+        try:
+            describe_selected_length_objects(selection, 0)
+        except WaveguideLengthError as error:
+            assert error.reason == "composite_spiral"
+        else:
+            raise AssertionError("含复合 Spiral 的选择未取消整次计算")
+
+    composite_selection = _selection(top, [excluded])
+    reject_composite(composite_selection)
+    reject_composite(chosen + composite_selection)
+    reject_composite(composite_selection + chosen)
 
     # 总长功能纳入 Spiral，不扩大“两个 Waveguide 长度差”的原有选择范围。
     try:
@@ -336,14 +347,14 @@ def _spiral_checks():
     parent = top.insert(pya.CellInstArray(wrapper.cell_index(), pya.ICplxTrans(2, 90, True, 0, 0)))
     obj = _selection(top, [parent])[0]
     obj.append_path(pya.InstElement(child))
-    scaled = describe_selected_length_objects([obj], 0)[0][0]
+    scaled = describe_selected_length_objects([obj], 0)[0]
     assert scaled["length_um"] == 2 * details[1]["length_um"] and scaled["parameters"]["width"] == 1.4
     array = top.insert(pya.CellInstArray(spirals[0].cell_index, pya.Trans(), pya.Vector(200000, 0), pya.Vector(0, 200000), 2, 3))
     obj = pya.ObjectInstPath()
     obj.top = top.cell_index()
     obj.cv_index = 0
     obj.append_path(pya.InstElement(array, -1, -1))
-    array_detail = describe_selected_length_objects([obj], 0)[0][0]
+    array_detail = describe_selected_length_objects([obj], 0)[0]
     assert array_detail["copies"] == 6 and array_detail["total_length_um"] == 6 * details[1]["length_um"]
 
     with tempfile.TemporaryDirectory(prefix="jnu_spiral_length_") as directory:
@@ -356,10 +367,13 @@ def _spiral_checks():
             saved = pya.Layout()
             saved.read(str(path))
             saved_top = saved.cell(top.name)
-            restored, removed = describe_selected_length_objects(_selection(saved_top, list(saved_top.each_inst())[:len(waveguides) + len(spirals) + 1]), 0)
+            saved_instances = list(saved_top.each_inst())
+            supported_count = len(waveguides) + len(spirals)
+            restored = describe_selected_length_objects(_selection(saved_top, saved_instances[:supported_count]), 0)
+            reject_composite(_selection(saved_top, saved_instances[:supported_count + 1]))
             # 前三个普通 Waveguide 比初始混选多两个，预期增加它们的长度。
             extra = sum(item["total_length_um"] for item in describe_selected_waveguides(_selection(top, waveguides[1:]), 0))
-            assert len(restored) == 9 and len(removed) == 1
+            assert len(restored) == 9
             assert abs(math.fsum(item["total_length_um"] for item in restored) - expected - extra) < 1e-6
             assert all(math.isclose(item["parameters"]["width"], 0.7, abs_tol=1e-12) for item in restored[3:])
             assert all(item["parameters"]["bend_type"] in ("Circular", "Bezier", "Euler") for item in restored[3:])
@@ -376,7 +390,7 @@ def _spiral_checks():
     else:
         raise AssertionError("重复 Spiral 总长标注未报错")
     duplicate.delete()
-    print("PASS: ordinary Spirals, actual not target length, composite Spiral exclusion, copies, scaling and GDS context/plain reopen", flush=True)
+    print("PASS: ordinary Spirals, actual not target length, whole-calculation composite Spiral rejection, copies, scaling and GDS context/plain reopen", flush=True)
 
 
 def _gui_checks():
@@ -456,16 +470,23 @@ def _gui_checks():
             assert messages[-1][0:2] == ("warning", title)
             assert len(view.object_selection) == len(mixed)
             assert all(obj in view.object_selection for obj in mixed)
-            mixed_spirals = chosen[:1] + _selection(top, [spirals[1], spirals[5], excluded_spiral], cv_index)
+            mixed_spirals = chosen[:1] + _selection(top, [spirals[1], spirals[5]], cv_index)
             view.object_selection = mixed_spirals
             menu_action.trigger()
             report = messages[-1][2]
             assert messages[-1][0:2] == ("info", title)
             assert ("Paperclip Spiral" if language == "en" else "回形针 Spiral") in report
             assert ("Archimedean Spiral" if language == "en" else "阿基米德 Spiral") in report
-            assert ("Skipped composite-width Spirals: 1" if language == "en" else "已跳过 1 个复合宽度 Spiral") in report
             assert "0.700 µm" in report and "Euler Rmax: 30.000 µm" in report
             assert len(view.object_selection) == len(mixed_spirals)
+            rejected_selection = mixed_spirals + _selection(top, [excluded_spiral], cv_index)
+            view.object_selection = rejected_selection
+            before_messages = len(messages)
+            menu_action.trigger()
+            assert len(messages) == before_messages + 1 and messages[-1][0:2] == ("warning", title)
+            assert ("entire calculation was cancelled" if language == "en" else "已取消整次计算") in messages[-1][2]
+            assert len(view.object_selection) == len(rejected_selection)
+            assert all(obj in view.object_selection for obj in rejected_selection)
             view.object_selection = _selection(top, [excluded_spiral], cv_index)
             menu_action.trigger()
             assert messages[-1][0:2] == ("warning", title)

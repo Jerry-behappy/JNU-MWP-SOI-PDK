@@ -11,7 +11,7 @@ Updates are listed newest first. Historical dates follow Git commit dates in Bei
 
 ## 2026-10-15 · Bilingual menus and Spiral lengths
 
-- Calculate Waveguide Length now includes ordinary `Paperclip_Spiral` and `Archimedean_Spiral` instances alongside Waveguides, reporting actual centerline lengths, widths and bend parameters. Inner straight lengths and target lengths are not treated as totals. Composite-width Spirals are skipped with a notice and excluded from the count and total.
+- Calculate Waveguide Length now includes ordinary `Paperclip_Spiral` and `Archimedean_Spiral` instances alongside Waveguides, reporting actual centerline lengths, widths and bend parameters. Inner straight lengths and target lengths are not treated as totals. If the selection contains a composite-width Spiral, show an error and cancel the entire calculation without reporting a partial total.
 - Match the TFLN PDK menu style by showing Chinese / English together on each line for Waveguides, Layout, DRC and maintenance actions. Remove the Language switch and clean up its old entries during reload while preserving shortcuts.
 
 ## 2026-10-14 · PinRec in Layer Exclude

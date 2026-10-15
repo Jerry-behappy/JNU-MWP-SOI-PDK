@@ -297,21 +297,14 @@ def describe_selected_waveguides(selection, cellview_index, include_spirals=Fals
 
 
 def describe_selected_length_objects(selection, cellview_index):
-    """总长功能纳入两种普通 Spiral，跳过复合 Spiral 并返回其名称供界面说明。"""
-    included, excluded, unique = [], [], []
-    for obj in selection:
-        if any(obj == existing for existing in unique):
-            continue
-        unique.append(obj)
+    """预检全部选中项，含复合 Spiral 时整批拒绝，不返回部分统计。"""
+    selected = list(selection)
+    for obj in selected:
         if obj.is_cell_inst() and obj.cv_index == cellview_index:
             instance = obj.inst()
             if instance is not None and instance.cell is not None and _spiral_kind(instance.cell) == "composite_spiral":
-                excluded.append(instance.cell.name)
-                continue
-        included.append(obj)
-    if not included and excluded:
-        return [], excluded
-    return describe_selected_waveguides(included, cellview_index, include_spirals=True), excluded
+                raise WaveguideLengthError("composite_spiral")
+    return describe_selected_waveguides(selected, cellview_index, include_spirals=True)
 
 
 def measure_selected_waveguides(selection, cellview_index):
