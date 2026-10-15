@@ -40,7 +40,7 @@ Copy these prompts into an AI agent **that can access local files and run comman
 ### Updates, language, and whiteboxes
 
 - A `main` installation checks GitHub for updates at startup. Click **Update now** in the prompt or use **JNU_MWP_SOI_PDK V1.4 → Check for PDK Updates**. Development branches do not show automatic update prompts. Restart KLayout after updating.
-- Choose **JNU_MWP_SOI_PDK V1.4 → Language → English / 简体中文** to change menu and PCell parameter labels; the change takes effect **after a restart**. **Reload JNU PDK** can reload Python tools, but changes to startup macros, technology, or installation paths still require a restart.
+- All function menus display **中文 / English** together, with no language switching required. **重新加载 JNU PDK / Reload JNU PDK** can reload Python tools, but changes to startup macros, technology, or installation paths still require a restart.
 - Authorized users can choose **JNU_MWP_SOI_PDK V1.4 → Install / Update Whitebox Library** to install 31 fixed whiteboxes from the separate [JNU-MWP-SOI-Library](https://github.com/Jerry-behappy/JNU-MWP-SOI-Library). This public PDK repository contains no whitebox GDS.
 
 ## Features and user guide

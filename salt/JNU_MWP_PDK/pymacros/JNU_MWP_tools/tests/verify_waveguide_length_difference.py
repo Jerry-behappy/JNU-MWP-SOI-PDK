@@ -146,10 +146,10 @@ def _gui_checks():
             setattr(builtins, ui_language._SESSION_KEY, language)
             macro.run()
             macro.run()
-            assert len(window._jnu_menu_actions) == 16
-            assert len({str(item.title) for item in window._jnu_menu_actions}) == 16
+            assert len(window._jnu_menu_actions) == 14
+            assert len({str(item.title) for item in window._jnu_menu_actions}) == 14
             menu_action = window.menu().action("jnu_mwp_pdk_menu.waveguides.jnu_action_calculate_waveguide_length_difference")
-            assert menu_action.title == title
+            assert menu_action.title == "计算波导长度差 / Calculate Waveguide Length Difference"
             chosen = _selection(top, [instances[0], long_instance], cv_index)
             view.object_selection = chosen
             menu_action.trigger()

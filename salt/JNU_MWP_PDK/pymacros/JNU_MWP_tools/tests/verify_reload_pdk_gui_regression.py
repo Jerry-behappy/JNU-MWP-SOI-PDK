@@ -5,6 +5,7 @@
 """在 KLayout 隐藏 GUI 中验证菜单宏和 PDK 重载入口的幂等性。"""
 
 from pathlib import Path
+import builtins
 import sys
 
 import pya
@@ -14,12 +15,11 @@ PYMACROS_DIR = Path(__file__).resolve().parents[2]
 if str(PYMACROS_DIR) not in sys.path:
     sys.path.insert(0, str(PYMACROS_DIR))
 
-from JNU_MWP_tools.core.ui_language import LANGUAGE_ZH, active_language  # noqa: E402
 from JNU_MWP_tools.core.pdk_identity import MENU_TITLE  # noqa: E402
 
 
 MENU_MACRO = PYMACROS_DIR / "JNU_MWP_PDK_Menu.lym"
-EXPECTED_ACTION_COUNT = 16
+EXPECTED_ACTION_COUNT = 14
 DEFAULT_SHORTCUTS = {
     "jnu_action_path_to_waveguide": "9",
     "jnu_action_waveguide_to_path": "8",
@@ -41,8 +41,6 @@ EXPECTED_SHORTCUTS = {
     "jnu_action_reload_jnu_pdk": "Ctrl+Alt+R",
     "jnu_action_update_pdk": "",
     "jnu_action_install_private": "",
-    "jnu_action_language_en": "",
-    "jnu_action_language_zh": "",
 }
 _PERSISTENT_CONFIG_KEYS = (
     "key-bindings",
@@ -63,9 +61,15 @@ def _check_menu(main_window):
     actions = getattr(main_window, "_jnu_menu_actions", [])
     _assert(len(actions) == EXPECTED_ACTION_COUNT, "JNU 菜单 Action 数量错误：%d。" % len(actions))
     titles = sorted(str(action.title) for action in actions)
-    chinese = active_language() == LANGUAGE_ZH
-    _assert(("重新加载 JNU PDK" if chinese else "Reload JNU PDK") in titles, "根菜单缺少 Reload JNU PDK。")
-    _assert(("通过波导连接器件" if chinese else "Cell Connect by Waveguide") in titles, "Waveguides 菜单缺少自动连接功能。")
+    _assert("重新加载 JNU PDK / Reload JNU PDK" in titles, "根菜单缺少双语 Reload JNU PDK。")
+    _assert("通过波导连接器件 / Cell Connect by Waveguide" in titles, "Waveguides 菜单缺少双语自动连接功能。")
+    for title in titles:
+        chinese, separator, english = title.partition(" / ")
+        _assert(separator and any("\u4e00" <= c <= "\u9fff" for c in chinese) and english, "功能项缺少双语标题：%s。" % title)
+    menu = main_window.menu()
+    for item, expected in (("waveguides", "波导 / Waveguides"), ("layout", "版图 / Layout"), ("drc", "设计规则检查 / DRC")):
+        _assert(menu.action("jnu_mwp_pdk_menu." + item).title == expected, "子菜单缺少双语标题。")
+    _assert(not menu.is_menu("jnu_mwp_pdk_menu.language"), "旧 Language 子菜单未清理。")
     _assert("SBend connect" not in titles, "旧 SBend connect 菜单标题仍然存在。")
     _assert(len(titles) == len(set(titles)), "JNU 菜单存在重复 Action。")
 
@@ -157,8 +161,6 @@ def _set_configured_shortcuts(app):
         "jnu_action_reload_jnu_pdk": "jnu_mwp_pdk_menu",
         "jnu_action_update_pdk": "jnu_mwp_pdk_menu",
         "jnu_action_install_private": "jnu_mwp_pdk_menu",
-        "jnu_action_language_en": "jnu_mwp_pdk_menu.language",
-        "jnu_action_language_zh": "jnu_mwp_pdk_menu.language",
     }
     for item_id, shortcut in EXPECTED_SHORTCUTS.items():
         mapping[parent_by_id[item_id] + "." + item_id] = "'%s'" % shortcut
@@ -234,6 +236,31 @@ def _verify_reload_timer_lifecycle(reload_pdk):
 
 def _run_regression(app, main_window):
     """执行菜单和重载回归；持久配置由外层负责恢复。"""
+    from JNU_MWP_tools.core import ui_language
+
+    original_language = getattr(builtins, ui_language._SESSION_KEY, None)
+    try:
+        for language in ("en", "zh_CN"):
+            setattr(builtins, ui_language._SESSION_KEY, language)
+            menu = main_window.menu()
+            if not menu.is_menu("jnu_mwp_pdk_menu"):
+                menu.insert_menu("help_menu", "jnu_mwp_pdk_menu", "JNU_MWP_PDK")
+            menu.insert_menu("jnu_mwp_pdk_menu.begin", "language", "Language")
+            old_actions = list(getattr(main_window, "_jnu_menu_actions", []))
+            for item, title in (("en", "English"), ("zh", "简体中文")):
+                action = pya.Action()
+                action.title = title
+                menu.insert_item("jnu_mwp_pdk_menu.language.end", "jnu_action_language_" + item, action)
+                old_actions.append(action)
+            main_window._jnu_menu_actions = old_actions
+            pya.Macro(str(MENU_MACRO)).run()
+            _check_menu(main_window)
+    finally:
+        if original_language is None:
+            delattr(builtins, ui_language._SESSION_KEY)
+        else:
+            setattr(builtins, ui_language._SESSION_KEY, original_language)
+
     _remove_jnu_configured_shortcuts(app)
     for item_id, action in getattr(main_window, "_jnu_menu_actions_by_id", {}).items():
         if item_id in DEFAULT_SHORTCUTS:

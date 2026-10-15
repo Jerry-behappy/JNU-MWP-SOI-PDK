@@ -312,7 +312,7 @@ def _gui_checks():
             menu_macro.run()
             menu_path = "jnu_mwp_pdk_menu.waveguides.jnu_action_calculate_waveguide_length"
             menu_action = window.menu().action(menu_path)
-            assert menu_action.title == title
+            assert menu_action.title == "计算波导长度 / Calculate Waveguide Length"
             view.object_selection = chosen
             menu_action.trigger()
             assert messages[-1][0:2] == ("info", title)

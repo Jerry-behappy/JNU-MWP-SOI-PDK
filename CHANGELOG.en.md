@@ -9,6 +9,10 @@
 
 Updates are listed newest first. Historical dates follow Git commit dates in Beijing time (UTC+8). Related changes on the same day are grouped; the full commit history shows the content and timestamp of every commit.
 
+## 2026-10-15 · Bilingual function menus
+
+- Match the TFLN PDK menu style by showing Chinese / English together on each line for Waveguides, Layout, DRC and maintenance actions. Remove the Language switch and clean up its old entries during reload while preserving shortcuts.
+
 ## 2026-10-14 · PinRec in Layer Exclude
 
 - Add a PinRec (1/10) keep option to Layer Exclude, checked by default on first use and after upgrading. Subsequent uses remember the selection. Keeping the layer preserves port Paths and port-name Text; unchecking it removes the layer.

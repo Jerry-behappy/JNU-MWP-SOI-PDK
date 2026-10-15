@@ -39,7 +39,7 @@ def probe():
         assert all(black.layout().cell(cell.name) for cell in layout.top_cells())
     window = pya.Application.instance().main_window()
     actions = getattr(window, "_jnu_menu_actions_by_id", {})
-    assert len(actions) == 16
+    assert len(actions) == 14
     expected_shortcuts = {
         "jnu_action_path_to_waveguide": "9",
         "jnu_action_waveguide_to_path": "8",
@@ -81,7 +81,8 @@ def probe():
     expected_language = LANGUAGE_ZH if expect_chinese else LANGUAGE_EN
     assert active_language() == expected_language
     menu_title = str(actions["jnu_action_path_to_waveguide"].title)
-    assert menu_title == ("路径转波导" if expect_chinese else "Path to Waveguide")
+    assert menu_title == "路径转波导 / Path to Waveguide"
+    assert not window.menu().is_menu("jnu_mwp_pdk_menu.language")
     declaration = white.layout().pcell_declaration("Pcell_Straight_Waveguide")
     width_label = next(parameter.description for parameter in declaration.get_parameters() if parameter.name == "width")
     assert width_label == ("波导宽度" if expect_chinese else "Waveguide width")
@@ -108,7 +109,7 @@ def probe():
         set_next_language(LANGUAGE_ZH)
         assert active_language() == LANGUAGE_EN, "语言切换在重启前错误生效"
         pya.Macro(str(source / "pymacros" / "JNU_MWP_PDK_Menu.lym")).run()
-        assert str(window._jnu_menu_actions_by_id["jnu_action_path_to_waveguide"].title) == "Path to Waveguide"
+        assert str(window._jnu_menu_actions_by_id["jnu_action_path_to_waveguide"].title) == "路径转波导 / Path to Waveguide"
     report = {"pcells": len(expected), "blackbox_files": len(files), "menu_actions": len(window._jnu_menu_actions),
               "default_shortcuts": expected_shortcuts,
               "no_external_tech": True, "gds_roundtrip": True}

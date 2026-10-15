@@ -93,7 +93,9 @@ def _probe():
         macro.run()
         macro.run()
         assert window.menu().action("jnu_mwp_pdk_menu").title == MENU_TITLE
-        assert len(window._jnu_menu_actions) == 16
+        assert len(window._jnu_menu_actions) == 14
+        assert window._jnu_menu_actions_by_id[action_id].title == "吸附器件 / Snap components"
+        assert not window.menu().is_menu("jnu_mwp_pdk_menu.language")
         assert window._jnu_menu_actions_by_id[action_id].shortcut == "Ctrl+Alt+K"
     path = home / "identity.gds"
     layout.write(str(path))
