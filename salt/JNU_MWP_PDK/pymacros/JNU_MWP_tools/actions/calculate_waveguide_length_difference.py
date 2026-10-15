@@ -2,7 +2,7 @@
 # 创建者: Junyi Zhang
 # 时间: 2026-10
 
-"""只读比较两个选中波导实例的长度，复合波导排除 taper。"""
+"""只读比较两个波导或普通 Spiral 的长度，复合波导排除 taper。"""
 
 import pya
 
@@ -57,7 +57,7 @@ def _result_message(details, difference_um):
 
 
 def calculate_waveguide_length_difference():
-    """要求恰好两个独立波导实例；选择和版图均保持不变。"""
+    """要求恰好两个独立波导或普通 Spiral 实例；选择和版图均保持不变。"""
     title = _ui("Calculate Waveguide Length Difference", "计算波导长度差")
     try:
         view, _layout, _cell = _active_context()
@@ -66,25 +66,35 @@ def calculate_waveguide_length_difference():
         )
     except WaveguideLengthError as error:
         count_message = _ui(
-            "Select exactly two Waveguide or Composite_Waveguide instances.\n"
+            "Select exactly two instances: Waveguide, Composite_Waveguide, "
+            "ordinary Paperclip_Spiral or Archimedean_Spiral.\n"
             "For arrays, select two individual members instead of a whole array.",
-            "请恰好选中两个单宽度或复合宽度 Waveguide 实例。\n"
+            "请恰好选中两个实例：单宽度或复合宽度 Waveguide、普通回形针 "
+            "Paperclip_Spiral 或阿基米德 Archimedean_Spiral。\n"
             "对于阵列，请选择两个单独成员，不要选择整个阵列。",
         )
         messages = {
             "empty": count_message,
             "not_two": count_message,
             "unsupported": _ui(
-                "Only Waveguide and Composite_Waveguide instances are supported.\n"
+                "Only Waveguide, Composite_Waveguide, ordinary Paperclip_Spiral "
+                "and Archimedean_Spiral instances are supported.\n"
                 "The selection contains another object, so no difference was calculated.",
-                "只支持单宽度和复合宽度 Waveguide 实例。\n"
+                "只支持单宽度和复合宽度 Waveguide、普通回形针 Paperclip_Spiral "
+                "及阿基米德 Archimedean_Spiral 实例。\n"
                 "选择中包含其他对象，已停止计算长度差。",
             ),
+            "composite_spiral": _ui(
+                "The selection contains a composite-width Spiral. The entire calculation was cancelled.\n"
+                "No length difference was calculated. Deselect composite-width Spirals and try again.",
+                "选择中包含复合宽度 Spiral，已取消整次计算，不显示长度差。\n"
+                "请取消选中复合宽度 Spiral 后重试。",
+            ),
             "missing_length": _ui(
-                "A selected Waveguide has missing or ambiguous length data.\n"
-                "Regenerate that Waveguide and try again.",
-                "选中的 Waveguide 缺少有效长度数据或存在重复长度标注。\n"
-                "请重新生成该波导后重试。",
+                "A selected Waveguide or Spiral has missing or ambiguous length data.\n"
+                "Regenerate that device and try again.",
+                "选中的 Waveguide 或 Spiral 缺少有效长度数据或存在重复长度标注。\n"
+                "请重新生成该器件后重试。",
             ),
             "missing_profile": _ui(
                 "A composite Waveguide has incomplete or inconsistent path/width data.\n"

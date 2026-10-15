@@ -22,7 +22,6 @@ from JNU_MWP_tools.actions.path_to_waveguide import _create_waveguide_cell  # no
 from JNU_MWP_tools.core.common import RAW_PATH_GDS_PROPERTY, RAW_PATH_PROPERTY, _value  # noqa: E402
 from JNU_MWP_tools.core.waveguide_length import (  # noqa: E402
     WaveguideLengthError,
-    compare_selected_waveguides,
     describe_selected_length_objects,
     describe_selected_waveguides,
     measure_selected_waveguides,
@@ -333,14 +332,6 @@ def _spiral_checks():
     reject_composite(composite_selection)
     reject_composite(chosen + composite_selection)
     reject_composite(composite_selection + chosen)
-
-    # 总长功能纳入 Spiral，不扩大“两个 Waveguide 长度差”的原有选择范围。
-    try:
-        compare_selected_waveguides(_selection(top, spirals[:2]), 0)
-    except WaveguideLengthError as error:
-        assert error.reason == "unsupported"
-    else:
-        raise AssertionError("长度差功能意外纳入了 Spiral")
 
     wrapper = layout.create_cell("SPIRAL_SCALED_PARENT")
     child = wrapper.insert(pya.CellInstArray(spirals[0].cell_index, pya.Trans()))

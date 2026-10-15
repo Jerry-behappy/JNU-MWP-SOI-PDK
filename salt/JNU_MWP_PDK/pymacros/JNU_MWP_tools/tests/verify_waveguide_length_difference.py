@@ -2,10 +2,11 @@
 # 创建者: Junyi Zhang
 # 时间: 2026-10
 
-"""验证两个波导的长度差、复合 taper 排除、GDS 重读和真实双语菜单。"""
+"""验证波导及普通 Spiral 的长度差、复合 Spiral 拒绝、GDS 重读和双语菜单。"""
 
 import builtins
 from pathlib import Path
+import re
 import sys
 import tempfile
 from types import SimpleNamespace
@@ -17,7 +18,7 @@ TEST_DIR = Path(__file__).resolve().parent
 if str(TEST_DIR) not in sys.path:
     sys.path.insert(0, str(TEST_DIR))
 
-from verify_waveguide_length import PYMACROS, _fixture, _selection, _variant  # noqa: E402
+from verify_waveguide_length import PYMACROS, _fixture, _selection, _spiral_fixture, _variant  # noqa: E402
 from JNU_MWP_tools.core.common import _value  # noqa: E402
 from JNU_MWP_tools.core.waveguide_length import (  # noqa: E402
     WaveguideLengthError,
@@ -110,6 +111,58 @@ def _database_checks():
     print("PASS: absolute differences, copies, arrays, scales, strict selection, taper exclusion and reopened GDS", flush=True)
 
 
+def _spiral_checks():
+    layout = pya.Layout()
+    top, waveguides = _fixture(layout)
+    spirals, composite = _spiral_fixture(layout, top)
+    # 从器件实际总长标注取得独立预期，不能使用内直段长度或目标长度。
+    lengths = []
+    for instance in spirals:
+        values = [float(match.group(1))
+                  for shape in instance.cell.shapes(layout.layer(10, 0)).each() if shape.is_text()
+                  for match in re.finditer(r"\bL=([0-9.]+)um\b", shape.text.string)]
+        assert len(values) == 1
+        lengths.append(values[0])
+        assert values[0] > instance.cell.pcell_parameters_by_name()["length"]
+    for index, bend in enumerate(("Circular", "Bezier", "Euler")):
+        details, difference = compare_selected_waveguides(_selection(top, [spirals[index], spirals[index + 3]]), 0)
+        assert [item["kind"] for item in details] == ["paperclip", "archimedean"]
+        assert [item["length_um"] for item in details] == [lengths[index], lengths[index + 3]]
+        assert all(item["parameters"]["width"] == 0.7 and item["parameters"]["bend_type"] == bend for item in details)
+        assert difference == abs(lengths[index] - lengths[index + 3])
+    for index, spiral in enumerate(spirals):
+        details, difference = compare_selected_waveguides(_selection(top, [waveguides[0], spiral]), 0)
+        assert difference == abs(100.0 - lengths[index])
+    # 同类、跨类型和反向顺序均可比较，复合 Spiral 优先于数量检查整批拒绝。
+    for indices in ((0, 1), (3, 4), (4, 1)):
+        assert compare_selected_waveguides(_selection(top, [spirals[i] for i in indices]), 0)[1] == abs(
+            lengths[indices[0]] - lengths[indices[1]])
+    for group in ([composite], [spirals[0], composite], [composite, spirals[3]],
+                  [waveguides[0], spirals[0], composite]):
+        _reject(_selection(top, group), "composite_spiral")
+
+    with tempfile.TemporaryDirectory(prefix="jnu_spiral_difference_") as directory:
+        for context in (True, False):
+            path = Path(directory) / ("context.gds" if context else "plain.gds")
+            options = pya.SaveLayoutOptions()
+            options.set_format_from_filename(str(path))
+            options.write_context_info = context
+            layout.write(str(path), options)
+            saved = pya.Layout()
+            saved.read(str(path))
+            saved_top = saved.cell(top.name)
+            saved_instances = list(saved_top.each_inst())
+            saved_spirals = saved_instances[len(waveguides):len(waveguides) + len(spirals)]
+            for index in range(3):
+                details, difference = compare_selected_waveguides(_selection(
+                    saved_top, [saved_spirals[index], saved_spirals[index + 3]]), 0)
+                assert [item["length_um"] for item in details] == [lengths[index], lengths[index + 3]]
+                assert difference == abs(lengths[index] - lengths[index + 3])
+                assert all(abs(item["parameters"]["width"] - 0.7) < 1e-12 for item in details)
+            _reject(_selection(saved_top, [saved_spirals[0], saved_instances[-1]]), "composite_spiral")
+    print("PASS: ordinary Spiral differences, Waveguide mixing, actual lengths, parameters, composite cancellation and context/plain GDS", flush=True)
+
+
 def _gui_checks():
     from JNU_MWP_tools.actions import calculate_waveguide_length as length_action
     from JNU_MWP_tools.actions import calculate_waveguide_length_difference as action
@@ -139,6 +192,7 @@ def _gui_checks():
         long_instance = top.insert(pya.CellInstArray(long_cell.cell_index(), pya.Trans()))
         composite = _variant(layout, [(0, 0), (100, 0), (100, 100)], composite=True)
         composite_instance = top.insert(pya.CellInstArray(composite.cell_index(), pya.Trans()))
+        spirals, composite_spiral = _spiral_fixture(layout, top)
         other = layout.create_cell("OTHER_DEVICE")
         invalid = top.insert(pya.CellInstArray(other.cell_index(), pya.Trans()))
         macro = pya.Macro(str(PYMACROS / "JNU_MWP_PDK_Menu.lym"))
@@ -168,6 +222,32 @@ def _gui_checks():
             assert ("taper lengths are excluded" if language == "en" else "taper（宽度渐变段）长度不计入") in report
             assert "116.000" in report and "40.000 µm" in report
             assert ("Comparison by width" if language == "en" else "按宽度比较") in report
+            for group in ([spirals[1], spirals[4]], [instances[0], spirals[0]], [spirals[3], spirals[4]]):
+                chosen = _selection(top, group, cv_index)
+                view.object_selection = chosen
+                menu_action.trigger()
+                report = messages[-1][2]
+                assert messages[-1][0:2] == ("info", title)
+                assert "|L1 − L2|" in report
+                assert ("Waveguide width: 0.700 µm" if language == "en" else "波导宽度：0.700 µm") in report
+                for instance in group:
+                    if "Paperclip" in instance.cell.name:
+                        assert ("Paperclip Spiral" if language == "en" else "回形针 Spiral") in report
+                    elif "Archimedean" in instance.cell.name:
+                        assert ("Archimedean Spiral" if language == "en" else "阿基米德 Spiral") in report
+                if group == [spirals[1], spirals[4]]:
+                    assert "Bezier B: 0.400" in report
+                assert all(obj in view.object_selection for obj in chosen) and len(view.object_selection) == 2
+            for group in ([composite_spiral], [spirals[0], composite_spiral],
+                          [composite_spiral, instances[0]], [instances[0], spirals[3], composite_spiral]):
+                chosen = _selection(top, group, cv_index)
+                view.object_selection = chosen
+                count_before = len(messages)
+                menu_action.trigger()
+                assert len(messages) == count_before + 1
+                assert messages[-1][0:2] == ("warning", title)
+                assert ("entire calculation was cancelled" if language == "en" else "已取消整次计算") in messages[-1][2]
+                assert all(obj in view.object_selection for obj in chosen) and len(view.object_selection) == len(chosen)
             for group in ([], instances[:1], instances, [instances[0], invalid]):
                 chosen = _selection(top, group, cv_index)
                 view.object_selection = chosen
@@ -198,5 +278,6 @@ def _gui_checks():
 
 if __name__ == "__main__":
     _database_checks()
+    _spiral_checks()
     if hasattr(pya, "Application"):
         _gui_checks()
