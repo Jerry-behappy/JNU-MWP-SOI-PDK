@@ -93,7 +93,7 @@ def main():
             si = list(cell.shapes(layout.layer(1, 0)).each())
             assert len(si) == 1 and si[0].is_box(), cell.name
     assert len(names) == 31, len(names)
-    assert {"Crossing4", "1310_TE_Terminator", "1550_TE_Terminator",
+    assert {"1550_crossing4", "1310_TE_Terminator", "1550_TE_Terminator",
             "1310_Ybranch", "1550_Ybranch"} <= names
     assert not any(name.startswith("Pcell_") for name in names)
     assert not {"ebeam_crossing4", "ebeam_terminator_te1310", "ebeam_terminator_te1550",

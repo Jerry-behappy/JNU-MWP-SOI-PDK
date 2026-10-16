@@ -30,7 +30,7 @@ def probe():
     assert not black.layout().pcell_names()
     source = home / "salt" / "JNU_MWP_PDK"
     assert not list((source / "pymacros" / "JNU_MWP_gds").glob("*.gds")), "公开克隆不应携带白盒 GDS"
-    assert white.layout().cell("Crossing4") is None, "未授权的固定白盒不应加载"
+    assert white.layout().cell("1550_crossing4") is None, "未授权的固定白盒不应加载"
     files = sorted((source / "pymacros" / "JNU_MWP_blackbox_gds").glob("*.gds"))
     assert files
     for path in files:

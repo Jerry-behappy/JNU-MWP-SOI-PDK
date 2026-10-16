@@ -47,7 +47,7 @@ def main():
                     assert not shapes or (info.layer, info.datatype) == (10, 0)
     assert len(names) == 31, "黑盒器件数应为 31 个：%d" % len(names)
     assert {
-        "Crossing4", "1310_TE_Terminator", "1550_TE_Terminator",
+        "1550_crossing4", "1310_TE_Terminator", "1550_TE_Terminator",
         "1310_Ybranch", "1550_Ybranch",
     } <= names
     assert not any(name.startswith("Pcell_") for name in names)

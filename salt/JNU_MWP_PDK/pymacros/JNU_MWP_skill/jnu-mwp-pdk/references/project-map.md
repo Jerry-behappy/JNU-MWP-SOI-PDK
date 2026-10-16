@@ -9,7 +9,7 @@
 - `pymacros/JNU_MWP_pcells/paperclip_spiral.py`: 普通 Paperclip、effective-radius 与共享派生 helper。
 - `pymacros/JNU_MWP_pcells/paperclip_spiral_composite.py`: Composite Paperclip。
 - `Jerry-behappy/JNU-MWP-SOI-Library/JNU_MWP_gds/`: 全部固定白盒 GDS 的独立 Git 规范源（当前 31 份）。公开 PDK 的 `pymacros/JNU_MWP_gds/` 不追踪 `.gds`；安装器把授权文件从 `jnu_private` 安全同步到此目录顶层并由 Git 忽略；顶层旧 `gds/` 和独立 `JNU_MWP_ebeam_gds/` 不得恢复。
-- `pymacros/JNULib.py`: 无固定白盒时仍加载公开 PCell；授权白盒同步后从统一目录加载全部固定器件，五个 EBeam 源名称映射为 JNU 名称，缺失时兼容 `jnu_private/JNU_MWP_gds/`。不公开注册工具内部 `Waveguide` / `Composite_Waveguide`。
+- `pymacros/JNULib.py`: 无固定白盒时仍加载公开 PCell；授权白盒同步后从统一目录加载全部固定器件，五个 EBeam 来源器件文件名、顶层 cell 名与库名统一（crossing 为 `1550_crossing4`），旧源名称仅作读取兼容，缺失时兼容 `jnu_private/JNU_MWP_gds/`。不公开注册工具内部 `Waveguide` / `Composite_Waveguide`。
 - `pymacros/JNU_MWP_tools/release/sync_blackboxes_from_library.py`: 以独立 Library 全量白盒为输入，重建公开仓库的固定黑盒（当前 31 个），跳过所有 PCell；变更白盒后必须执行并提交黑盒更新。
 - `pymacros/JNU_MWP_tools/core/`: 公共基础模块；`bend_sampling.py` 管理自适应采样，`bend_curvature.py` 管理 Bezier/Euler 曲率，`path_geometry.py` 把中心线扫掠结果规范化为 Polygon，`common.py` 管理图层/选择/上下文共享逻辑，`make_pin.py` 生成 SiEPIC 兼容端口，`devrec.py` 按端口边和非端口边净空规则生成公开 PCell 的矩形 DevRec，`gui_state.py` 按稳定窗口键原子保存并恢复自定义对话框尺寸，`ebeam_library_bridge.py` 为 JNU Technology 注册已安装 EBeam PDK 的同名 Library 视图。
 - `pymacros/JNU_MWP_tools/actions/`: KLayout 菜单动作；包含 Path↔Waveguide、SBend connect、Make Pins、Layer Exclude、Numerical text array、Snap components 与交互式 DRC。`path_to_waveguide.py` 负责当前用户版图中的内部 Waveguide PCell 按需注册与 variant 创建；`make_pins_for_cell.py` 以端口边对齐、非端口边 0.5 µm 净空规则生成或升级普通 cell 的 DevRec 与 PinRec；`drc.py` 将九层 Source Specification、全局参数和按层勾选的 DSL 规则封装为临时 DRC 宏，并把报告载入当前视图。
@@ -21,6 +21,7 @@
 - `pymacros/JNU_MWP_pcells/waveguide_bump.py`: 公开 Pcell_Waveguide_Bump PCell；四段等半径圆弧加两端 20 nm 水平直段，使用解析圆弧法线直接生成 Si 边界，保持垂直端面；圆弧累计转角按 149° 封顶以避免折回端口平面，并生成 PinRec、增量长度 Text 与 68/0 DevRec。
 - `pymacros/JNU_MWP_tools/actions/sbend_connect.py`: 两实例端口自动连接；初始参数为Bezier、B=0.3、R=30 µm。
 - `pymacros/JNU_MWP_tools/actions/reload_pdk.py`: 运行时重载入口；重建公开 JNULib、替换已打开 layout 的内部波导声明并刷新菜单。
+- `pymacros/JNU_MWP_tools/core/waveguide_length.py`: Waveguide 与普通 Paperclip/Archimedean Spiral 的实际长度识别、变换和副本统计；复合宽度 Spiral 触发整次取消。菜单入口为 `actions/calculate_waveguide_length.py` 与 `actions/calculate_waveguide_length_difference.py`。
 - `pymacros/JNU_MWP_skill/jnu-mwp-pdk/`: Codex/Claude 共用的 canonical skill；上级 `JNU_MWP_skill` 整体不得进入黑盒包。
 
 ## Current Names and Layers
@@ -28,6 +29,7 @@
 - Product/manual display name: `JNU_MWP_SOI_PDK`。
 - Technology: `JNU_MWP_SOI_PDK`
 - Top-level menu: `JNU_MWP_SOI_PDK V1.4`；版本和名称由 `core/pdk_identity.py` 统一提供，内部菜单路径及 Action ID 不随展示名变化。
+- Function submenus/actions: “中文 / English”同行显示，移除 Language 切换入口，保留用户快捷键。
 - Salt/package/install directory/skill engineering name: `JNU_MWP_PDK`
 - White library: `JNULib`
 - Blackbox library: `JNULib_BlackBox`

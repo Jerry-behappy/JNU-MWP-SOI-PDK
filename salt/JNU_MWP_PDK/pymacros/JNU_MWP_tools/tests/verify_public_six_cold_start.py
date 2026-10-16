@@ -21,7 +21,7 @@ def _probe():
     assert "v1.3" in white.description and "v1.3" in black.description
 
     fixed_names = (
-        "Crossing4", "1310_TE_Terminator", "1550_TE_Terminator",
+        "1550_crossing4", "1310_TE_Terminator", "1550_TE_Terminator",
         "1310_Ybranch", "1550_Ybranch",
     )
     for old_name in ("ebeam_crossing4", "ebeam_terminator_te1310",

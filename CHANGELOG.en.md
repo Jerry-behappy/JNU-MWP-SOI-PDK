@@ -9,6 +9,11 @@
 
 Updates are listed newest first. Historical dates follow Git commit dates in Beijing time (UTC+8). Related changes on the same day are grouped; the full commit history shows the content and timestamp of every commit.
 
+## 2026-10-16 · Consistent fixed-device names
+
+- Rename `Crossing4` to `1550_crossing4`. Align filenames and top-cell names of all five EBeam-derived whiteboxes with their library names, preserving geometry, ports and all text, and synchronize the corresponding blackboxes.
+- Keep loader compatibility with legacy EBeam whitebox filenames. Cells already placed in existing layouts are not rewritten automatically.
+
 ## 2026-10-15 · Bilingual menus and Spiral lengths
 
 - Calculate Waveguide Length Difference also supports ordinary `Paperclip_Spiral` and `Archimedean_Spiral` instances. Select exactly two supported instances, including mixed selections with Waveguides, to compare actual total lengths and view width and bend parameters. Selecting a composite-width Spiral shows an error and cancels the entire calculation.

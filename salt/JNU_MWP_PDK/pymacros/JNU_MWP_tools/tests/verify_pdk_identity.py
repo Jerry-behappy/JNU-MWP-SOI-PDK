@@ -55,7 +55,7 @@ def _probe():
     if white:
         child = layout.create_cell("Pcell_Straight_Waveguide", "JNULib", {"length": 50.0, "width": 0.5})
     else:
-        child = layout.create_cell("Crossing4", "JNULib_BlackBox")
+        child = layout.create_cell("1550_crossing4", "JNULib_BlackBox")
     assert child and not child.bbox().empty()
     top.insert(pya.CellInstArray(child.cell_index(), pya.Trans()))
     area = pya.Region(top.begin_shapes_rec(layout.layer(1, 0))).area()

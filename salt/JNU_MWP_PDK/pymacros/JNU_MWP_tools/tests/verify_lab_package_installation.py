@@ -40,7 +40,7 @@ def probe():
     gdss = sorted((package / "pymacros" / "JNU_MWP_gds").glob("*.gds"))
     assert gdss, "固定 GDS 缺失"
     public_names = {
-        "ebeam_crossing4": "Crossing4",
+        "ebeam_crossing4": "1550_crossing4",
         "ebeam_terminator_te1310": "1310_TE_Terminator",
         "ebeam_terminator_te1550": "1550_TE_Terminator",
         "ebeam_y_1310": "1310_Ybranch",
