@@ -96,7 +96,7 @@
 - `core/fixed_gds.py` 保留对用户目录 `jnu_private/JNU_MWP_gds` 的读取兼容，避免既有授权数据失效；缺失时使用源码或完整离线包内的固定 GDS。维护代码时不删除用户已安装的数据。
 - 白盒规范源为独立 `JNU-MWP-SOI-Library/JNU_MWP_gds/`；公开 PDK 的 `pymacros/JNU_MWP_gds/` 不跟踪任何 GDS。私有仓库克隆仍位于 `jnu_private`，安装器用同步记录保护用户手动修改并将授权 GDS 放到原目录顶层。同步前仍可从 `jnu_private/JNU_MWP_gds/` 加载。不要创建顶层 `gds/` 或独立 `JNU_MWP_ebeam_gds/`。
 - 移动或清理固定 GDS 后，用 `rg` 检查 loader、打包脚本、README 和辅助脚本，确保不存在指向旧 `gds/` 的路径；同时验证 `JNULib.py` 仍指向 `pymacros/JNU_MWP_gds/`。
-- 固定白盒修改、接收用户已有更新或拉取 Library 更新后，先确认完整白盒规范源及其提交，再运行 `release/sync_blackboxes_from_library.py --source <Library/JNU_MWP_gds>` 重建全部对应黑盒（当前 31 份）。读取同步摘要的总数、更新数、移除数及错误；有变化时核对变化器件的名称、端口和矩形占位，再提交黑盒到指定 PDK 分支。更新和移除均为零时不创建空提交，也不为重复确认另建哈希清单。PCell 不进入黑盒库；发布包只复制已同步黑盒，排除白盒目录与 `JNULib.py`。
+- 固定白盒修改、接收用户已有更新或拉取 Library 更新后，先确认完整白盒规范源及其提交，再运行 `release/sync_blackboxes_from_library.py --source <Library/JNU_MWP_gds>` 重建全部对应黑盒（当前 31 份）。读取同步摘要的总数、更新数、移除数及错误；有变化时核对变化器件的名称、原位 PinRec、0.2 µm Si 直段、998/0 矩形主体及 DevRec，再提交黑盒到指定 PDK 分支。更新和移除均为零时不创建空提交，也不为重复确认另建哈希清单。PCell 不进入黑盒库；发布包只复制已同步黑盒，排除白盒目录与 `JNULib.py`。
 - 若系统 Python 没有 `pya`，用 KLayout 自带 Python 运行同步脚本：先设置环境变量 `JNU_WHITEBOX_GDS_DIR=<Library/JNU_MWP_gds>`，再执行 `klayout_app.exe -z -e -r <PDK/pymacros/JNU_MWP_tools/release/sync_blackboxes_from_library.py>`；必须在输出中确认同步数量为 31 且没有 `ERROR:`，因为部分 KLayout 版本的宏错误不会使进程返回非零退出码。
 - Technology 使用 `JNU_MWP_SOI_PDK`，菜单使用同名加发行版本；统一由 `core/pdk_identity.py` 加载技术并迁移旧选择。Salt、安装目录、skill 路径和发布包目录仍为 `JNU_MWP_PDK`，菜单内部路径和 Library 名称保持稳定。
 - 只有执行黑盒打包流程时，才同步修改 `pymacros/README.md` 和 PDK 使用说明；普通开发、维护和单独文档请求不改写这两类文档。若打包流程确需更新 `pymacros/README.md`，保持完整中文章节在前、完整英文章节在后。

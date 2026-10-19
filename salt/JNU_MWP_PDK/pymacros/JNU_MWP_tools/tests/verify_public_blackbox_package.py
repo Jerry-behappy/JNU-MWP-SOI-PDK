@@ -90,8 +90,11 @@ def main():
             cell = layout.cell(top) if isinstance(top, int) else top
             assert cell.name not in names, cell.name
             names.add(cell.name)
+            bodies = list(cell.shapes(layout.layer(998, 0)).each())
+            assert len(bodies) == 1 and bodies[0].is_box(), cell.name
             si = list(cell.shapes(layout.layer(1, 0)).each())
-            assert len(si) == 1 and si[0].is_box(), cell.name
+            ports = [s for s in cell.shapes(layout.layer(1, 10)).each() if s.is_path()]
+            assert len(si) == len(ports) > 0 and all(s.is_box() for s in si), cell.name
     assert len(names) == 31, len(names)
     assert {"1550_crossing4", "1310_TE_Terminator", "1550_TE_Terminator",
             "1310_Ybranch", "1550_Ybranch"} <= names

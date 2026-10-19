@@ -46,4 +46,6 @@ Technology 与菜单已按用户要求更名；Salt、目录、文件及 Library
 
 ## Blackbox Release
 
+固定黑盒使用 998/0 矩形主体，1/0 仅生成端口向内的 0.2 µm 恒宽直段，主体退到直段内端。PinRec 的位置、方向、宽度、名称及 DevRec 沿用白盒，不复制内部器件几何。
+
 发布包只包含固定黑盒 GDS、黑盒 loader、菜单和运行所需工具。禁止包含白盒 GDS、PCell 源码、canonical skill 及 `klayoutrc*`。

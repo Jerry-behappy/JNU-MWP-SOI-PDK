@@ -9,6 +9,11 @@
 
 Updates are listed newest first. Historical dates follow Git commit dates in Beijing time (UTC+8). Related changes on the same day are grouped; the full commit history shows the content and timestamp of every commit.
 
+## 2026-10-19 · Blackbox optical port straights
+
+- All 31 fixed blackboxes now retain a 0.2 µm constant-width Si straight at each optical port. PinRec stays at the outer end with its original position, direction, width and name. The rectangular body uses the existing BlackBox (998/0) layer and ends at the inner end of the straights. DevRec and device-name labels are retained.
+- Full blackbox synchronization after whitebox updates uses the same generation rules. Blackboxes exclude internal device geometry and public PCells.
+
 ## 2026-10-16 · Consistent fixed-device names
 
 - Rename `Crossing4` to `1550_crossing4`. Align filenames and top-cell names of all five EBeam-derived whiteboxes with their library names, preserving geometry, ports and all text, and synchronize the corresponding blackboxes.

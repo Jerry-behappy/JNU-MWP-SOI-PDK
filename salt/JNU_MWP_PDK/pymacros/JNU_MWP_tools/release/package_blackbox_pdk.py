@@ -29,7 +29,9 @@ SI_LAYER = pya.LayerInfo(1, 0)
 PIN_LAYER = pya.LayerInfo(1, 10)
 DEVREC_LAYER = pya.LayerInfo(68, 0)
 TEXT_LAYER = pya.LayerInfo(10, 0)
+BLACKBOX_LAYER = pya.LayerInfo(998, 0)
 LIBRARY_DBU = 0.001
+PORT_STRAIGHT_LENGTH_UM = 0.2
 
 
 def _safe_remove_output(path):
@@ -277,6 +279,50 @@ def _copy_pin_layer(src_cell, dst_cell, src_layout, dst_layout):
         iterator.next()
 
 
+def _draw_port_straights(cell, footprint):
+    """按原端口向内绘制直段，主体边界退到直段内端，连接坐标保持不变。"""
+    layout = cell.layout()
+    length = max(1, int(round(PORT_STRAIGHT_LENGTH_UM / layout.dbu)))
+    left, bottom, right, top = footprint.left, footprint.bottom, footprint.right, footprint.top
+    straights = []
+    for shape in cell.shapes(layout.layer(PIN_LAYER)).each():
+        if not shape.is_path():
+            continue
+        path = shape.path
+        points = list(path.each_point())
+        if len(points) != 2 or path.width <= 0:
+            raise RuntimeError("黑盒光端口必须是有宽度的两点短 Path：%s" % cell.name)
+        first, last = points
+        dx, dy = last.x - first.x, last.y - first.y
+        if (dx == 0) == (dy == 0):
+            raise RuntimeError("黑盒光端口方向必须水平或垂直：%s" % cell.name)
+        x, y = (first.x + last.x) // 2, (first.y + last.y) // 2
+        low, high = path.width // 2, path.width - path.width // 2
+        if dx > 0:
+            straight = pya.Box(x - length, y - low, x, y + high)
+            right = min(right, x - length)
+        elif dx < 0:
+            straight = pya.Box(x, y - low, x + length, y + high)
+            left = max(left, x + length)
+        elif dy > 0:
+            straight = pya.Box(x - low, y - length, x + high, y)
+            top = min(top, y - length)
+        else:
+            straight = pya.Box(x - low, y, x + high, y + length)
+            bottom = max(bottom, y + length)
+        straights.append(straight)
+    if not straights or left >= right or bottom >= top:
+        raise RuntimeError("黑盒缺少光端口或无法容纳端口直段：%s" % cell.name)
+    body = pya.Box(left, bottom, right, top)
+    # 每个直段内端必须接触主体，不能静默生成悬空端口。
+    for straight in straights:
+        if not body.touches(straight):
+            raise RuntimeError("黑盒端口直段无法连接矩形主体：%s" % cell.name)
+        cell.shapes(layout.layer(SI_LAYER)).insert(straight)
+    cell.shapes(layout.layer(BLACKBOX_LAYER)).insert(body)
+    return body
+
+
 def _draw_blackbox_cell(src_cell, src_layout, dst_layout, target_name=None):
     """从白盒 cell 生成单个黑盒 cell。"""
     dst_cell = dst_layout.create_cell(target_name or src_cell.name)
@@ -294,16 +340,15 @@ def _draw_blackbox_cell(src_cell, src_layout, dst_layout, target_name=None):
 
     _copy_pin_layer(src_cell, dst_cell, src_layout, dst_layout)
 
-    si_index = dst_layout.layer(SI_LAYER)
     devrec_index = dst_layout.layer(DEVREC_LAYER)
     text_index = dst_layout.layer(TEXT_LAYER)
 
-    dst_cell.shapes(si_index).insert(si_bbox)
+    body = _draw_port_straights(dst_cell, si_bbox)
     dst_cell.shapes(devrec_index).insert(devrec_bbox)
 
     label_text = dst_cell.name + " (black box)"
-    if not _insert_basic_text(dst_cell, si_bbox, dst_layout.dbu, label_text):
-        _insert_fallback_text(dst_cell, text_index, si_bbox, dst_layout.dbu, label_text)
+    if not _insert_basic_text(dst_cell, body, dst_layout.dbu, label_text):
+        _insert_fallback_text(dst_cell, text_index, body, dst_layout.dbu, label_text)
 
 
 def _basic_text_mag(target_box, dbu, label_text):
