@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-08
+# 时间: 2026-10
 
 """在不重启 KLayout 的情况下重新加载 JNU_MWP_PDK 运行时代码。"""
 
@@ -185,6 +185,21 @@ def _reload_menu_macro():
     pya.Macro(_MENU_MACRO).run()
 
 
+def _refresh_blackbox_display(view):
+    """只迁移旧版深色实心占位层，不重置用户其余图层的显示设置。"""
+    iterator = view.begin_layers()
+    while not iterator.at_end():
+        properties = iterator.current()
+        if (properties.source_layer == 998 and properties.source_datatype == 0
+                and properties.dither_pattern == 0 and (properties.fill_color & 0xffffff) == 0x004080):
+            updated = properties.dup()
+            updated.frame_color = 0x7a9bb8
+            updated.fill_color = 0xdce8f2
+            updated.dither_pattern = 1
+            view.set_layer_properties(iterator, updated)
+        iterator.next()
+
+
 def reload_jnu_pdk(main_window=None, reload_menu=True):
     """同步重载 JNU PDK；测试可传入 main_window=None 并关闭菜单重载。"""
 
@@ -209,6 +224,7 @@ def reload_jnu_pdk(main_window=None, reload_menu=True):
         except Exception as error:
             raise RuntimeError("重新注册 JNU 菜单阶段失败：%s" % error) from error
     for view in views:
+        _refresh_blackbox_display(view)
         try:
             _property_or_call(view, "redraw")
         except Exception:
