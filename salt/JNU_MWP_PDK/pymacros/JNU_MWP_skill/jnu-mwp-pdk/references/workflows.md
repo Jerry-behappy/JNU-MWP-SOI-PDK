@@ -1,5 +1,12 @@
 # JNU_MWP_PDK Workflows
 
+## Merge and Next Development Version
+
+- 用户授权合并开发分支到 `main` 时，先提交并推送当前分支，获取远端最新状态，完成合并并确认远端 `main` 包含开发提交；合并失败时不递增版本。
+- 远端合并成功后，自动把 `JNU_MWP_PDK_V<主版本>.<次版本>` 的次版本加一；优先通过 GitHub 分支重命名接口保留旧链接跳转，随后重命名本地分支并重新绑定 upstream。目标分支已存在时先检查其状态，不覆盖已有分支。
+- 在新分支同步 `core/pdk_identity.py` 的菜单版本、当前版本验收断言、根 README、更新说明链接以及 skill 的当前开发分支和版本；历史更新记录保留原版本。新分支记录合并日期与版本递增并提交推送；`main` 保留刚合并的发行版本。
+- 每次只递增一次：中断后先检查远端 `main`、新旧分支和元数据，从尚未完成的步骤继续。版本变化不重命名 Technology、Library、Salt 安装目录或白盒资源。
+
 ## Tool Code Organization
 
 - `JNU_MWP_tools/` 根目录只保留包入口 `__init__.py`，不得把功能实现重新堆放到根目录。

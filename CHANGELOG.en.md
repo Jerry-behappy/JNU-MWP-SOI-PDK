@@ -11,6 +11,7 @@ Updates are listed newest first. Historical dates follow Git commit dates in Bei
 
 ## 2026-10-19 · Blackbox optical port straights
 
+- Update the maintenance workflow: after a successful merge into main, increment the minor version and rename the development branch, updating the current menu version, documentation links and default push target.
 - Display BlackBox (998/0) with orange diagonal hatching so device labels remain visible. Migrate old solid or outline styles at startup, in new views and on reload, including views using EBeam technology.
 - Fix the runtime library loader rebuilding new blackboxes as solid Si blocks. Load the generated GDS layers and hierarchy directly, and verify registered and placed cells against the on-disk geometry.
 - All 31 fixed blackboxes now retain a 0.2 µm constant-width Si straight at each optical port. PinRec stays at the outer end with its original position, direction, width and name. The rectangular body uses the existing BlackBox (998/0) layer and ends at the inner end of the straights. DevRec and device-name labels are retained.

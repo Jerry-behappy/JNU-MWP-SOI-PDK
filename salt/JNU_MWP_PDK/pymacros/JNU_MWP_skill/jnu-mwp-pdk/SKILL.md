@@ -85,3 +85,4 @@ description: Use when developing, verifying, or packaging the JNU_MWP_PDK KLayou
 5. `JNU_PDK_CONTEXT_BACKUP.md` 仅保留为历史记录，除非用户明确要求，否则不读取、不写入。
 6. 向 GitHub 发布时遵循用户指定的分支：当前 PDK 开发分支为 `JNU_MWP_PDK_V1.4`，独立 Library 使用其授权仓库的 `main`；未明确指定时不要擅自迁移分支或发布白盒到公开 PDK。
 7. 发布功能、修复或固定器件更新时，同步根目录 `CHANGELOG.md` 与 `CHANGELOG.en.md`，按北京时间 `YYYY-MM-DD` 倒序记录日期和用户可见变化；历史补录日期从 Git 提交记录获取，不把维护日期当作历史更新日期。两个根 README 分别链接相应语言的更新说明；分支更名时同步更新页面中的完整提交记录链接。
+8. 每次获授权将当前开发分支合并到 `main` 并确认远端合并成功后，自动将开发分支的次版本加一并重命名，例如 `JNU_MWP_PDK_V1.4` → `JNU_MWP_PDK_V1.5`，无需再次询问；普通提交或推送不触发递增。按 `references/workflows.md` 的“Merge and Next Development Version”执行，并把更名后的分支作为后续默认推送目标。
