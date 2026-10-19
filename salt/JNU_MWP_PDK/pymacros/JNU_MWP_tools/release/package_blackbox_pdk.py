@@ -8,6 +8,7 @@
 
 import argparse
 import shutil
+import sys
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
@@ -15,10 +16,12 @@ import pya
 
 
 PDK_ROOT = Path(__file__).resolve().parents[3]
+if str(PDK_ROOT / "pymacros") not in sys.path:
+    sys.path.insert(0, str(PDK_ROOT / "pymacros"))
+from JNU_MWP_tools.core.pdk_identity import TECHNOLOGY_NAME as TECH_NAME
 DEFAULT_OUTPUT = Path.home() / "Desktop" / "JNU_MWP_PDK_blackbox_v1.1"
 
 TECH_FOLDER_NAME = "JNU_MWP_PDK"
-TECH_NAME = "JNU_MWP_PDK"
 SALT_PACKAGE_NAME = "JNU_MWP_PDK"
 LOADER_MACRO_NAME = "JNU_MWP_PDK_blackbox_loader.py"
 
@@ -26,7 +29,9 @@ SI_LAYER = pya.LayerInfo(1, 0)
 PIN_LAYER = pya.LayerInfo(1, 10)
 DEVREC_LAYER = pya.LayerInfo(68, 0)
 TEXT_LAYER = pya.LayerInfo(10, 0)
+BLACKBOX_LAYER = pya.LayerInfo(998, 0)
 LIBRARY_DBU = 0.001
+PORT_STRAIGHT_LENGTH_UM = 0.2
 
 
 def _safe_remove_output(path):
@@ -65,33 +70,19 @@ def _write_blackbox_pymacros_init(pymacros_dst):
         "# $autorun\n"
         "# -*- coding: utf-8 -*-\n"
         "# 创建者: Junyi Zhang\n"
-        "# 时间: 2026-09\n\n"
+        "# 时间: 2026-10\n\n"
         "# 初始化 JNU MWP 黑盒器件库。Technology 主要由 tech/JNU_MWP_PDK 注册，"
         "这里保留 Salt 场景下的辅助加载逻辑。\n"
         "print(\"JNU MWP BlackBox PDK: load JNULib_BlackBox\")\n\n"
-        "import os\n\n"
-        "import pya\n\n\n"
-        "TECH_NAME = \"JNU_MWP_PDK\"\n"
+        "import os\n"
+        "import sys\n\n"
         "SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__)) if \"__file__\" in globals() else os.getcwd()\n"
         "PDK_ROOT = os.path.dirname(SCRIPT_DIR)\n"
-        "TECH_FILE = os.path.join(PDK_ROOT, \"JNU_MWP_PDK.lyt\")\n"
-        "\n"
-        "def _load_jnu_technology():\n"
-        "    \"\"\"加载相对路径 Technology，支持直接复制发布包到任意用户目录。\"\"\"\n"
-        "    if not os.path.isfile(TECH_FILE):\n"
-        "        print(\"JNU MWP BlackBox PDK: technology file not found:\", TECH_FILE)\n"
-        "        return\n"
-        "    try:\n"
-        "        if not pya.Technology().has_technology(TECH_NAME):\n"
-        "            tech = pya.Technology().create_technology(TECH_NAME)\n"
-        "        else:\n"
-        "            tech = pya.Technology.technology_by_name(TECH_NAME)\n"
-        "        tech.load(TECH_FILE)\n"
-        "        print(\"JNU MWP BlackBox PDK: technology loaded from\", TECH_FILE)\n"
-        "    except Exception as error:\n"
-        "        print(\"JNU MWP BlackBox PDK: technology load failed:\", error)\n\n\n"
-        "_load_jnu_technology()\n\n"
-        "from . import JNULib_BlackBox  # 只加载黑盒器件库。\n"
+        "if SCRIPT_DIR not in sys.path:\n"
+        "    sys.path.insert(0, SCRIPT_DIR)\n"
+        "from JNU_MWP_tools.core.pdk_identity import load_jnu_technology\n"
+        "load_jnu_technology(PDK_ROOT)\n\n"
+        "import JNULib_BlackBox  # 只加载黑盒器件库。\n"
     )
     (pymacros_dst / "__init__.py").write_text(content, encoding="utf-8", newline="\n")
 
@@ -141,7 +132,7 @@ def _loader_source():
         "# $autorun\n"
         "# -*- coding: utf-8 -*-\n"
         "# 创建者: Junyi Zhang\n"
-        "# 时间: 2026-06\n\n"
+        "# 时间: 2026-10\n\n"
         "# 根目录加载器：KLayout 会自动扫描 %USERPROFILE%/KLayout/pymacros。\n"
         "# 该文件负责把 salt/JNU_MWP_PDK 中的黑盒库和功能菜单加载出来。\n\n"
         "import os\n"
@@ -164,7 +155,7 @@ def _loader_source():
         "    except Exception as error:\n"
         "        print(\"JNU_MWP_PDK blackbox loader: library load failed:\", error)\n\n\n"
         "def _load_menu():\n"
-        "    \"\"\"运行菜单宏，创建 JNU_MWP_PDK 顶部功能菜单。\"\"\"\n"
+        "    \"\"\"运行菜单宏，创建带版本号的 JNU_MWP_SOI_PDK 顶部功能菜单。\"\"\"\n"
         "    if not os.path.isfile(MENU_MACRO):\n"
         "        print(\"JNU_MWP_PDK blackbox loader: menu macro not found:\", MENU_MACRO)\n"
         "        return\n"
@@ -288,6 +279,50 @@ def _copy_pin_layer(src_cell, dst_cell, src_layout, dst_layout):
         iterator.next()
 
 
+def _draw_port_straights(cell, footprint):
+    """按原端口向内绘制直段，主体边界退到直段内端，连接坐标保持不变。"""
+    layout = cell.layout()
+    length = max(1, int(round(PORT_STRAIGHT_LENGTH_UM / layout.dbu)))
+    left, bottom, right, top = footprint.left, footprint.bottom, footprint.right, footprint.top
+    straights = []
+    for shape in cell.shapes(layout.layer(PIN_LAYER)).each():
+        if not shape.is_path():
+            continue
+        path = shape.path
+        points = list(path.each_point())
+        if len(points) != 2 or path.width <= 0:
+            raise RuntimeError("黑盒光端口必须是有宽度的两点短 Path：%s" % cell.name)
+        first, last = points
+        dx, dy = last.x - first.x, last.y - first.y
+        if (dx == 0) == (dy == 0):
+            raise RuntimeError("黑盒光端口方向必须水平或垂直：%s" % cell.name)
+        x, y = (first.x + last.x) // 2, (first.y + last.y) // 2
+        low, high = path.width // 2, path.width - path.width // 2
+        if dx > 0:
+            straight = pya.Box(x - length, y - low, x, y + high)
+            right = min(right, x - length)
+        elif dx < 0:
+            straight = pya.Box(x, y - low, x + length, y + high)
+            left = max(left, x + length)
+        elif dy > 0:
+            straight = pya.Box(x - low, y - length, x + high, y)
+            top = min(top, y - length)
+        else:
+            straight = pya.Box(x - low, y, x + high, y + length)
+            bottom = max(bottom, y + length)
+        straights.append(straight)
+    if not straights or left >= right or bottom >= top:
+        raise RuntimeError("黑盒缺少光端口或无法容纳端口直段：%s" % cell.name)
+    body = pya.Box(left, bottom, right, top)
+    # 每个直段内端必须接触主体，不能静默生成悬空端口。
+    for straight in straights:
+        if not body.touches(straight):
+            raise RuntimeError("黑盒端口直段无法连接矩形主体：%s" % cell.name)
+        cell.shapes(layout.layer(SI_LAYER)).insert(straight)
+    cell.shapes(layout.layer(BLACKBOX_LAYER)).insert(body)
+    return body
+
+
 def _draw_blackbox_cell(src_cell, src_layout, dst_layout, target_name=None):
     """从白盒 cell 生成单个黑盒 cell。"""
     dst_cell = dst_layout.create_cell(target_name or src_cell.name)
@@ -305,16 +340,15 @@ def _draw_blackbox_cell(src_cell, src_layout, dst_layout, target_name=None):
 
     _copy_pin_layer(src_cell, dst_cell, src_layout, dst_layout)
 
-    si_index = dst_layout.layer(SI_LAYER)
     devrec_index = dst_layout.layer(DEVREC_LAYER)
     text_index = dst_layout.layer(TEXT_LAYER)
 
-    dst_cell.shapes(si_index).insert(si_bbox)
+    body = _draw_port_straights(dst_cell, si_bbox)
     dst_cell.shapes(devrec_index).insert(devrec_bbox)
 
     label_text = dst_cell.name + " (black box)"
-    if not _insert_basic_text(dst_cell, si_bbox, dst_layout.dbu, label_text):
-        _insert_fallback_text(dst_cell, text_index, si_bbox, dst_layout.dbu, label_text)
+    if not _insert_basic_text(dst_cell, body, dst_layout.dbu, label_text):
+        _insert_fallback_text(dst_cell, text_index, body, dst_layout.dbu, label_text)
 
 
 def _basic_text_mag(target_box, dbu, label_text):
@@ -447,13 +481,13 @@ def _installer_source():
     return (
         "# -*- coding: utf-8 -*-\n"
         "# 创建者: Junyi Zhang\n"
-        "# 时间: 2026-06\n\n"
+        "# 时间: 2026-10\n\n"
         "# 可选安装脚本：把本发布包中的 salt 和 tech 目录安装到当前用户 KLayout 目录，"
         "并重写 Technology 路径。\n\n"
         "import shutil\n"
         "from pathlib import Path\n"
         "import xml.etree.ElementTree as ET\n\n\n"
-        "TECH_NAME = \"JNU_MWP_PDK\"\n"
+        f"TECH_NAME = {TECH_NAME!r}\n"
         "PACKAGE_NAME = \"JNU_MWP_PDK\"\n"
         "LOADER_MACRO_NAME = \"JNU_MWP_PDK_blackbox_loader.py\"\n\n\n"
         "def _rewrite_lyt(lyt_root, base_path, original_base_path, layer_path):\n"

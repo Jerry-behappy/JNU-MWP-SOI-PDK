@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-07
+# 时间: 2026-10
 
 """验证 JNU Technology 下可见的 EBeam Library 镜像。"""
 
@@ -34,7 +34,7 @@ def _assert(condition, message):
 
 def _ensure_technology(name, path):
     technology = pya.Technology.technology_by_name(name)
-    if technology is not None:
+    if pya.Technology.has_technology(name):
         return technology
     technology = pya.Technology().create_technology(name)
     technology.load(str(path))
@@ -68,7 +68,7 @@ def main():
     second = register_ebeam_libraries_for_jnu()
     _assert(not second["created"], "重复注册不应新建 EBeam Library。")
     _assert(second["existing"] == expected_names, "重复注册未完整识别已有 Library。")
-    print("OK: EBeam libraries are visible under JNU_MWP_PDK without replacing EBeam.")
+    print("OK: EBeam libraries are visible under JNU_MWP_SOI_PDK without replacing EBeam.")
 
 
 if __name__ == "__main__":

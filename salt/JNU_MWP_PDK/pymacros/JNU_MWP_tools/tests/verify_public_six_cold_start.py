@@ -13,7 +13,7 @@ import pya
 
 
 def _probe():
-    assert pya.Technology.has_technology("JNU_MWP_PDK")
+    assert pya.Technology.has_technology("JNU_MWP_SOI_PDK")
     assert pya.Library.library_by_name("EBeam") is None, "隔离环境意外加载 EBeam"
     white = pya.Library.library_by_name("JNULib")
     black = pya.Library.library_by_name("JNULib_BlackBox")
@@ -21,7 +21,7 @@ def _probe():
     assert "v1.3" in white.description and "v1.3" in black.description
 
     fixed_names = (
-        "Crossing4", "1310_TE_Terminator", "1550_TE_Terminator",
+        "1550_crossing4", "1310_TE_Terminator", "1550_TE_Terminator",
         "1310_Ybranch", "1550_Ybranch",
     )
     for old_name in ("ebeam_crossing4", "ebeam_terminator_te1310",
@@ -75,7 +75,7 @@ def _finish():
         pya.Application.instance().exit(0)
 
 
-pya.Application.instance().main_window().create_layout("JNU_MWP_PDK", 1)
+pya.Application.instance().main_window().create_layout("JNU_MWP_SOI_PDK", 1)
 _timer = pya.QTimer()
 _timer.setSingleShot(True)
 _timer.timeout(_finish)

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-08
+# 时间: 2026-10
 
 """在不重启 KLayout 的情况下重新加载 JNU_MWP_PDK 运行时代码。"""
 
@@ -185,6 +185,12 @@ def _reload_menu_macro():
     pya.Macro(_MENU_MACRO).run()
 
 
+def _refresh_blackbox_display(view):
+    """迁移当前视图的旧版 BlackBox 样式。"""
+    from JNU_MWP_tools.core.blackbox_display import refresh_blackbox_display
+    refresh_blackbox_display(view)
+
+
 def reload_jnu_pdk(main_window=None, reload_menu=True):
     """同步重载 JNU PDK；测试可传入 main_window=None 并关闭菜单重载。"""
 
@@ -209,6 +215,7 @@ def reload_jnu_pdk(main_window=None, reload_menu=True):
         except Exception as error:
             raise RuntimeError("重新注册 JNU 菜单阶段失败：%s" % error) from error
     for view in views:
+        _refresh_blackbox_display(view)
         try:
             _property_or_call(view, "redraw")
         except Exception:

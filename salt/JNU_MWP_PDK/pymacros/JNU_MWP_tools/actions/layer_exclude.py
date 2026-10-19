@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-07
+# 时间: 2026-10
 
 """
 KLayout GUI 宏脚本：Layer Exclude。
@@ -35,6 +35,7 @@ TOOL_TITLE = "Layer Exclude"
 # 等价于 DRC 脚本里常见的 input(99) / input(290) 写法。
 KEEP_LAYER_SPECS = [
     ("LayerSi", 1, 0, "硅波导层"),
+    ("PinRec", 1, 10, "光学端口识别层"),
     ("LayerSi_rib", 2, 0, "脊型硅层"),
     ("LayerFP", 99, None, "芯片边界"),
     ("LayerCD", 290, None, "芯片设计区域"),

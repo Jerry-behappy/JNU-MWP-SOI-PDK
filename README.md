@@ -7,7 +7,9 @@
 
 # JNU-MWP-SOI-PDK
 
-暨南大学光电混合集成实验室的 KLayout 硅光 PDK，提供 `JNU_MWP_PDK` Technology、参数化 `JNULib`、固定器件 `JNULib_BlackBox`、波导工具和 DRC。公开仓库可独立使用 9 类 PCell 与 29 个固定黑盒；29 份固定白盒 GDS 由独立器件库授权安装。
+暨南大学光电混合集成实验室的 KLayout 硅光 PDK，提供 `JNU_MWP_SOI_PDK` Technology、参数化 `JNULib`、固定器件 `JNULib_BlackBox`、波导工具和 DRC。顶部功能菜单显示 `JNU_MWP_SOI_PDK V1.4`。公开仓库可独立使用 9 类 PCell 与 31 个固定黑盒；31 份固定白盒 GDS 由独立器件库授权安装。
+
+**[更新说明与日期](CHANGELOG.md)**
 
 <a id="克隆仓库安装windows"></a><a id="git-clone-installation-windows"></a>
 ## 安装与更新
@@ -18,7 +20,7 @@
 
 1. **[下载安装宏 Install_JNU_PDK.lym](https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK/releases/download/installer-macro/Install_JNU_PDK.lym)**。
 2. 将 `.lym` 拖入平时使用的 KLayout，在 **Macro Development** 中选择 **Install JNU PDK**，点击绿色 **Run**，再点击“安装”。
-3. 完成后重启 KLayout，选择 `JNU_MWP_PDK` Technology，并确认顶部菜单及两个器件库已出现。
+3. 完成后重启 KLayout，选择 `JNU_MWP_SOI_PDK` Technology，并确认顶部菜单及两个器件库已出现。
 
 安装宏从正在运行的 KLayout 读取用户配置目录，克隆默认分支并建立目录联接，不要求 KLayout 与源码在同一盘。也可使用下方 AI 提示词安装。
 
@@ -37,9 +39,9 @@
 <a id="更新与白盒-gds"></a><a id="updates-and-whitebox-gds"></a>
 ### 更新、语言与白盒
 
-- `main` 安装版每次启动会后台检查 GitHub 更新；发现新版可点击弹窗中的“立即更新”，也可使用 **JNU_MWP_PDK → Check for PDK Updates**。开发分支不自动提示更新；完成更新后重启 KLayout。
-- 选择 **JNU_MWP_PDK → Language → English / 简体中文** 切换菜单和 PCell 参数标签，**重启后生效**。仅修改 Python 功能时可用 **Reload JNU PDK** 热重载；启动宏、Technology 或安装路径变动后仍应重启。
-- 获授权后使用 **JNU_MWP_PDK → Install / Update Whitebox Library**，从独立 [JNU-MWP-SOI-Library](https://github.com/Jerry-behappy/JNU-MWP-SOI-Library) 安装 29 份固定白盒；公开 PDK 仓库不包含白盒 GDS。
+- `main` 安装版每次启动会后台检查 GitHub 更新；发现新版可点击弹窗中的“立即更新”，也可使用 **JNU_MWP_SOI_PDK V1.4 → Check for PDK Updates**。开发分支不自动提示更新；完成更新后重启 KLayout。
+- 功能菜单统一以 **中文 / English** 同时显示，无需切换语言。仅修改 Python 功能时可用 **重新加载 JNU PDK / Reload JNU PDK** 热重载；启动宏、Technology 或安装路径变动后仍应重启。
+- 获授权后使用 **JNU_MWP_SOI_PDK V1.4 → Install / Update Whitebox Library**，从独立 [JNU-MWP-SOI-Library](https://github.com/Jerry-behappy/JNU-MWP-SOI-Library) 安装 31 份固定白盒；公开 PDK 仓库不包含白盒 GDS。
 
 ## 功能与使用说明
 
@@ -62,3 +64,5 @@
 </table>
 
 [问题反馈](https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK/issues) · [许可证](LICENSE.md)
+
+本项目参考自 [SiEPIC PDK](https://github.com/SiEPIC/SiEPIC_EBeam_PDK) 与 [SiEPIC-Tools](https://github.com/SiEPIC/SiEPIC-Tools)。

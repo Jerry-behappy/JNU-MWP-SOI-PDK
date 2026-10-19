@@ -17,11 +17,12 @@ PYMACROS = Path(__file__).resolve().parents[2]
 if str(PYMACROS) not in sys.path:
     sys.path.insert(0, str(PYMACROS))
 
-from JNU_MWP_tools.core.public_ebeam_cells import PUBLIC_EBEAM_CELLS
+from JNU_MWP_tools.core.public_ebeam_cells import PUBLIC_EBEAM_CELL_NAMES
 from JNU_MWP_tools.release.package_blackbox_pdk import LIBRARY_DBU, _draw_blackbox_cell
 
 
-SOURCE_NAMES = dict(PUBLIC_EBEAM_CELLS)
+# 规范白盒已统一文件名与顶层名称；旧 EBeam 名称只由运行时加载器兼容。
+SOURCE_NAMES = {name: name for name in PUBLIC_EBEAM_CELL_NAMES}
 
 
 def _write_blackbox(cell, source_layout, destination, target_name=None):

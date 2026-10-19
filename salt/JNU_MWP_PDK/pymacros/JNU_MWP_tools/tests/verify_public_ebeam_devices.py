@@ -20,7 +20,7 @@ import JNULib  # noqa: F401
 
 
 FIXED = (
-    ("ebeam_crossing4", "Crossing4", 7, 4),
+    ("ebeam_crossing4", "1550_crossing4", 7, 4),
     ("ebeam_terminator_te1310", "1310_TE_Terminator", 3, 1),
     ("ebeam_terminator_te1550", "1550_TE_Terminator", 4, 1),
     ("ebeam_y_1310", "1310_Ybranch", 6, 3),
@@ -63,11 +63,12 @@ def _port_signature(cell, layout):
 
 
 def verify_fixed(library):
+    assert library.layout().cell("Crossing4") is None
     for source_name, name, text_count, port_count in FIXED:
         assert library.layout().cell(source_name) is None, source_name
         source = pya.Layout()
-        source.read(str(SOURCE_GDS / (source_name + ".gds")))
-        original = source.cell(source_name)
+        source.read(str(SOURCE_GDS / (name + ".gds")))
+        original = source.cell(name)
         copied = library.layout().cell(name)
         assert original is not None and copied is not None, name
         assert abs(source.dbu - library.layout().dbu) < 1e-12, name

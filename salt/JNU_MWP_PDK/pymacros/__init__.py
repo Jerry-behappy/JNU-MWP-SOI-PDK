@@ -1,7 +1,7 @@
 # $autorun
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-08
+# 时间: 2026-10
 
 # 初始化 JNU MWP Python 器件库，并确保 Salt 安装时也能注册 Technology。
 
@@ -10,13 +10,12 @@ print("JNU MWP PDK: load JNULib")
 import os
 import sys
 
-import pya
-
-
-TECH_NAME = "JNU_MWP_PDK"
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__)) if "__file__" in globals() else os.getcwd()
 PDK_ROOT = os.path.dirname(SCRIPT_DIR)
 TECH_FILE = os.path.join(PDK_ROOT, "JNU_MWP_PDK.lyt")
+if SCRIPT_DIR not in sys.path:
+    sys.path.insert(0, SCRIPT_DIR)
+from JNU_MWP_tools.core.pdk_identity import TECHNOLOGY_NAME as TECH_NAME, load_jnu_technology
 
 
 def _load_jnu_technology():
@@ -26,11 +25,7 @@ def _load_jnu_technology():
         return
 
     try:
-        if not pya.Technology().has_technology(TECH_NAME):
-            tech = pya.Technology().create_technology(TECH_NAME)
-        else:
-            tech = pya.Technology.technology_by_name(TECH_NAME)
-        tech.load(TECH_FILE)
+        load_jnu_technology(PDK_ROOT)
         print("JNU MWP PDK: technology loaded from", TECH_FILE)
     except Exception as error:
         print("JNU MWP PDK: technology load failed:", error)
