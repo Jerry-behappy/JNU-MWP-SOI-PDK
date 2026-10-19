@@ -57,6 +57,7 @@ def main():
     assert files, "仓库未携带黑盒 GDS"
     assert Path(blackbox._active_gds_dir()).resolve() == directory.resolve()
     names = set()
+    source_files = {}
     for path in files:
         layout = pya.Layout()
         layout.read(str(path))
@@ -64,6 +65,7 @@ def main():
             cell = layout.cell(top) if isinstance(top, int) else top
             assert cell.name not in names, "器件名称重复：%s" % cell.name
             names.add(cell.name)
+            source_files[cell.name] = path
             verify_port_straights(cell, layout)
             pins = list(cell.shapes(layout.layer(1, 10)).each())
             assert any(shape.is_path() for shape in pins), "缺少端口：%s" % cell.name
@@ -90,9 +92,19 @@ def main():
     assert library is not None
     assert not list(library.layout().pcell_names())
     for name in names:
+        registered = library.layout().cell(name)
+        assert registered is not None, name
+        verify_port_straights(registered, library.layout())
         target = pya.Layout()
         instance_cell = target.create_cell(name, "JNULib_BlackBox")
         assert instance_cell is not None and not instance_cell.bbox().empty(), name
+        verify_port_straights(instance_cell, target)
+        disk = pya.Layout()
+        disk.read(str(source_files[name]))
+        for layer in ((1, 0), (1, 10), (68, 0), (998, 0), (10, 0)):
+            disk_region = pya.Region(disk.top_cell().begin_shapes_rec(disk.layer(*layer)))
+            placed_region = pya.Region(instance_cell.begin_shapes_rec(target.layer(*layer)))
+            assert (disk_region ^ placed_region).is_empty(), (name, layer)
     print("PASS: %d blackboxes load and instantiate; Si contains only 0.2 um port straights touching the BlackBox body." % len(names))
 
 

@@ -68,6 +68,8 @@ description: Use when developing, verifying, or packaging the JNU_MWP_PDK KLayou
 - 只有执行 `package_blackbox_pdk.py` 打包黑盒器件库时，才同步修改 `pymacros/README.md` 和 PDK 使用说明文档；普通代码开发、PCell/菜单/图层修改、规则更新、维护性脚本和单独文档请求都不得改写这两类文档。
 - 涉及较为重要的 PDK 开发规则的更新或增加，才修改本 skill 的 `SKILL.md` 与 `references/`；个别 PCell 参数微调、单次回归脚本、一次性维护工具或与 PDK 主线无关的临时修缮，不进入 skill，避免噪声污染共享规范源。
 
+运行时 `JNU_MWP_blackbox` 必须原样加载预生成黑盒 GDS 的完整图层与层级，不得读取后再按 Si bbox 绘制实心块。黑盒验收除磁盘 GDS 外，必须核对 `JNULib_BlackBox` 注册 cell 和实际放置实例的 Si、BlackBox、PinRec、DevRec 与标签几何。
+
 ## Workflow
 
 推荐用户运行根目录 `Install_JNU_PDK.lym`：从运行中的 KLayout 读取 `application_data_path()`，无需用户寻找程序或配置目录。唯一逻辑源为 `actions/install_pdk.py`，修改后运行 `tools/build_install_macro.py` 生成独立宏并核验 XML 内源码一致。Git 克隆、更新和认证在后台线程执行，Qt 更新仅通过主线程 timer；只更新干净且无本地超前提交的 main，保留旧目录和修改。菜单提供 `Check for PDK Updates` 与 `Install / Update Whitebox Library`，独立 Library 只克隆到用户目录 `jnu_private`，不接收或保存凭据。安装回归使用临时 Git 仓库和隔离 KLayout GUI，不操作用户实际安装。
