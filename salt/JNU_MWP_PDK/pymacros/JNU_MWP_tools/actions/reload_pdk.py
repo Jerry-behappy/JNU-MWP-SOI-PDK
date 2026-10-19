@@ -186,18 +186,9 @@ def _reload_menu_macro():
 
 
 def _refresh_blackbox_display(view):
-    """只迁移旧版深色实心占位层，不重置用户其余图层的显示设置。"""
-    iterator = view.begin_layers()
-    while not iterator.at_end():
-        properties = iterator.current()
-        if (properties.source_layer == 998 and properties.source_datatype == 0
-                and properties.dither_pattern == 0 and (properties.fill_color & 0xffffff) == 0x004080):
-            updated = properties.dup()
-            updated.frame_color = 0x7a9bb8
-            updated.fill_color = 0xdce8f2
-            updated.dither_pattern = 1
-            view.set_layer_properties(iterator, updated)
-        iterator.next()
+    """迁移当前视图的旧版 BlackBox 样式。"""
+    from JNU_MWP_tools.core.blackbox_display import refresh_blackbox_display
+    refresh_blackbox_display(view)
 
 
 def reload_jnu_pdk(main_window=None, reload_menu=True):

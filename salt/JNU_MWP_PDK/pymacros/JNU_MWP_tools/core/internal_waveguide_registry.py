@@ -341,11 +341,14 @@ def _on_view_created(main_window, *args):
 
 def _dynamic_attach_all_views(main_window):
     """周期扫描主窗口中的视图，作为 KLayout 视图事件的兼容保护。"""
+    from JNU_MWP_tools.core.blackbox_display import refresh_blackbox_display
+
     module = importlib.import_module(
         "JNU_MWP_tools.core.internal_waveguide_registry"
     )
     for view in module._main_window_views(main_window):
         module.attach_view(view)
+        refresh_blackbox_display(view)
 
 
 def _install_view_sync_timer(main_window):
