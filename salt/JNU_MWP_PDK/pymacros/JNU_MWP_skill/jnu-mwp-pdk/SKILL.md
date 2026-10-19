@@ -61,7 +61,7 @@ description: Use when developing, verifying, or packaging the JNU_MWP_PDK KLayou
 - 黑盒包不得包含 `JNU_MWP_skill`、`JNU_MWP_pcells`、`JNU_MWP_gds`、`JNULib.py`、`JNU_MWP_tools/release`、`JNU_MWP_tools/tests` 或 `klayoutrc*`；只携带工具包入口及 `core/actions` 运行时代码。
 - 固定白盒 GDS 更新后必须同步黑盒，包括本轮修改、用户此前修改和从 Library 拉取的更新；先将白盒更新纳入独立 Library 仓库，再运行 `release/sync_blackboxes_from_library.py --source <Library checkout/JNU_MWP_gds>`，从完整白盒目录重建全部对应固定黑盒（当前 31 个）。有变化时提交黑盒；无变化则报告同步结果，不制造空提交。所有 PCell（包括 bump）不进入黑盒库。黑盒使用 998/0 BlackBox 矩形主体；1/0 Si 仅包含每个光端口向内的 0.2 µm 恒宽直段，主体对应边退到直段内端，原 PinRec 位置、方向、宽度、名称及 DevRec 保持不变。重读全部 GDS 验证四向直段、主体接触关系和白盒端口一致性；只保留器件名与端口名，发布包仅复制已验收的黑盒，不从本机白盒静默覆盖。公开 PDK 中不得提交任何白盒 `.gds`。
 - 完整实验室 Salt Package 与黑盒包分开构建：`release/package_lab_pdk.py --gds-source <私有器件 checkout/JNU_MWP_gds>` 从 `Jerry-behappy/JNU-MWP-SOI-Library` 获取的本地 checkout 复制固定 GDS，并包含公开 PCell。完整 ZIP 仅内部交付，不上传公开 PDK 仓库；安装索引只在接收方本地生成，不嵌入凭据。`JNU_MWP_PDK_Startup.lym` 早期只注册技术和内部波导接口，公开库及 EBeam 桥接必须由 `pymacros/__init__.py` 在普通 autorun 阶段加载，避免 SiEPIC 在主窗口建立前被缓存成 batch 环境而丢失菜单。Package 不依赖额外 `tech` 副本；发布前验证独立安装及 SiEPIC/EBeam 共存冷启动。
-- Technology 注册名为 `JNU_MWP_SOI_PDK`，顶部菜单显示 `JNU_MWP_SOI_PDK V<版本号>`（当前 V1.4）；名称与版本统一维护在 `core/pdk_identity.py`。启动与菜单重载自动迁移旧 `JNU_MWP_PDK` 技术、默认选择、最近文件技术字段和原 JNU 桥接库关联。菜单内部路径与 Action ID 保持稳定，保留已有快捷键。Salt 包、安装目录、`.lyt` 文件名、canonical skill 路径和黑盒输出目录继续使用工程名 `JNU_MWP_PDK`；不得据此重命名 `JNULib` 或 `JNULib_BlackBox`。
+- Technology 注册名为 `JNU_MWP_SOI_PDK`，顶部菜单显示 `JNU_MWP_SOI_PDK V<版本号>`（当前 V1.5）；名称与版本统一维护在 `core/pdk_identity.py`。启动与菜单重载自动迁移旧 `JNU_MWP_PDK` 技术、默认选择、最近文件技术字段和原 JNU 桥接库关联。菜单内部路径与 Action ID 保持稳定，保留已有快捷键。Salt 包、安装目录、`.lyt` 文件名、canonical skill 路径和黑盒输出目录继续使用工程名 `JNU_MWP_PDK`；不得据此重命名 `JNULib` 或 `JNULib_BlackBox`。
 - 功能子菜单与动作标题统一同行显示“中文 / English”，不通过 Language 子菜单切换；重载旧菜单时移除旧语言入口，保持稳定 Action ID、内部菜单路径及用户快捷键。菜单双语显示不要求同时改写参数对话框原有的语言行为。
 - 当前安装仅使用 `salt/JNU_MWP_PDK/JNU_MWP_PDK.lyt`，仓库根目录不再维护 `tech/` 副本；技术及图层由包内启动宏注册。该配置必须保持可搬运：`base-path` 与 `original-base-path` 为空，`layer-properties_file` 为同目录相对路径 `layers.lyp`。运行时代码只可由 `__file__` 推导安装位置，禁止写入 `C:/Users/zjy/...` 等作者机器绝对路径；备用黑盒打包工具生成的 `.lyt` 同样遵守此规则。
 - `pymacros/README.md` 先完整写完中文，再完整写英文；不要交错排列双语段落。
@@ -76,13 +76,13 @@ description: Use when developing, verifying, or packaging the JNU_MWP_PDK KLayou
 
 当前用户安装仅支持 Git 克隆及目录联接：仓库根 `Install_Cloned_PDK.ps1` 将克隆内 `salt/JNU_MWP_PDK` 联接到 KLayout 的 salt 目录，不覆盖已有安装，不配置在线索引。更新使用 `git pull --ff-only origin main` 后重启。私有 GDS 单独授权并保留独立目录读取兼容；离线实验室和黑盒构建工具仅作为维护者备用工具，不作为当前用户安装流程。
 
-资源管理器中 salt 包目录带箭头时，先用 `Get-Item -Force | Select-Object FullName,LinkType,Target` 确认链接类型和目标。Git 安装使用 Windows 目录联接（Junction），KLayout 通过 salt 入口直接读取源码目录，并非 `.lnk` 快捷方式或额外副本。正常联接无需改成实体目录；移动源码会使入口失效，入口内的文件修改和删除会作用于目标源码。维护本机开发分支时遵循下方分支约定，不把面向普通安装的 main 更新命令套用到 V1.4。
+资源管理器中 salt 包目录带箭头时，先用 `Get-Item -Force | Select-Object FullName,LinkType,Target` 确认链接类型和目标。Git 安装使用 Windows 目录联接（Junction），KLayout 通过 salt 入口直接读取源码目录，并非 `.lnk` 快捷方式或额外副本。正常联接无需改成实体目录；移动源码会使入口失效，入口内的文件修改和删除会作用于目标源码。维护本机开发分支时遵循下方分支约定，不把面向普通安装的 main 更新命令套用到当前开发分支。
 
 1. 修改前阅读 `references/project-map.md` 和 `references/workflows.md`；不自动读取项目根 `JNU_PDK_CONTEXT_BACKUP.md`。
 2. 用 `rg` / `Get-Content` 检查现状，用 `apply_patch` 做聚焦修改。
 3. 对所有改动的 Python 文件运行 `py_compile`，再运行 KLayout 批处理和 GDS 重读验证。
 4. 修改本 skill 后运行 `python scripts/sync_skill_links.py sync` 与 `check`。
 5. `JNU_PDK_CONTEXT_BACKUP.md` 仅保留为历史记录，除非用户明确要求，否则不读取、不写入。
-6. 向 GitHub 发布时遵循用户指定的分支：当前 PDK 开发分支为 `JNU_MWP_PDK_V1.4`，独立 Library 使用其授权仓库的 `main`；未明确指定时不要擅自迁移分支或发布白盒到公开 PDK。
+6. 向 GitHub 发布时遵循用户指定的分支：当前 PDK 开发分支为 `JNU_MWP_PDK_V1.5`，独立 Library 使用其授权仓库的 `main`；未明确指定时不要擅自迁移分支或发布白盒到公开 PDK。
 7. 发布功能、修复或固定器件更新时，同步根目录 `CHANGELOG.md` 与 `CHANGELOG.en.md`，按北京时间 `YYYY-MM-DD` 倒序记录日期和用户可见变化；历史补录日期从 Git 提交记录获取，不把维护日期当作历史更新日期。两个根 README 分别链接相应语言的更新说明；分支更名时同步更新页面中的完整提交记录链接。
 8. 每次获授权将当前开发分支合并到 `main` 并确认远端合并成功后，自动将开发分支的次版本加一并重命名，例如 `JNU_MWP_PDK_V1.4` → `JNU_MWP_PDK_V1.5`，无需再次询问；普通提交或推送不触发递增。按 `references/workflows.md` 的“Merge and Next Development Version”执行，并把更名后的分支作为后续默认推送目标。

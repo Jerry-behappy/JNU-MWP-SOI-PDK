@@ -5,9 +5,13 @@
 
 # 更新说明
 
-[返回 README](README.md) · [完整提交记录](https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK/commits/JNU_MWP_PDK_V1.4/)
+[返回 README](README.md) · [完整提交记录](https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK/commits/JNU_MWP_PDK_V1.5/)
 
 按更新日期倒序排列。历史日期采用 Git 提交日期（北京时间，UTC+8），同一天的相关改动合并说明；完整提交记录可查看每一次提交的内容与时间。
+
+## 2026-10-19 · V1.5 开发分支
+
+- V1.4 已通过 PR #2 合并到 main；开发分支自动递增并改名为 `JNU_MWP_PDK_V1.5`，基于合并后的 main 继续开发。菜单显示 V1.5，后续默认推送到此分支。
 
 ## 2026-10-19 · 黑盒光端口直波导
 

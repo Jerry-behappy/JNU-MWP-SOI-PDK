@@ -5,9 +5,13 @@
 
 # Changelog
 
-[Back to README](README.en.md) · [Full commit history](https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK/commits/JNU_MWP_PDK_V1.4/)
+[Back to README](README.en.md) · [Full commit history](https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK/commits/JNU_MWP_PDK_V1.5/)
 
 Updates are listed newest first. Historical dates follow Git commit dates in Beijing time (UTC+8). Related changes on the same day are grouped; the full commit history shows the content and timestamp of every commit.
+
+## 2026-10-19 · V1.5 development branch
+
+- Merge V1.4 into main through PR #2, then increment and rename the development branch to `JNU_MWP_PDK_V1.5` from the merged main. Show V1.5 in the menu and use this branch for subsequent development pushes.
 
 ## 2026-10-19 · Blackbox optical port straights
 
