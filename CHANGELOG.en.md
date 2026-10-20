@@ -9,6 +9,10 @@
 
 Updates are listed newest first. Historical dates follow Git commit dates in Beijing time (UTC+8). Related changes on the same day are grouped; the full commit history shows the content and timestamp of every commit.
 
+## 2026-10-20 · Configurable PinRec recognition layer
+
+- Add an editable PinRec recognition layer shared by all three Path to Waveguide tabs. Default to `1/10`, remember the layer/datatype setting and use it to find ports for endpoint snapping. Invalid input blocks conversion. Generated waveguides retain their pins on the SOI standard layer.
+
 ## 2026-10-19 · V1.5 development branch
 
 - Merge V1.4 into main through PR #2, then increment and rename the development branch to `JNU_MWP_PDK_V1.5` from the merged main. Show V1.5 in the menu and use this branch for subsequent development pushes.

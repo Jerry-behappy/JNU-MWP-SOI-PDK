@@ -12,6 +12,7 @@ import math
 import copy
 import hashlib
 import tempfile
+import re
 
 import pya
 
@@ -27,6 +28,7 @@ except Exception:
     euler_Reff = None
 
 from JNU_MWP_tools.core.common import (
+    PIN_LAYER,
     RAW_PATH_GDS_PROPERTY,
     RAW_PATH_PROPERTY,
     WAVEGUIDE_CONTAINER_GDS_PROPERTY,
@@ -73,6 +75,7 @@ _DIALOG_LABELS_ZH = {
     "Saved Types": "已保存类型",
     "Selected Parameters": "所选参数",
     "Note": "备注",
+    "PinRec Recognition Layer (layer/datatype)：": "PinRec 识别层（图层号/数据类型）：",
     "Bend Type：": "弯曲类型：",
     "Waveguide Width (um)：": "波导宽度（µm）：",
     "Straight Width (um)：": "直波导宽度（µm）：",
@@ -525,11 +528,23 @@ def _build_waveguide_cell_base_name(params):
     )
 
 
+def _parse_pin_recognition_layer(value):
+    """仅接受明确的数字图层/数据类型，拒绝空输入、通配符与名称。"""
+    match = re.fullmatch(r"\s*([0-9]+)\s*/\s*([0-9]+)\s*", str(value))
+    if match is None or any(int(part) > 65535 for part in match.groups()):
+        raise ValueError(_dialog_message(
+            "PinRec recognition layer must be layer/datatype, with both numbers from 0 to 65535 (for example 1/10).",
+            "PinRec 识别层须填写 图层号/数据类型，两个编号范围均为 0–65535（例如 1/10）。",
+        ))
+    return pya.LayerInfo(*(int(part) for part in match.groups()))
+
+
 def _default_waveguide_params():
     """返回独立配置副本，避免 GUI 和测试共享可变默认值。"""
     return {
         "schema_version": PARAM_SCHEMA_VERSION,
         "active_tab": TAB_SINGLE,
+        "pin_recognition_layer": "%d/%d" % (PIN_LAYER.layer, PIN_LAYER.datatype),
         "single": {
             "width": 0.5, "radius": 20.0, "bend_type": "Circular",
             "bezier": 0.35, "Euler_Rmax": 30.0, "Euler_Rmin": 10.0,
@@ -773,6 +788,12 @@ def _load_waveguide_params():
         return defaults
     if not isinstance(data, dict):
         return defaults
+    try:
+        defaults["pin_recognition_layer"] = _parse_pin_recognition_layer(
+            data.get("pin_recognition_layer", defaults["pin_recognition_layer"])
+        ).to_s()
+    except ValueError:
+        pass
     if isinstance(data.get("single"), dict):
         defaults["single"] = _normalize_editable_params(TAB_SINGLE, data["single"])
         defaults["composite"] = _normalize_editable_params(
@@ -1384,6 +1405,16 @@ def _show_waveguide_dialog(dbu=0.001):
     )
     layout.addWidget(tabs)
 
+    # 识别层是本工具的公共吸附设置，不参与几何预设或 PCell 身份。
+    pin_row = pya.QHBoxLayout()
+    pin_row.addWidget(pya.QLabel(_dialog_text("PinRec Recognition Layer (layer/datatype)："), dialog))
+    pin_edit = pya.QLineEdit(dialog)
+    pin_edit.setObjectName("jnu_pin_recognition_layer")
+    pin_edit.setText(state["saved"]["pin_recognition_layer"])
+    pin_edit.setPlaceholderText("1/10")
+    pin_row.addWidget(pin_edit)
+    layout.addLayout(pin_row)
+
     buttons = pya.QHBoxLayout(dialog)
     ok_btn, cancel_btn = (
         pya.QPushButton(_dialog_text("OK"), dialog),
@@ -1640,6 +1671,12 @@ def _show_waveguide_dialog(dbu=0.001):
         update_ok_enabled()
 
     def accept_dialog(_checked=False):
+        try:
+            _parse_pin_recognition_layer(_value(pin_edit, "text"))
+        except ValueError as error:
+            _message("JNU_MWP_PDK", str(error))
+            pin_edit.setFocus()
+            return
         if flush_user_fields(True):
             dialog.accept()
 
@@ -1678,6 +1715,12 @@ def _show_waveguide_dialog(dbu=0.001):
     def persist_dialog_settings():
         """保存三个页签的有效设置；未完成的无效输入保留上次有效值。"""
         candidate = copy.deepcopy(state["saved"])
+        try:
+            candidate["pin_recognition_layer"] = _parse_pin_recognition_layer(
+                _value(pin_edit, "text")
+            ).to_s()
+        except ValueError:
+            pass
         current_index = int(_value(tabs, "currentIndex"))
         index_to_tab = {index: name for name, index in active_indices.items()}
         candidate["active_tab"] = index_to_tab.get(current_index, TAB_SINGLE)
@@ -1731,6 +1774,7 @@ def _show_waveguide_dialog(dbu=0.001):
     except (TypeError, ValueError) as error:
         _message("JNU_MWP_PDK", _dialog_error(error))
         return None
+    result["pin_recognition_layer"] = _parse_pin_recognition_layer(_value(pin_edit, "text")).to_s()
     return result
 
 
@@ -2238,7 +2282,10 @@ def path_to_waveguide():
             return
         _debug_log("params: %s" % params)
 
-        pins = _find_pins_in_cell(cell, layout)
+        recognition_layer = _parse_pin_recognition_layer(params.get(
+            "pin_recognition_layer", "%d/%d" % (PIN_LAYER.layer, PIN_LAYER.datatype),
+        ))
+        pins = _find_pins_in_cell(cell, layout, recognition_layer)
         _debug_log("optical pins for snap: %d" % len(pins))
 
         requested_radius = float(params["effective_radius"])
