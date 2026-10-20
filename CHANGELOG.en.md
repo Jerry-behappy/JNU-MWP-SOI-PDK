@@ -11,6 +11,7 @@ Updates are listed newest first. Historical dates follow Git commit dates in Bei
 
 ## 2026-10-20 · Configurable PinRec recognition layer
 
+- Rename the display label of layer 2/0 from `Si - 90 nm rib` to `Si - 70nm etch`.
 - Add an editable PinRec recognition layer shared by all three Path to Waveguide tabs. Default to `1/10`, remember the layer/datatype setting and use it to find ports for endpoint snapping. Invalid input blocks conversion. Generated waveguides retain their pins on the SOI standard layer.
 
 ## 2026-10-19 · V1.5 development branch
