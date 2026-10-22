@@ -9,6 +9,11 @@
 
 Updates are listed newest first. Historical dates follow Git commit dates in Beijing time (UTC+8). Related changes on the same day are grouped; the full commit history shows the content and timestamp of every commit.
 
+## 2026-10-22 · Terminator device names
+
+- Rename `1310_TE_Terminator` to `1310_500nm_TE_terminator`, `1550_TE_Terminator` to `1550_500nm_TE_terminator`, and `1550_2um_terminator` to `1550_2um_TE_terminator`. Synchronize whitebox filenames, top cells, library names and blackboxes, preserving geometry, ports and text.
+- Require fixed-device changes to be committed and pushed to both the SOI PDK and independent Library repositories in the maintenance skill.
+
 ## 2026-10-20 · Configurable PinRec recognition layer
 
 - Rename the display label of layer 2/0 from `Si - 90 nm rib` to `Si - 70nm etch`.

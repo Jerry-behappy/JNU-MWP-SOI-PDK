@@ -9,6 +9,11 @@
 
 按更新日期倒序排列。历史日期采用 Git 提交日期（北京时间，UTC+8），同一天的相关改动合并说明；完整提交记录可查看每一次提交的内容与时间。
 
+## 2026-10-22 · Terminator 器件命名
+
+- 统一三个终端器名称：`1310_TE_Terminator` → `1310_500nm_TE_terminator`、`1550_TE_Terminator` → `1550_500nm_TE_terminator`、`1550_2um_terminator` → `1550_2um_TE_terminator`；同步白盒 GDS 文件名、顶层 cell、库名与黑盒，原几何、端口及文字保留。
+- skill 明确固定器件修改须同步提交并推送 SOI PDK 与独立器件库两个仓库。
+
 ## 2026-10-20 · 可配置 PinRec 识别层
 
 - 将 2/0 图层的显示名称由 `Si - 90 nm rib` 改为 `Si - 70nm etch`。

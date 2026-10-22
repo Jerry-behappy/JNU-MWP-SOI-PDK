@@ -1,6 +1,6 @@
 # Origin of five bundled EBeam blackboxes
 
-`1550_crossing4.gds`, `1310_TE_Terminator.gds`, `1550_TE_Terminator.gds`,
+`1550_crossing4.gds`, `1310_500nm_TE_terminator.gds`, `1550_500nm_TE_terminator.gds`,
 `1310_Ybranch.gds`, and `1550_Ybranch.gds` are fixed blackboxes with rectangular bodies and 0.2 um optical port straights
 derived from upstream `ebeam_crossing4`, `ebeam_terminator_te1310`,
 `ebeam_terminator_te1550`, `ebeam_y_1310`, and `ebeam_y_1550` in the

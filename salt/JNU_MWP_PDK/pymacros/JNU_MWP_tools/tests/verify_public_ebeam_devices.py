@@ -21,8 +21,8 @@ import JNULib  # noqa: F401
 
 FIXED = (
     ("ebeam_crossing4", "1550_crossing4", 7, 4),
-    ("ebeam_terminator_te1310", "1310_TE_Terminator", 3, 1),
-    ("ebeam_terminator_te1550", "1550_TE_Terminator", 4, 1),
+    ("ebeam_terminator_te1310", "1310_500nm_TE_terminator", 3, 1),
+    ("ebeam_terminator_te1550", "1550_500nm_TE_terminator", 4, 1),
     ("ebeam_y_1310", "1310_Ybranch", 6, 3),
     ("ebeam_y_1550", "1550_Ybranch", 6, 3),
 )

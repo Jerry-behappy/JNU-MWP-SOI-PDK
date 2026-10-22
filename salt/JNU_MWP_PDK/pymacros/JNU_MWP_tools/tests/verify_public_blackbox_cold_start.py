@@ -20,7 +20,7 @@ def _probe():
     assert black is not None and "v1.3" in black.description
     assert not list(black.layout().pcell_names())
     names = {
-        "1550_crossing4", "1310_TE_Terminator", "1550_TE_Terminator",
+        "1550_crossing4", "1310_500nm_TE_terminator", "1550_500nm_TE_terminator",
         "1310_Ybranch", "1550_Ybranch",
     }
     for old_name in ("ebeam_crossing4", "ebeam_terminator_te1310",
