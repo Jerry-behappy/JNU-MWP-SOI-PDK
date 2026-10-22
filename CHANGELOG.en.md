@@ -5,12 +5,17 @@
 
 # Changelog
 
-[Back to README](README.en.md) · [Full commit history](https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK/commits/JNU_MWP_PDK_V1.5/)
+[Back to README](README.en.md) · [Full commit history](https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK/commits/JNU_MWP_PDK_V1.6/)
 
 Updates are listed newest first. Historical dates follow Git commit dates in Beijing time (UTC+8). Related changes on the same day are grouped; the full commit history shows the content and timestamp of every commit.
 
+## 2026-10-22 · V1.6 development branch
+
+- Merge V1.5 into main through PR #3 and rename the development branch to `JNU_MWP_PDK_V1.6`. Update the menu version and default development push target.
+
 ## 2026-10-22 · Terminator device names
 
+- Use ASCII `NxM` instead of `N*M` or `N×M` for all five MMIs, synchronizing whitebox filenames, top cells, library names and blackboxes while retaining geometry and ports.
 - Rename `1310_TE_Terminator` to `1310_500nm_TE_terminator`, `1550_TE_Terminator` to `1550_500nm_TE_terminator`, and `1550_2um_terminator` to `1550_2um_TE_terminator`. Synchronize whitebox filenames, top cells, library names and blackboxes, preserving geometry, ports and text.
 - Require fixed-device changes to be committed and pushed to both the SOI PDK and independent Library repositories in the maintenance skill.
 

@@ -87,6 +87,9 @@ def main():
     } <= names
     assert not any(name.startswith("Pcell_") for name in names)
     assert "1550_2um_TE_terminator" in names
+    assert {"1310_4x4_MMI", "1550_1x2_MMI", "1550_1x4_MMI",
+            "1550_2x2_MMI_2um-InputPort_for_TE0", "1550_4x4_MMI"} <= names
+    assert all("*" not in name and "×" not in name for name in names if "MMI" in name)
     assert not {"1310_TE_Terminator", "1550_TE_Terminator", "1550_2um_terminator"} & names
     assert not {"ebeam_crossing4", "ebeam_terminator_te1310", "ebeam_terminator_te1550",
                 "ebeam_y_1310", "ebeam_y_1550"} & names
