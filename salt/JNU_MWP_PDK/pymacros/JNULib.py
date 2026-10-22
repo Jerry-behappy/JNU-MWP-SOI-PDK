@@ -27,11 +27,11 @@ if SCRIPT_DIR not in sys.path:
     sys.path.insert(0, SCRIPT_DIR)
 
 from JNU_MWP_tools.core.fixed_gds import fixed_gds_directory
-from JNU_MWP_tools.core.public_ebeam_cells import PUBLIC_EBEAM_CELLS
+from JNU_MWP_tools.core.public_ebeam_cells import FIXED_CELL_ALIASES
 from JNU_MWP_tools.core.pdk_identity import TECHNOLOGY_NAME
 
 GDS_DIR = fixed_gds_directory(SCRIPT_DIR)
-SOURCE_CELL_NAMES = dict(PUBLIC_EBEAM_CELLS)
+SOURCE_CELL_NAMES = FIXED_CELL_ALIASES
 
 from JNU_MWP_pcells import (
     Bend90deg,

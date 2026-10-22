@@ -2,6 +2,7 @@
 
 ## Merge and Next Development Version
 
+- 固定器件修改涉及两个仓库时，先推送 Library main 的白盒及元数据，再推送 PDK 开发分支的映射、重新生成的黑盒及验收；两边完成后才合并 PDK。文件名、顶层名和库显示名一起核对，本机已安装白盒也应同步，遇到用户手动修改须先保留备份。
 - 用户授权合并开发分支到 `main` 时，先提交并推送当前分支，获取远端最新状态，完成合并并确认远端 `main` 包含开发提交；合并失败时不递增版本。
 - 远端合并成功后，自动把 `JNU_MWP_PDK_V<主版本>.<次版本>` 的次版本加一；优先通过 GitHub 分支重命名接口保留旧链接跳转，随后重命名本地分支并重新绑定 upstream。目标分支已存在时先检查其状态，不覆盖已有分支。
 - 在新分支同步 `core/pdk_identity.py` 的菜单版本、当前版本验收断言、根 README、更新说明链接以及 skill 的当前开发分支和版本；历史更新记录保留原版本。新分支记录合并日期与版本递增并提交推送；`main` 保留刚合并的发行版本。
@@ -42,7 +43,7 @@
 
 ## Runtime Reload
 
-- `JNU_MWP_SOI_PDK V1.4 → Reload JNU PDK` 在当前菜单回调退出后异步执行，避免重建菜单时销毁正在触发的 Action。待触发的单次 timer 只能由 `reload_pdk` 模块级引用保存，禁止写入或读取 `MainWindow` 的动态 Python 属性；重复触发必须合并为一次。
+- `JNU_MWP_SOI_PDK V1.5 → Reload JNU PDK` 在当前菜单回调退出后异步执行，避免重建菜单时销毁正在触发的 Action。待触发的单次 timer 只能由 `reload_pdk` 模块级引用保存，禁止写入或读取 `MainWindow` 的动态 Python 属性；重复触发必须合并为一次。
 - 清除 `JNU_MWP_pcells`、`JNU_MWP_tools` 与 `JNULib` 模块缓存后从磁盘重新导入；同名公开库只保留一个，并调用 `Library.refresh()` 更新全部 client layout。
 - 对已打开 layout 中现存的 `Waveguide` / `Composite_Waveguide` 以同名新声明调用 `register_pcell`，保持 PCell ID 不变，再调用 `Layout.refresh()` 重算已有 variant。
 - 菜单宏注册必须幂等：删除全部已知 action item、替换主窗口持久 action 列表后再插入。重建前以稳定 action ID 保存当前 `pya.Action.shortcut`；若当前值已为空，则从 `Application.get_config("key-bindings")` 中相同完整菜单路径恢复，且不得改写用户配置。成功只写短暂状态栏消息，失败弹窗且不得删除用户布局对象。

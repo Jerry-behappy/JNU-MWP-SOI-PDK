@@ -6,13 +6,13 @@ They are sourced from the SiEPIC EBeam PDK, installed locally as EBeam version
 0.4.53:
 
 - `1550_crossing4.gds` (upstream `ebeam_crossing4.gds`)
-- `1310_TE_Terminator.gds` (upstream `ebeam_terminator_te1310.gds`)
-- `1550_TE_Terminator.gds` (upstream `ebeam_terminator_te1550.gds`)
+- `1310_500nm_TE_terminator.gds` (upstream `ebeam_terminator_te1310.gds`)
+- `1550_500nm_TE_terminator.gds` (upstream `ebeam_terminator_te1550.gds`)
 - `1310_Ybranch.gds` (upstream `ebeam_y_1310.gds`)
 - `1550_Ybranch.gds` (upstream `ebeam_y_1550.gds`)
 
 JNU library names, in the same order: `1550_crossing4`,
-`1310_TE_Terminator`, `1550_TE_Terminator`, `1310_Ybranch`, and `1550_Ybranch`.
+`1310_500nm_TE_terminator`, `1550_500nm_TE_terminator`, `1310_Ybranch`, and `1550_Ybranch`.
 Each distributed filename and top-cell name matches its JNU library name.
 Only structure-name records are renamed; geometry, ports and all original
 GDS Text remain unchanged. The names above record the upstream provenance.

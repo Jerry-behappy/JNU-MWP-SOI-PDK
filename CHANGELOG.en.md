@@ -5,9 +5,23 @@
 
 # Changelog
 
-[Back to README](README.en.md) · [Full commit history](https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK/commits/JNU_MWP_PDK_V1.4/)
+[Back to README](README.en.md) · [Full commit history](https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK/commits/JNU_MWP_PDK_V1.5/)
 
 Updates are listed newest first. Historical dates follow Git commit dates in Beijing time (UTC+8). Related changes on the same day are grouped; the full commit history shows the content and timestamp of every commit.
+
+## 2026-10-22 · Terminator device names
+
+- Rename `1310_TE_Terminator` to `1310_500nm_TE_terminator`, `1550_TE_Terminator` to `1550_500nm_TE_terminator`, and `1550_2um_terminator` to `1550_2um_TE_terminator`. Synchronize whitebox filenames, top cells, library names and blackboxes, preserving geometry, ports and text.
+- Require fixed-device changes to be committed and pushed to both the SOI PDK and independent Library repositories in the maintenance skill.
+
+## 2026-10-20 · Configurable PinRec recognition layer
+
+- Rename the display label of layer 2/0 from `Si - 90 nm rib` to `Si - 70nm etch`.
+- Add an editable PinRec recognition layer shared by all three Path to Waveguide tabs. Default to `1/10`, remember the layer/datatype setting and use it to find ports for endpoint snapping. Invalid input blocks conversion. Generated waveguides retain their pins on the SOI standard layer.
+
+## 2026-10-19 · V1.5 development branch
+
+- Merge V1.4 into main through PR #2, then increment and rename the development branch to `JNU_MWP_PDK_V1.5` from the merged main. Show V1.5 in the menu and use this branch for subsequent development pushes.
 
 ## 2026-10-19 · Blackbox optical port straights
 

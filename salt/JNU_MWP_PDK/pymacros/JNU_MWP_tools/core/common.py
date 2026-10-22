@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-06
+# 时间: 2026-10
 
 # JNU_MWP_PDK 菜单工具公共函数。
 # 集中放置图层常量、GUI 上下文、Pin 扫描和通用 helper。
@@ -48,9 +48,9 @@ class _OpticalPin(object):
         self.width = width
 
 
-def _find_pins_in_cell(cell, layout):
+def _find_pins_in_cell(cell, layout, pin_layer=PIN_LAYER):
     """递归扫描当前 cell 层级树，提取所有 PinRec 层的 pin 中心坐标和朝向。"""
-    pin_layer_index = layout.layer(PIN_LAYER)
+    pin_layer_index = layout.find_layer(pin_layer)
     if pin_layer_index is None:
         return []
 

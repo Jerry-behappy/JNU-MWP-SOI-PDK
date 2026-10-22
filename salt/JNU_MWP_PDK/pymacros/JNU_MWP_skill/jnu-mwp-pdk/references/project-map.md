@@ -28,7 +28,7 @@
 
 - Product/manual display name: `JNU_MWP_SOI_PDK`。
 - Technology: `JNU_MWP_SOI_PDK`
-- Top-level menu: `JNU_MWP_SOI_PDK V1.4`；版本和名称由 `core/pdk_identity.py` 统一提供，内部菜单路径及 Action ID 不随展示名变化。
+- Top-level menu: `JNU_MWP_SOI_PDK V1.5`；版本和名称由 `core/pdk_identity.py` 统一提供，内部菜单路径及 Action ID 不随展示名变化。
 - Function submenus/actions: “中文 / English”同行显示，移除 Language 切换入口，保留用户快捷键。
 - Salt/package/install directory/skill engineering name: `JNU_MWP_PDK`
 - White library: `JNULib`

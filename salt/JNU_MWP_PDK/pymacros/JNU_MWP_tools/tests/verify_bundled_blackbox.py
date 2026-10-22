@@ -82,10 +82,12 @@ def main():
                     assert not shapes or (info.layer, info.datatype) == (10, 0)
     assert len(names) == 31, "黑盒器件数应为 31 个：%d" % len(names)
     assert {
-        "1550_crossing4", "1310_TE_Terminator", "1550_TE_Terminator",
+        "1550_crossing4", "1310_500nm_TE_terminator", "1550_500nm_TE_terminator",
         "1310_Ybranch", "1550_Ybranch",
     } <= names
     assert not any(name.startswith("Pcell_") for name in names)
+    assert "1550_2um_TE_terminator" in names
+    assert not {"1310_TE_Terminator", "1550_TE_Terminator", "1550_2um_terminator"} & names
     assert not {"ebeam_crossing4", "ebeam_terminator_te1310", "ebeam_terminator_te1550",
                 "ebeam_y_1310", "ebeam_y_1550"} & names
     library = pya.Library.library_by_name("JNULib_BlackBox")
