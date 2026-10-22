@@ -15,6 +15,7 @@
 
 ## 2026-10-22 · Terminator 器件命名
 
+- 五个 MMI 的 `N*M`／`N×M` 统一改为 ASCII `NxM`，同步白盒 GDS 文件名、顶层 cell、库显示名及黑盒；几何与端口保留。
 - 统一三个终端器名称：`1310_TE_Terminator` → `1310_500nm_TE_terminator`、`1550_TE_Terminator` → `1550_500nm_TE_terminator`、`1550_2um_terminator` → `1550_2um_TE_terminator`；同步白盒 GDS 文件名、顶层 cell、库名与黑盒，原几何、端口及文字保留。
 - skill 明确固定器件修改须同步提交并推送 SOI PDK 与独立器件库两个仓库。
 

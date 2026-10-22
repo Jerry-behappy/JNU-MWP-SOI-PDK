@@ -15,6 +15,7 @@ Updates are listed newest first. Historical dates follow Git commit dates in Bei
 
 ## 2026-10-22 · Terminator device names
 
+- Use ASCII `NxM` instead of `N*M` or `N×M` for all five MMIs, synchronizing whitebox filenames, top cells, library names and blackboxes while retaining geometry and ports.
 - Rename `1310_TE_Terminator` to `1310_500nm_TE_terminator`, `1550_TE_Terminator` to `1550_500nm_TE_terminator`, and `1550_2um_terminator` to `1550_2um_TE_terminator`. Synchronize whitebox filenames, top cells, library names and blackboxes, preserving geometry, ports and text.
 - Require fixed-device changes to be committed and pushed to both the SOI PDK and independent Library repositories in the maintenance skill.
 

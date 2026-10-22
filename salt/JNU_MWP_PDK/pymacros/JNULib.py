@@ -88,13 +88,15 @@ class JNULib(pya.Library):
             temp.read(fullpath)
             source_name = os.path.splitext(filename)[0]
             target_name = SOURCE_CELL_NAMES.get(source_name)
-            if target_name and temp.cell(source_name) is None:
+            if target_name and temp.cell(source_name) is None and temp.cell(source_name.replace("×", "*")) is None:
                 raise RuntimeError("白盒 GDS 缺少源 cell：%s" % fullpath)
 
             for top_cell in temp.each_top_cell():
                 # KLayout 不同版本的 each_top_cell 可能返回 cell index 或 cell 对象。
                 cell = temp.cell(top_cell) if isinstance(top_cell, int) else top_cell
-                name = target_name if cell.name == source_name and target_name else cell.name
+                name = SOURCE_CELL_NAMES.get(cell.name, cell.name)
+                if target_name and cell.name == source_name.replace("×", "*"):
+                    name = target_name
                 if ly.cell(name) is not None:
                     raise RuntimeError("白盒器件名冲突：%s" % name)
                 print("%s loading: %s" % (LIBRARY_NAME, name))
