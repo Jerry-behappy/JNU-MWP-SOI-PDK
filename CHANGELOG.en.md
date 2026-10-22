@@ -5,9 +5,13 @@
 
 # Changelog
 
-[Back to README](README.en.md) · [Full commit history](https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK/commits/JNU_MWP_PDK_V1.6/)
+[Back to README](README.en.md) · [Full commit history](https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK/commits/JNU_MWP_PDK_V1.7/)
 
 Updates are listed newest first. Historical dates follow Git commit dates in Beijing time (UTC+8). Related changes on the same day are grouped; the full commit history shows the content and timestamp of every commit.
+
+## 2026-10-22 · V1.7 development branch
+
+- Merge MMI naming updates into main through PR #4 and rename the development branch to `JNU_MWP_PDK_V1.7`, updating the menu version and default push target.
 
 ## 2026-10-22 · V1.6 development branch
 
