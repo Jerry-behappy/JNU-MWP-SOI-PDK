@@ -302,7 +302,7 @@ def _gui_checks():
                 if stage:
                     session.dialog.close()
                 else:
-                    session.dialog.reject()
+                    session.dialog.findChild("waveguide_group_cancel").click()
                 assert action._selection_session is None and len(messages) == count_before
             # 选取中切换编辑 cell 后不混合两套上下文。
             session = start(menu_action)
@@ -338,8 +338,79 @@ def _gui_checks():
         startup_update.schedule_startup_update_check = original_schedule
 
 
+def _result_close_checks():
+    """实际点击按钮并发送 Esc，避免直接调用 accept 掩盖信号参数错误。"""
+    from JNU_MWP_tools.actions import calculate_waveguide_length as length_action
+    from JNU_MWP_tools.actions import calculate_waveguide_length_difference as action
+    from JNU_MWP_tools.core import gui_state, ui_language
+
+    window = pya.Application.instance().main_window()
+    if window is None:
+        return
+    original_exec = length_action.exec_dialog_with_persisted_size
+    original_state_file = gui_state._gui_state_file
+    failures = []
+    completed = []
+
+    def execute(dialog, key, default_size):
+        def dismiss():
+            try:
+                if close_mode == "button":
+                    dialog.findChild("waveguide_length_close").click()
+                elif close_mode == "titlebar":
+                    dialog.close()
+                else:
+                    event = pya.QKeyEvent(pya.QEvent.KeyPress, int(pya.Qt.Key_Escape), pya.Qt.NoModifier)
+                    pya.QApplication.sendEvent(dialog, event)
+                assert not _value(dialog, "visible"), (key, close_mode)
+            except Exception as error:
+                failures.append(str(error))
+            finally:
+                if _value(dialog, "visible"):
+                    dialog.reject()
+
+        timer = pya.QTimer(dialog)
+        timer.setSingleShot(True)
+        timer.timeout(dismiss)
+        timer.start(0)
+        value = original_exec(dialog, key, default_size)
+        assert not failures, failures
+        completed.append((key, close_mode))
+        return value
+
+    try:
+        with tempfile.TemporaryDirectory(prefix="jnu_result_close_") as directory:
+            gui_state._gui_state_file = lambda: str(Path(directory) / "gui_state.json")
+            length_action.exec_dialog_with_persisted_size = execute
+            cv = window.create_layout(1)
+            top, instances = _fixture(cv.layout())
+            cv.cell = top
+            view = window.current_view()
+            cv_index = _value(view, "active_cellview_index")
+            for language in ("en", "zh_CN"):
+                setattr(builtins, ui_language._SESSION_KEY, language)
+                for close_mode in ("button", "titlebar", "escape"):
+                    length_action._show_results("Length", "100.000 µm")
+                    # 长度差从真实的第二组确定按钮进入结果窗口，不替换结果函数。
+                    action.calculate_waveguide_length_difference()
+                    session = action._selection_session
+                    view.object_selection = _selection(top, instances[:2], cv_index)
+                    session.confirm.click()
+                    view.object_selection = _selection(top, instances[2:], cv_index)
+                    session.confirm.click()
+                    assert action._selection_session is None
+            assert len(completed) == 12, completed
+        print("PASS: real length/group-result Close buttons, titlebar close and Esc in English/Chinese", flush=True)
+    finally:
+        length_action.exec_dialog_with_persisted_size = original_exec
+        gui_state._gui_state_file = original_state_file
+        if action._selection_session is not None:
+            action._selection_session.dialog.reject()
+
+
 if __name__ == "__main__":
     _database_checks()
     _spiral_checks()
     if hasattr(pya, "Application"):
         _gui_checks()
+        _result_close_checks()

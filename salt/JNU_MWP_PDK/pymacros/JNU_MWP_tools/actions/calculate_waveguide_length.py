@@ -137,7 +137,9 @@ def _show_results(title, message, dialog_key="calculate_waveguide_length"):
     output.setPlainText(message)
     layout.addWidget(output)
     close = pya.QPushButton(_ui("Close", "关闭"), dialog)
-    close.clicked.connect(dialog.accept)
+    close.setObjectName("waveguide_length_close")
+    # clicked 携带 checked 参数，原生 accept 不接受该参数。
+    close.clicked.connect(lambda _checked=False: dialog.accept())
     layout.addWidget(close)
     exec_dialog_with_persisted_size(dialog, dialog_key, (800, 520))
 

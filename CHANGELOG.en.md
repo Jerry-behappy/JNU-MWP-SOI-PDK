@@ -11,6 +11,7 @@ Updates are listed newest first. Historical dates follow Git commit dates in Bei
 
 ## 2026-10-23 · Waveguide group length difference
 
+- Fix the Close buttons in length and length-difference results and the Cancel button during group selection by handling the Qt clicked signal argument before closing the dialog.
 - Calculate Waveguide Length Difference now prompts for two groups in sequence. Select the first group and click OK, then select the second group and confirm. Each group supports multiple waveguides, ordinary Spirals and array copies; the result compares the group totals.
 - The selection prompt leaves the layout interactive and clears the selection after confirming group 1. Results retain group details, widths and bend parameters. Composite Waveguide tapers remain excluded; a composite-width Spiral cancels the entire calculation.
 
