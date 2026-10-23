@@ -16,6 +16,7 @@ from JNU_MWP_tools.actions.calculate_waveguide_length import (
     _waveguide_detail_lines,
 )
 from JNU_MWP_tools.core.common import _active_context, _main_window, _value
+from JNU_MWP_tools.core.gui_state import position_dialog_center_right
 from JNU_MWP_tools.core.waveguide_length import (
     WaveguideLengthError,
     describe_selected_length_objects,
@@ -46,11 +47,23 @@ def _result_message(groups):
                          "第 %d 组总长度 L%d：%.3f µm（%.6f mm）；波导数量：%d") % (
             index, index, length, length / 1000.0, sum(item["copies"] for item in details),
         ))
+        known = sum(item["bend_count"] * item["copies"] for item in details if item["bend_count"] is not None)
+        unknown = sum(item["copies"] for item in details if item["bend_count"] is None)
+        count = str(known) if not unknown else _ui("%d known; %d waveguides unknown", "已知 %d；另有 %d 个波导未知") % (known, unknown)
+        lines.append(_ui("Group %d 90° bends: %s", "第 %d 组 90° 弯曲数：%s") % (index, count))
+        spiral_arms = sum(item["continuous_spiral_segments"] * item["copies"] for item in details)
+        if spiral_arms:
+            lines.append(_ui("Group %d continuous spiral arms: %d", "第 %d 组连续螺旋臂数：%d") % (index, spiral_arms))
     difference_um = abs(_group_length(groups[0]) - _group_length(groups[1]))
     lines.append(_ui("Absolute length difference |L1 − L2|: %.3f µm (%.6f mm)",
                      "绝对长度差 |L1 − L2|：%.3f µm（%.6f mm）") % (
         difference_um, difference_um / 1000.0,
     ))
+    lines.extend(["", _ui(
+        "Bend count: each discrete 90° turn counts once, including array copies; "
+        "continuous Archimedean spiral arms are listed separately. Unknown counts are not treated as zero.",
+        "计数说明：每个独立的 90° 弯计 1 次，阵列按副本累计；阿基米德 Spiral 的连续螺旋臂单独列出。未知弯曲数不按零处理。",
+    )])
     has_composite = any(item["kind"] == "composite" for group in groups for item in group)
     if has_composite:
         lines.extend(["", _taper_note(), _ui(
@@ -74,7 +87,7 @@ def _result_message(groups):
                          "各宽度的绝对差分别列出，不将其相加作为总长度差。"))
     for index, details in enumerate(groups, 1):
         lines.extend(["", _ui("Group %d details:", "第 %d 组明细：") % index])
-        lines.extend(_waveguide_detail_lines(details))
+        lines.extend(_waveguide_detail_lines(details, include_bends=True))
     return "\n".join(lines)
 
 
@@ -169,6 +182,8 @@ class _GroupSelection:
         ))
 
     def show(self):
+        if not _value(self.dialog, "visible"):
+            position_dialog_center_right(self.dialog)
         self.dialog.show()
         self.dialog.raise_()
         self.dialog.activateWindow()

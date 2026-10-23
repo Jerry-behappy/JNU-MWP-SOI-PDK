@@ -177,8 +177,8 @@ def _waveguide_parameters(cell, annotation, scale, overrides=None):
     return result
 
 
-def _composite_length_data(cell, instance, annotation, total_length_um, params):
-    """使用已保存的路径及实际宽度分段，不重生成或修改选中波导。"""
+def _saved_route_data(cell, instance):
+    """从 PCell 或恢复属性读取原始路径，不从圆滑后的多边形顶点猜测转角。"""
     dbu = cell.layout().dbu
     metadata = {}
     for target in (cell, instance):
@@ -202,6 +202,64 @@ def _composite_length_data(cell, instance, annotation, total_length_um, params):
         points = list(path.each_point())
     else:
         points = [pya.Point(int(round(x / dbu)), int(round(y / dbu))) for x, y in metadata.get("points_um", [])]
+    return points, metadata
+
+
+def _route_bend_count(points):
+    """每个有效 Manhattan 90° 转向计一次，忽略重复点及同向共线点。"""
+    if len(points) < 2:
+        return None
+    directions = []
+    for first, second in zip(points, points[1:]):
+        dx, dy = second.x - first.x, second.y - first.y
+        if dx == 0 and dy == 0:
+            continue
+        if dx != 0 and dy != 0:
+            return None
+        directions.append(((dx > 0) - (dx < 0), (dy > 0) - (dy < 0)))
+    if not directions:
+        return None
+    count = 0
+    for before, after in zip(directions, directions[1:]):
+        if before != after:
+            if before[0] * after[0] + before[1] * after[1] != 0:
+                return None
+            count += 1
+    return count
+
+
+def _bend_data(cell, instance, kind, annotation):
+    """离散直角弯与连续螺旋臂分别统计，参数缺失时保持未知。"""
+    if kind in ("single", "composite"):
+        try:
+            points, _ = _saved_route_data(cell, instance)
+        except (ValueError, TypeError, KeyError):
+            return None, 0
+        return _route_bend_count(points), 0
+    native = dict(cell.pcell_parameters_by_name())
+    stored = annotation + "\n" + cell.name
+    port_type = native.get("ports_type")
+    if port_type not in ("type1", "type2", "type3"):
+        match = re.search(r"(?:\b(?:type|ports)=|\()(type[123])\b", stored)
+        port_type = match.group(1) if match else None
+    if kind == "archimedean":
+        # 中心 S 连接器四个直角弯，type3 的外端引出另有一个；双臂连续曲线单列。
+        return (4 + int(port_type == "type3") if port_type is not None else None), 2
+    loops = _number(native.get("loops"))
+    if loops is None:
+        match = re.search(r"\b(?:N|loops)=([0-9]+)\b", stored)
+        loops = int(match.group(1)) if match else None
+    if loops is None or loops < 1 or int(loops) != loops or port_type is None:
+        return None, 0
+    # 每圈在两臂各增加四个弯；中心两个弯，同侧或等高引出额外两个弯。
+    return 8 * int(loops) + 2 + (0 if port_type == "type2" else 2), 0
+
+
+def _composite_length_data(cell, instance, annotation, total_length_um, params):
+    """使用已保存的路径及实际宽度分段，不重生成或修改选中波导。"""
+    dbu = cell.layout().dbu
+    points, metadata = _saved_route_data(cell, instance)
+    native = cell.pcell_parameters_by_name()
     if len(points) < 2:
         raise WaveguideLengthError("missing_profile")
     keys = ("straight_width", "bend_width", "taper_length", "transition_length", "start_width", "end_width")
@@ -280,10 +338,13 @@ def describe_selected_waveguides(selection, cellview_index, include_spirals=Fals
             for width, value in lengths.items()
         }
         counted_length = math.fsum(scaled_lengths.values())
+        bends, spiral_segments = _bend_data(instance.cell, instance, kind, annotation)
         details.append({
             "cell_name": instance.cell.name,
             "kind": kind,
             "copies": copies,
+            "bend_count": bends,
+            "continuous_spiral_segments": spiral_segments,
             "length_um": counted_length,
             "total_length_um": counted_length * copies,
             "length_by_width_um": scaled_lengths,

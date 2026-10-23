@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-07
+# 时间: 2026-10
 
 """保存并恢复 JNU 自定义对话框的用户尺寸。"""
 
@@ -136,11 +136,30 @@ def save_dialog_size(dialog, dialog_key, app=None):
     return file_saved or config_saved
 
 
+def position_dialog_center_right(dialog, window=None):
+    """在主窗口所在屏幕的可用区中间偏右显示，并限制在屏幕边界内。"""
+    if window is None:
+        window = pya.Application.instance().main_window()
+    if hasattr(window, "screen"):
+        area = _value(_value(window, "screen"), "availableGeometry")
+    else:
+        area = pya.QApplication.desktop().availableGeometry(window)
+    left, top = _value(area, "left"), _value(area, "top")
+    width, height = _value(area, "width"), _value(area, "height")
+    dialog_width, dialog_height = _value(dialog, "width"), _value(dialog, "height")
+    x = max(left, min(round(left + width * 0.70 - dialog_width / 2), left + width - dialog_width))
+    y = max(top, min(round(top + height * 0.50 - dialog_height / 2), top + height - dialog_height))
+    dialog.move(x, y)
+    return x, y
+
+
 def exec_dialog_with_persisted_size(
-    dialog, dialog_key, default_size=None, app=None,
+    dialog, dialog_key, default_size=None, app=None, center_right=False,
 ):
     """执行模态对话框，并在 OK、Cancel 或标题栏关闭后保存尺寸。"""
     restore_dialog_size(dialog, dialog_key, default_size, app)
+    if center_right:
+        position_dialog_center_right(dialog)
     try:
         return dialog.exec_()
     finally:
@@ -153,5 +172,6 @@ __all__ = [
     "parse_dialog_size",
     "restore_dialog_size",
     "save_dialog_size",
+    "position_dialog_center_right",
     "exec_dialog_with_persisted_size",
 ]

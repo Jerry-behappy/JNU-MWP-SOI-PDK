@@ -22,6 +22,8 @@ from JNU_MWP_tools.core.common import _value  # noqa: E402
 from JNU_MWP_tools.core.waveguide_length import (  # noqa: E402
     WaveguideLengthError,
     compare_selected_waveguides,
+    describe_selected_length_objects,
+    _route_bend_count,
 )
 
 
@@ -160,6 +162,72 @@ def _spiral_checks():
                 assert all(abs(item["parameters"]["width"] - 0.7) < 1e-12 for item in details)
             _reject(_selection(saved_top, [saved_spirals[0], saved_instances[-1]]), "composite_spiral")
     print("PASS: ordinary Spiral differences, Waveguide mixing, actual lengths, parameters, composite cancellation and context/plain GDS", flush=True)
+
+
+def _bend_checks():
+    """用已知转角、实际 Paperclip waypoint 及保存重读验证弯曲计数。"""
+    layout = pya.Layout()
+    top, instances = _fixture(layout)
+    composite = _variant(layout, [(0, 0), (100, 0), (100, 100)], composite=True)
+    composite_inst = top.insert(pya.CellInstArray(composite.cell_index(), pya.Trans()))
+    chosen = _selection(top, instances + [composite_inst])
+    details = describe_selected_length_objects(chosen + chosen[:1], 0)
+    assert [item["bend_count"] for item in details] == [0, 0, 1, 1]
+    points = [pya.Point(*xy) for xy in ((0, 0), (0, 0), (50, 0), (100, 0), (100, 100), (200, 100))]
+    assert _route_bend_count(points) == 2
+    assert _route_bend_count([pya.Point(0, 0), pya.Point(1, 1)]) is None
+    assert _route_bend_count([pya.Point(0, 0), pya.Point(10, 0), pya.Point(0, 0)]) is None
+    scaled = top.insert(pya.CellInstArray(instances[2].cell_index, pya.ICplxTrans(2.0, 90, True, 0, 0)))
+    assert describe_selected_length_objects(_selection(top, [scaled]), 0)[0]["bend_count"] == 1
+    array = top.insert(pya.CellInstArray(
+        instances[2].cell_index, pya.Trans(), pya.Vector(200000, 0), pya.Vector(0, 200000), 2, 3,
+    ))
+    array_obj = pya.ObjectInstPath()
+    array_obj.top, array_obj.cv_index = top.cell_index(), 0
+    array_obj.append_path(pya.InstElement(array, -1, -1))
+    array_detail = describe_selected_length_objects([array_obj], 0)[0]
+    assert array_detail["bend_count"] == 1 and array_detail["copies"] == 6
+    from JNU_MWP_tools.actions.calculate_waveguide_length_difference import _result_message
+    report = _result_message([[array_detail], [details[2]]])
+    assert ("Group 1 90° bends: 6" in report or "第 1 组 90° 弯曲数：6" in report)
+    legacy = layout.create_cell("Waveguide_legacy_without_route")
+    legacy.shapes(layout.layer(10, 0)).insert(pya.Text("Waveguide width=0.5um length=100.000um", pya.Trans()))
+    legacy_inst = top.insert(pya.CellInstArray(legacy.cell_index(), pya.Trans()))
+    legacy_detail = describe_selected_length_objects(_selection(top, [legacy_inst]), 0)[0]
+    assert legacy_detail["length_um"] == 100 and legacy_detail["bend_count"] is None
+    report = _result_message([[legacy_detail, details[2]], [details[0]]])
+    assert "1 known; 1 waveguides unknown" in report or "已知 1；另有 1 个波导未知" in report
+    spirals, _ = _spiral_fixture(layout, top)
+    # 对照生成器的真实未圆角路径，而不是再次套用待验证的圈数公式。
+    for loops in (1, 3):
+        for port in ("type1", "type2", "type3"):
+            cell = layout.create_cell("Pcell_Paperclip_Spiral", {
+                "length": 100.0, "loops": loops, "ports_type": port, "vertical_stretch": 20.0,
+            })
+            native = dict(cell.pcell_parameters_by_name())
+            waypoints = cell.pcell_declaration()._centerline_waypoints(native)
+            expected = _route_bend_count([pya.Point(round(p.x / layout.dbu), round(p.y / layout.dbu)) for p in waypoints])
+            inst = top.insert(pya.CellInstArray(cell.cell_index(), pya.Trans()))
+            assert describe_selected_length_objects(_selection(top, [inst]), 0)[0]["bend_count"] == expected
+    for port, expected in (("type1", 4), ("type2", 4), ("type3", 5)):
+        cell = layout.create_cell("Pcell_Archimedean_Spiral", {"length": 1000.0, "ports_type": port})
+        inst = top.insert(pya.CellInstArray(cell.cell_index(), pya.Trans()))
+        item = describe_selected_length_objects(_selection(top, [inst]), 0)[0]
+        assert item["bend_count"] == expected and item["continuous_spiral_segments"] == 2
+    with tempfile.TemporaryDirectory(prefix="jnu_bend_counts_") as directory:
+        for context in (True, False):
+            path = Path(directory) / ("context.gds" if context else "plain.gds")
+            options = pya.SaveLayoutOptions()
+            options.set_format_from_filename(str(path))
+            options.write_context_info = context
+            options.gds2_write_cell_properties = True
+            layout.write(str(path), options)
+            saved = pya.Layout()
+            saved.read(str(path))
+            saved_top = saved.cell(top.name)
+            saved_instances = list(saved_top.each_inst())[:4]
+            assert [item["bend_count"] for item in describe_selected_length_objects(_selection(saved_top, saved_instances), 0)] == [0, 0, 1, 1]
+    print("PASS: bend counts, arrays, transforms, collinear points, unknown routes, Spirals and GDS reopen", flush=True)
 
 
 def _gui_checks():
@@ -315,7 +383,7 @@ def _gui_checks():
 
         assert layout.cells() == cell_count and sum(1 for _ in top.each_inst()) == instance_count
 
-        def check_dialog(dialog, key, default_size):
+        def check_dialog(dialog, key, default_size, **options):
             output = dialog.findChild("waveguide_length_output")
             assert output.toPlainText() == report and _value(output, "readOnly")
             assert _value(_value(output, "font"), "pointSize") == 11
@@ -352,9 +420,17 @@ def _result_close_checks():
     failures = []
     completed = []
 
-    def execute(dialog, key, default_size):
+    def execute(dialog, key, default_size, **options):
+        assert options.get("center_right")
         def dismiss():
             try:
+                area = (_value(_value(window, "screen"), "availableGeometry") if hasattr(window, "screen")
+                        else pya.QApplication.desktop().availableGeometry(window))
+                expected_x = max(_value(area, "left"), min(
+                    round(_value(area, "left") + _value(area, "width") * 0.70 - _value(dialog, "width") / 2),
+                    _value(area, "left") + _value(area, "width") - _value(dialog, "width"),
+                ))
+                assert abs(_value(dialog, "x") - expected_x) < 32
                 if close_mode == "button":
                     dialog.findChild("waveguide_length_close").click()
                 elif close_mode == "titlebar":
@@ -373,7 +449,7 @@ def _result_close_checks():
         timer.setSingleShot(True)
         timer.timeout(dismiss)
         timer.start(0)
-        value = original_exec(dialog, key, default_size)
+        value = original_exec(dialog, key, default_size, **options)
         assert not failures, failures
         completed.append((key, close_mode))
         return value
@@ -411,6 +487,7 @@ def _result_close_checks():
 if __name__ == "__main__":
     _database_checks()
     _spiral_checks()
+    _bend_checks()
     if hasattr(pya, "Application"):
         _gui_checks()
         _result_close_checks()
