@@ -53,7 +53,7 @@
 
 - 总长度与长度差共用 `core/waveguide_length.py`：普通 Waveguide、复合宽度 Waveguide、普通 Paperclip Spiral、Archimedean Spiral 可混选。读取实际圆滑中心线长度；Spiral 不以目标长度或 delta_L 代替实际总长。复合宽度 Waveguide 排除 taper，并按宽度列出小计。
 - 选择中包含任何复合宽度 Spiral 时，报错并取消整次计算，不显示其余有效器件的部分总长或长度差。不要把复合宽度 Waveguide 一并拒绝。
-- 总长度计入副本、阵列及实例缩放；长度差要求恰好两个实际副本，返回 `abs(L1-L2)`。两者显示长度、宽度和对应弯曲参数；缺失或歧义长度数据不能当作零处理。
+- 总长度和长度差均计入副本、阵列及实例缩放；长度差使用非模态提示窗口依次选取第一组、第二组，每组至少一个实例并允许多选。第一组确认后只保存数值快照并清空选择，第二组确认后返回 `abs(sum(L1)-sum(L2))`，分组显示长度、宽度和对应弯曲参数。空组允许补选，取消或关闭窗口不显示结果；切换版图／编辑 cell 或选中非法对象时取消整次计算。缺失或歧义长度数据不能当作零处理。
 - 修改上述逻辑时运行 `tests/verify_waveguide_length.py` 与 `tests/verify_waveguide_length_difference.py`，覆盖普通 Spiral 混选、复合 Spiral 整次取消，以及保存重开 GDS 后的结果。
 
 ## EBeam Library Visibility in JNU Technology

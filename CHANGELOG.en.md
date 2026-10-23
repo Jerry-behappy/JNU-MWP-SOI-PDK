@@ -9,6 +9,11 @@
 
 Updates are listed newest first. Historical dates follow Git commit dates in Beijing time (UTC+8). Related changes on the same day are grouped; the full commit history shows the content and timestamp of every commit.
 
+## 2026-10-23 · Waveguide group length difference
+
+- Calculate Waveguide Length Difference now prompts for two groups in sequence. Select the first group and click OK, then select the second group and confirm. Each group supports multiple waveguides, ordinary Spirals and array copies; the result compares the group totals.
+- The selection prompt leaves the layout interactive and clears the selection after confirming group 1. Results retain group details, widths and bend parameters. Composite Waveguide tapers remain excluded; a composite-width Spiral cancels the entire calculation.
+
 ## 2026-10-22 · V1.7 development branch
 
 - Merge MMI naming updates into main through PR #4 and rename the development branch to `JNU_MWP_PDK_V1.7`, updating the menu version and default push target.
