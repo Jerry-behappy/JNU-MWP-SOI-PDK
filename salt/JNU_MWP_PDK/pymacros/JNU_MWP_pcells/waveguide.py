@@ -231,10 +231,10 @@ def _store_raw_manhattan_path(cell, raw_path, raw_points, width_dbu, dbu, extra=
         pass
 
 
-def draw_waveguide_geometry(cell, layout, dpath, width, radius, bend_type, npoints=None, bezier_k=DEFAULT_BEZIER_K, euler_Rmax=DEFAULT_EULER_RMAX, euler_Rmin=DEFAULT_EULER_RMIN):
+def draw_waveguide_geometry(cell, layout, dpath, width, radius, bend_type, npoints=None, bezier_k=DEFAULT_BEZIER_K, euler_Rmax=DEFAULT_EULER_RMAX, euler_Rmin=DEFAULT_EULER_RMIN, waveguide_layer=None):
     """在指定 cell 中绘制一条 JNU 波导，并返回波导中心线长度。
 
-    Waveguide PCell 通过该函数生成 Si、DevRec、PinRec 和 Text；菜单转换
+    Waveguide PCell 通过该函数在所选实体层生成波导，并生成 DevRec、PinRec 和 Text；菜单转换
     先创建真实 PCell variant，再由 PCell 的生产流程调用本函数。
 
     npoints: 弯曲采样点数。若为 None 或 0，则按半径和 dbu 自动计算。
@@ -268,14 +268,16 @@ def draw_waveguide_geometry(cell, layout, dpath, width, radius, bend_type, npoin
     if len(centerline) < 2:
         return 0.0
 
-    si_layer = layout.layer(SI_LAYER)
+    physical_layer = SI_LAYER if waveguide_layer is None else waveguide_layer
+    si_layer = layout.layer(physical_layer)
     devrec_layer = layout.layer(DEVREC_LAYER)
     text_layer = layout.layer(TEXT_LAYER)
     pin_layer = layout.layer(PIN_LAYER)
 
     # 原始 Manhattan Path 由 PCell 的 TypeShape 参数保存；cell property 只作为
     # GDS 重读后的无图形恢复后备，不在任何物理图层重复绘制引导 Path。
-    _store_raw_manhattan_path(cell, raw_path, raw_points, width_dbu, dbu)
+    _store_raw_manhattan_path(cell, raw_path, raw_points, width_dbu, dbu,
+                              {"waveguide_layer": "%d/%d" % (physical_layer.layer, physical_layer.datatype)})
     insert_centerline_polygons(cell, si_layer, centerline, width_dbu)
     # DevRec 沿波导中心线两侧各扩展固定净空，覆盖完整 Si 实体并留出器件识别边界。
     insert_centerline_polygons(cell, devrec_layer, centerline, devrec_width_dbu)
@@ -402,6 +404,8 @@ class Waveguide(pya.PCellDeclarationHelper):
             self.name_suffix_param.hidden = True
         except Exception:
             pass
+
+        self.param("waveguide_layer", self.TypeLayer, "Waveguide layer", default=SI_LAYER)
 
         # 只读派生参数统一放在全部可编辑参数之后。
         self.Bezier_Rmax_param = self.param(
@@ -561,6 +565,7 @@ class Waveguide(pya.PCellDeclarationHelper):
             bezier_k=self.bezier_k,
             euler_Rmax=self.Euler_Rmax,
             euler_Rmin=self.Euler_Rmin,
+            waveguide_layer=self.waveguide_layer,
         )
         name_waveguide_variant(self.layout, self.cell, self.display_text_impl())
 

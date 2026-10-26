@@ -13,6 +13,8 @@ import copy
 import hashlib
 import tempfile
 import re
+from pathlib import Path
+import xml.etree.ElementTree as ET
 
 import pya
 
@@ -28,6 +30,7 @@ except Exception:
     euler_Reff = None
 
 from JNU_MWP_tools.core.common import (
+    SI_LAYER,
     PIN_LAYER,
     RAW_PATH_GDS_PROPERTY,
     RAW_PATH_PROPERTY,
@@ -75,6 +78,7 @@ _DIALOG_LABELS_ZH = {
     "Saved Types": "已保存类型",
     "Selected Parameters": "所选参数",
     "Note": "备注",
+    "Waveguide Layer：": "波导图层：",
     "PinRec Recognition Layer (layer/datatype)：": "PinRec 识别层（图层号/数据类型）：",
     "Bend Type：": "弯曲类型：",
     "Waveguide Width (um)：": "波导宽度（µm）：",
@@ -269,6 +273,10 @@ def _waveguide_variant_signature(dpath, params, dbu):
             for key in parameter_keys
         },
     }
+    layer = _parse_waveguide_layer(params.get("waveguide_layer", "1/0"))
+    # 默认 Si 沿用旧签名；其他实体层必须区分 variant，防止重用错层器件。
+    if layer != SI_LAYER:
+        payload["waveguide_layer"] = layer.to_s()
     encoded = json.dumps(payload, ensure_ascii=True, separators=(",", ":"), sort_keys=True)
     return kind, hashlib.sha256(encoded.encode("ascii")).hexdigest()[:20]
 
@@ -539,11 +547,61 @@ def _parse_pin_recognition_layer(value):
     return pya.LayerInfo(*(int(part) for part in match.groups()))
 
 
+def _parse_waveguide_layer(value):
+    """将输出层规范化为不带显示名称的数字图层，保持 PCell 身份稳定。"""
+    if isinstance(value, pya.LayerInfo):
+        value = "%d/%d" % (value.layer, value.datatype)
+    match = re.fullmatch(r"\s*([0-9]+)\s*/\s*([0-9]+)\s*", str(value))
+    if match is None or any(int(part) > 65535 for part in match.groups()):
+        raise ValueError(_dialog_message(
+            "Select a valid waveguide layer (layer/datatype).",
+            "请选择有效的波导图层（图层号/数据类型）。",
+        ))
+    return pya.LayerInfo(*(int(part) for part in match.groups()))
+
+
+def _waveguide_layer_choices(selected="1/0"):
+    """合并工艺图层、当前视图和自定义图层；无图形的工艺层也能选择。"""
+    choices = {(SI_LAYER.layer, SI_LAYER.datatype): "Si"}
+
+    def add(layer, datatype, name=""):
+        if 0 <= layer <= 65535 and 0 <= datatype <= 65535:
+            key = (layer, datatype)
+            if name or key not in choices:
+                choices[key] = str(name)
+
+    layer_file = Path(__file__).resolve().parents[3] / "layers.lyp"
+    if layer_file.is_file():
+        for node in ET.parse(str(layer_file)).iter():
+            source = node.findtext("source", "").split("@", 1)[0]
+            match = re.fullmatch(r"([0-9]+)/([0-9]+)", source)
+            if match:
+                add(*(int(part) for part in match.groups()), name=node.findtext("name", ""))
+    view = _main_window().current_view() if _main_window() is not None else None
+    if view is not None:
+        cv = view.active_cellview()
+        if cv is not None and cv.layout() is not None:
+            for info in cv.layout().layer_infos():
+                add(info.layer, info.datatype, info.name)
+        for index in range(int(_value(view, "num_layer_lists"))):
+            iterator = view.begin_layers(index)
+            while not iterator.at_end():
+                prop = iterator.current()
+                add(int(prop.source_layer), int(prop.source_datatype), prop.name)
+                iterator.next()
+    chosen = _parse_waveguide_layer(selected)
+    add(chosen.layer, chosen.datatype)
+    keys = [(SI_LAYER.layer, SI_LAYER.datatype)] + sorted(key for key in choices if key != (SI_LAYER.layer, SI_LAYER.datatype))
+    return [("%s (%d/%d)" % (choices[key], *key) if choices[key] else "%d/%d" % key,
+             "%d/%d" % key) for key in keys]
+
+
 def _default_waveguide_params():
     """返回独立配置副本，避免 GUI 和测试共享可变默认值。"""
     return {
         "schema_version": PARAM_SCHEMA_VERSION,
         "active_tab": TAB_SINGLE,
+        "waveguide_layer": "1/0",
         "pin_recognition_layer": "%d/%d" % (PIN_LAYER.layer, PIN_LAYER.datatype),
         "single": {
             "width": 0.5, "radius": 20.0, "bend_type": "Circular",
@@ -788,6 +846,12 @@ def _load_waveguide_params():
         return defaults
     if not isinstance(data, dict):
         return defaults
+    try:
+        defaults["waveguide_layer"] = _parse_waveguide_layer(
+            data.get("waveguide_layer", defaults["waveguide_layer"])
+        ).to_s()
+    except ValueError:
+        pass
     try:
         defaults["pin_recognition_layer"] = _parse_pin_recognition_layer(
             data.get("pin_recognition_layer", defaults["pin_recognition_layer"])
@@ -1405,6 +1469,19 @@ def _show_waveguide_dialog(dbu=0.001):
     )
     layout.addWidget(tabs)
 
+    # 输出层独立于几何预设，同一设置应用到三个页签。
+    layer_row = pya.QHBoxLayout()
+    layer_row.addWidget(pya.QLabel(_dialog_text("Waveguide Layer："), dialog))
+    layer_combo = pya.QComboBox(dialog)
+    layer_combo.setObjectName("jnu_waveguide_layer")
+    layer_choices = _waveguide_layer_choices(state["saved"]["waveguide_layer"])
+    for label, _spec in layer_choices:
+        layer_combo.addItem(label)
+    layer_specs = [spec for _label, spec in layer_choices]
+    layer_combo.setCurrentIndex(layer_specs.index(state["saved"]["waveguide_layer"]))
+    layer_row.addWidget(layer_combo)
+    layout.addLayout(layer_row)
+
     # 识别层是本工具的公共吸附设置，不参与几何预设或 PCell 身份。
     pin_row = pya.QHBoxLayout()
     pin_row.addWidget(pya.QLabel(_dialog_text("PinRec Recognition Layer (layer/datatype)："), dialog))
@@ -1715,6 +1792,7 @@ def _show_waveguide_dialog(dbu=0.001):
     def persist_dialog_settings():
         """保存三个页签的有效设置；未完成的无效输入保留上次有效值。"""
         candidate = copy.deepcopy(state["saved"])
+        candidate["waveguide_layer"] = layer_specs[int(_value(layer_combo, "currentIndex"))]
         try:
             candidate["pin_recognition_layer"] = _parse_pin_recognition_layer(
                 _value(pin_edit, "text")
@@ -1775,6 +1853,7 @@ def _show_waveguide_dialog(dbu=0.001):
         _message("JNU_MWP_PDK", _dialog_error(error))
         return None
     result["pin_recognition_layer"] = _parse_pin_recognition_layer(_value(pin_edit, "text")).to_s()
+    result["waveguide_layer"] = layer_specs[int(_value(layer_combo, "currentIndex"))]
     return result
 
 
@@ -2237,6 +2316,7 @@ def _create_waveguide_cell(layout, dpath, params, index):
             "name_suffix": "",
         }
     declaration, pcell_id = _ensure_local_waveguide_pcell(layout, pcell_name)
+    pcell_params["waveguide_layer"] = _parse_waveguide_layer(params.get("waveguide_layer", "1/0"))
     parameter_values = _local_pcell_parameter_values(declaration, pcell_params)
     cell_index = layout.add_pcell_variant(pcell_id, parameter_values)
     waveguide_cell = layout.cell(cell_index)
@@ -2254,6 +2334,7 @@ def _create_waveguide_cell(layout, dpath, params, index):
 
     recovery_metadata = _composite_recovery_metadata(params) or {}
     recovery_metadata.update({
+        "waveguide_layer": pcell_params["waveguide_layer"].to_s(),
         "jnu_waveguide_kind": waveguide_kind,
         "jnu_waveguide_signature": signature,
     })
@@ -2417,7 +2498,10 @@ def path_to_waveguide():
             # PCell variant 的 cell property 在写出 GDS 时会被展开器丢弃，
             # 因此在实例上同步同一份无图形恢复属性，保证文件重读可逆。
             _store_waveguide_recovery_property(
-                waveguide_inst, dpath, _composite_recovery_metadata(actual_params)
+                waveguide_inst, dpath, dict(
+                    _composite_recovery_metadata(actual_params) or {},
+                    waveguide_layer=_parse_waveguide_layer(actual_params.get("waveguide_layer", "1/0")).to_s(),
+                )
             )
             _mark_waveguide(
                 waveguide_inst,

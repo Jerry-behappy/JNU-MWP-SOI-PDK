@@ -9,6 +9,10 @@
 
 Updates are listed newest first. Historical dates follow Git commit dates in Beijing time (UTC+8). Related changes on the same day are grouped; the full commit history shows the content and timestamp of every commit.
 
+## 2026-10-26 · Waveguide output layer selection
+
+- Add a Waveguide Layer dropdown to Path to Waveguide, defaulting to Si (1/0), with technology layers and custom layers from the current layout. Single-width, composite-width and user-defined modes use the selected output layer and remember the last choice. PinRec and DevRec retain their dedicated layers. Store the output layer in PCell parameters so identical routes on different layers remain distinct variants.
+
 ## 2026-10-26 · Cross-GDS copying and legacy PCell recovery
 
 - Recover legacy Waveguides identified by PCell context even when route properties are missing or cells were renamed, preventing empty waveguides after copying to another GDS.
