@@ -9,6 +9,12 @@
 
 Updates are listed newest first. Historical dates follow Git commit dates in Beijing time (UTC+8). Related changes on the same day are grouped; the full commit history shows the content and timestamp of every commit.
 
+## 2026-10-26 · Cross-GDS copying and legacy PCell recovery
+
+- Recover legacy Waveguides identified by PCell context even when route properties are missing or cells were renamed, preventing empty waveguides after copying to another GDS.
+- Compare every cell's layers, text, PinRec, properties and child hierarchy before automatic recovery. Retain cached geometry when the current implementation differs.
+- Add `JNU_MWP_tools/release/repair_cross_gds_layout.py` to save a repaired copy while preserving the source. Restore matching local Taper, straight and Waveguide references; retain unmatched devices as static cells and verify the saved GDS by rereading it.
+
 ## 2026-10-23 · Waveguide group length difference
 
 - Add group totals and per-device counts of discrete 90° bends to length-difference results, including array copies. List continuous spiral arms separately and mark unavailable historical route data as unknown.

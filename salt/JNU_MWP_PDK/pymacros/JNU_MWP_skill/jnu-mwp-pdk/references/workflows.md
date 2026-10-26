@@ -36,6 +36,13 @@
 - `Waveguide` 与 `Composite_Waveguide` 不进入公开 `JNULib`；`JNU_MWP_InternalWaveguideRegistry.lym` 以 early autorun 安装注册器，`pymacros/__init__.py` 和菜单 autorun 再作幂等安装。注册器必须覆盖已有视图、CellView 创建和文件打开前的视图同步，在每个用户 layout 中预注册同名本地 PCell 声明，确保用户在 GUI 重启后打开 GDS 时即可恢复 PCell 身份。Path to Waveguide 创建的 variant 直接实例化在原所属 cell 中，不新增中间容器。KLayout 禁止在活动 Undo transaction 中注册本地 PCell，也不允许本地 PCell 首次生产时向受 Undo 管理的只读 shape list 写入图形，因此声明注册和全部 variant 预生成都必须在 `LayoutView.transaction` 开始前完成；transaction 内只插入实例、写入实例恢复属性并删除输入 Path。若预生成或 transaction 失败，清理本轮新增且无父实例引用的 variant。原始 Manhattan Path 由 TypeShape `path` 参数保存；名为 `JNU_MWP_raw_manhattan_path` 的无图形属性提供后备，并以 GDS 数字实例属性镜像跨文件保存。新波导的 `1/99` 必须为空，不得创建 raw helper cell，也不得强制切换当前视图的图层显隐。反向转换依次读取 PCell 参数、恢复属性、旧版 cell 内 `1/99` 和旧版 helper；旧版容器和 helper 读取后删除，但不把 Path 写回 `1/99`。
 - Cell 名称包含所有可编辑弯曲参数及 Rmax/Rmin/Reff，排除 Bend Points 和波导层；完全相同的局部路径与参数复用同一 variant，不同路径碰撞同一基础名称时按稳定签名追加 `__002`、`__003`，不得保留 `$N`。
 
+## Legacy PCells and Cross-GDS Copy
+
+- 旧文件缺少恢复属性或 cell 被改名时，以 cold proxy 的 `basic_name` 和保存的参数识别内部波导；GDS 读入器可能把代理名称改回声明名，因此预览比对应按参数映射身份，再逐 cell 检查全部图层、文字、端口路径、属性及子实例。多边形顶点起点或绕向不同可用 Region 差集判等，不要求序列字符串一致。
+- 自动读后恢复只处理尚未编辑的文件；当前 PCell 与缓存图形不一致时保留缓存，不强制重新生成。新 Layout 创建后应立即具有内部声明，不能把等待轮询 timer 当作跨 GDS 粘贴的前提。
+- 用户授权另存修复时，可在独立原生 KLayout 进程调用 `release/repair_cross_gds_layout.py` 的 `repair_file(source, output, report_path)`。工具先保留静态快照，再尝试恢复内部波导、标准 JNU Taper／直波导及固定库引用；仅接受全部图形及端口一致的候选，其他器件保持原有静态图形和层级。原文件、已有修复文件均不得覆盖。
+- 运行 `tests/verify_cross_gds_copy.py` 验证无恢复属性的旧上下文、改名 cell、失效声明的静态 fallback、实例属性、真实 GUI 深复制到空 Layout，以及复制后保存重开的几何和 PCell 身份；不能只用 `copy_tree` 的结果代替原生剪贴板流程。
+
 ## Interactive DRC
 
 - `DRC → JNU_MWP_DRC` 直接打开 KLayout 原生 `Macro Development` 并定位到 `drc/JNU_MWP_DRC.lydrc`；使用原生保存功能持久化规则。规则文件只保留一个单参数 `report("标题")`，供原生绿色 Run 建立报告上下文；禁止 `source()` 和带报告路径的 `report()`。执行时选择 `DRC → Run JNU_MWP_DRC`，该动作会剥离单参数 report、注入临时输入与报告路径，只针对当前编辑 Cell 运行已保存代码。

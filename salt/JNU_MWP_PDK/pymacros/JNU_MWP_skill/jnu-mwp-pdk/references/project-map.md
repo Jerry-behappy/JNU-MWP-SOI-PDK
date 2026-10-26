@@ -22,6 +22,8 @@
 - `pymacros/JNU_MWP_tools/actions/sbend_connect.py`: 两实例端口自动连接；初始参数为Bezier、B=0.3、R=30 µm。
 - `pymacros/JNU_MWP_tools/actions/reload_pdk.py`: 运行时重载入口；重建公开 JNULib、替换已打开 layout 的内部波导声明并刷新菜单。
 - `pymacros/JNU_MWP_tools/core/waveguide_length.py`: Waveguide 与普通 Paperclip/Archimedean Spiral 的实际长度识别、变换和副本统计；复合宽度 Spiral 触发整次取消。菜单入口为 `actions/calculate_waveguide_length.py` 与 `actions/calculate_waveguide_length_difference.py`。
+- `pymacros/JNU_MWP_tools/core/pcell_geometry.py`: 恢复或迁移 PCell 前的逐层几何、文字、PinRec、属性和实例层级比对，支持代理名称映射。
+- `pymacros/JNU_MWP_tools/release/repair_cross_gds_layout.py`: 不覆盖原文件的旧本地 PCell 迁移与保存重读验收；`tests/verify_cross_gds_copy.py` 验证实际 GUI 剪贴板跨版图复制。
 - `pymacros/JNU_MWP_skill/jnu-mwp-pdk/`: Codex/Claude 共用的 canonical skill；上级 `JNU_MWP_skill` 整体不得进入黑盒包。
 
 ## Current Names and Layers
