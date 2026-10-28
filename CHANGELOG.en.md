@@ -9,6 +9,10 @@
 
 Updates are listed newest first. Historical dates follow Git commit dates in Beijing time (UTC+8). Related changes on the same day are grouped; the full commit history shows the content and timestamp of every commit.
 
+## 2026-10-28 · Edge coupler port markers
+
+- Remove PinRec and port labels from the four fork tips of all three edge couplers; retain the circuit connection port and update the blackboxes.
+
 ## 2026-10-28 · Edge coupler port extensions
 
 - Extend the four fork tips of each edge coupler with 40 µm straight waveguides matching the tip widths, move the ports to the new ends and update the blackboxes.
