@@ -9,6 +9,10 @@
 
 Updates are listed newest first. Historical dates follow Git commit dates in Beijing time (UTC+8). Related changes on the same day are grouped; the full commit history shows the content and timestamp of every commit.
 
+## 2026-10-28 · Edge coupler port extensions
+
+- Extend the four fork tips of each edge coupler with 40 µm straight waveguides matching the tip widths, move the ports to the new ends and update the blackboxes.
+
 ## 2026-10-26 · Waveguide output layer selection
 
 - Add a Waveguide Layer dropdown to Path to Waveguide, defaulting to Si (1/0), with technology layers and custom layers from the current layout. Single-width, composite-width and user-defined modes use the selected output layer and remember the last choice. PinRec and DevRec retain their dedicated layers. Store the output layer in PCell parameters so identical routes on different layers remain distinct variants.
