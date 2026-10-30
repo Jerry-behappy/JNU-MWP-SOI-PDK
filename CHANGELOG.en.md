@@ -5,7 +5,7 @@
 
 # Changelog
 
-[Back to README](README.en.md) · [Full commit history](https://github.com/Jinan-Photonics-Integration-Center/JNU-MWP-SOI-PDK/commits/JNU_MWP_PDK_V1.8/)
+[Back to README](README.en.md) · [Full commit history](https://github.com/Jinan-Photonics-Integration-Center/JNU-MWP-SOI-PDK/commits/JNU_MWP_PDK_V1.9/)
 
 Updates are listed newest first. Historical dates follow Git commit dates in Beijing time (UTC+8). Related changes on the same day are grouped; the full commit history shows the content and timestamp of every commit.
 
@@ -20,6 +20,10 @@ Updates are listed newest first. Historical dates follow Git commit dates in Bei
 ## 2026-10-30 · V1.8 development branch
 
 - Merge V1.7 into main and rename the development branch to V1.8, updating the menu version.
+
+## 2026-10-30 · V1.9 development branch
+
+- Merge V1.8 into main and rename the development branch to V1.9, updating the menu version.
 
 ## 2026-10-30 · License copyright notice
 

@@ -7,7 +7,7 @@
 
 # JNU-MWP-SOI-PDK
 
-A KLayout silicon photonics PDK from Jinan University's Optoelectronic Hybrid Integration Laboratory. It provides the `JNU_MWP_SOI_PDK` technology, parametric `JNULib`, fixed-device `JNULib_BlackBox`, waveguide tools, and DRC. The top-level menu shows `JNU_MWP_SOI_PDK V1.8`. The public repository works independently with nine PCell types and 31 fixed blackboxes; 31 fixed whitebox GDS files are available through a separately authorized library.
+A KLayout silicon photonics PDK from Jinan University's Optoelectronic Hybrid Integration Laboratory. It provides the `JNU_MWP_SOI_PDK` technology, parametric `JNULib`, fixed-device `JNULib_BlackBox`, waveguide tools, and DRC. The top-level menu shows `JNU_MWP_SOI_PDK V1.9`. The public repository works independently with nine PCell types and 31 fixed blackboxes; 31 fixed whitebox GDS files are available through a separately authorized library.
 
 **[Changelog and update dates](CHANGELOG.en.md)**
 
@@ -39,9 +39,9 @@ Copy these prompts into an AI agent **that can access local files and run comman
 <a id="updates-and-whitebox-gds"></a>
 ### Updates, language, and whiteboxes
 
-- A `main` installation checks GitHub for updates at startup. Click **Update now** in the prompt or use **JNU_MWP_SOI_PDK V1.8 → Check for PDK Updates**. Development branches do not show automatic update prompts. Restart KLayout after updating.
+- A `main` installation checks GitHub for updates at startup. Click **Update now** in the prompt or use **JNU_MWP_SOI_PDK V1.9 → Check for PDK Updates**. Development branches do not show automatic update prompts. Restart KLayout after updating.
 - All function menus display **中文 / English** together, with no language switching required. **重新加载 JNU PDK / Reload JNU PDK** can reload Python tools, but changes to startup macros, technology, or installation paths still require a restart.
-- Authorized users can choose **JNU_MWP_SOI_PDK V1.8 → Install / Update Whitebox Library** to install 31 fixed whiteboxes from the separate [JNU-MWP-SOI-Library](https://github.com/Jinan-Photonics-Integration-Center/JNU-MWP-SOI-Library). This public PDK repository contains no whitebox GDS.
+- Authorized users can choose **JNU_MWP_SOI_PDK V1.9 → Install / Update Whitebox Library** to install 31 fixed whiteboxes from the separate [JNU-MWP-SOI-Library](https://github.com/Jinan-Photonics-Integration-Center/JNU-MWP-SOI-Library). This public PDK repository contains no whitebox GDS.
 
 ## Features and user guide
 
