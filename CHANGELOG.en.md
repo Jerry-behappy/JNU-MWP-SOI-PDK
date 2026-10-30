@@ -9,6 +9,10 @@
 
 Updates are listed newest first. Historical dates follow Git commit dates in Beijing time (UTC+8). Related changes on the same day are grouped; the full commit history shows the content and timestamp of every commit.
 
+## 2026-10-30 · License copyright notice
+
+- Update the JNU copyright contributors in the MIT license.
+
 ## 2026-10-30 · Array instance snapping
 
 - Snap components supports array instances as moving or reference objects and snaps the nearest opposing ports while preserving the array.
