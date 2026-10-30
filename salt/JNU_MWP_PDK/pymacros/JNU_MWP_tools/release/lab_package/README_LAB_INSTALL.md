@@ -5,7 +5,7 @@
 本交付包包含白盒固定 GDS、8 类公开 PCell、波导工具、菜单和 DRC。
 含器件设计细节，仅通过实验室内部渠道发送；不要上传公开 GitHub。
 公开仓库用于维护代码和打包工具，不是本完整包的更新源。
-固定器件来源为私有仓库 `Jerry-behappy/JNU-MWP-SOI-Library/JNU_MWP_gds`。
+固定器件来源为私有仓库 `Jinan-Photonics-Integration-Center/JNU-MWP-SOI-Library/JNU_MWP_gds`。
 发布者通过已授权账户取得器件后打包；接收本完整 ZIP 的同事不需要 GitHub 凭据。
 不要把访问令牌写入 `grain.xml`、安装脚本或索引。
 
@@ -52,7 +52,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Open_Lab_Package_Manager.p
 This internal delivery includes fixed whitebox GDS, eight public PCells, waveguide
 tools, menus and DRC. Share it only within the laboratory. Do not upload it to the
 public GitHub repository, which hosts the source and build tools only.
-Fixed GDS originates from the private `Jerry-behappy/JNU-MWP-SOI-Library`
+Fixed GDS originates from the private `Jinan-Photonics-Integration-Center/JNU-MWP-SOI-Library`
 repository. The publisher retrieves it with an authorized account; recipients
 of the complete internal ZIP do not need GitHub credentials. Never put access
 tokens in package metadata, launchers or indexes.

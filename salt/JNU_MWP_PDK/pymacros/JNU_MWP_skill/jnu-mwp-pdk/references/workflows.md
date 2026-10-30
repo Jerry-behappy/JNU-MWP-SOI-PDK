@@ -50,7 +50,7 @@
 
 ## Runtime Reload
 
-- `JNU_MWP_SOI_PDK V1.7 → Reload JNU PDK` 在当前菜单回调退出后异步执行，避免重建菜单时销毁正在触发的 Action。待触发的单次 timer 只能由 `reload_pdk` 模块级引用保存，禁止写入或读取 `MainWindow` 的动态 Python 属性；重复触发必须合并为一次。
+- `JNU_MWP_SOI_PDK V1.8 → Reload JNU PDK` 在当前菜单回调退出后异步执行，避免重建菜单时销毁正在触发的 Action。待触发的单次 timer 只能由 `reload_pdk` 模块级引用保存，禁止写入或读取 `MainWindow` 的动态 Python 属性；重复触发必须合并为一次。
 - 清除 `JNU_MWP_pcells`、`JNU_MWP_tools` 与 `JNULib` 模块缓存后从磁盘重新导入；同名公开库只保留一个，并调用 `Library.refresh()` 更新全部 client layout。
 - 对已打开 layout 中现存的 `Waveguide` / `Composite_Waveguide` 以同名新声明调用 `register_pcell`，保持 PCell ID 不变，再调用 `Layout.refresh()` 重算已有 variant。
 - 菜单宏注册必须幂等：删除全部已知 action item、替换主窗口持久 action 列表后再插入。重建前以稳定 action ID 保存当前 `pya.Action.shortcut`；若当前值已为空，则从 `Application.get_config("key-bindings")` 中相同完整菜单路径恢复，且不得改写用户配置。成功只写短暂状态栏消息，失败弹窗且不得删除用户布局对象。
@@ -99,7 +99,7 @@
 
 ### Offline Laboratory Package
 
-- 公开代码仓库为 `Jerry-behappy/JNU-MWP-SOI-PDK`，私有固定器件仓库为 `Jerry-behappy/JNU-MWP-SOI-Library`。运行时继续从安装包内 `pymacros/JNU_MWP_gds` 加载；独立器件仓库不直接作为未经认证的公共 Salt 依赖。
+- 公开代码仓库为 `Jinan-Photonics-Integration-Center/JNU-MWP-SOI-PDK`，私有固定器件仓库为 `Jinan-Photonics-Integration-Center/JNU-MWP-SOI-Library`。运行时继续从安装包内 `pymacros/JNU_MWP_gds` 加载；独立器件仓库不直接作为未经认证的公共 Salt 依赖。
 - 完整内部交付使用 `release/package_lab_pdk.py --gds-source <checkout/JNU_MWP_gds> --output <新目录> --zip`；源码、私有 GDS checkout、本机正在使用的 PDK 都不因构建而修改。GDS 数量以所选器件版本为准，不硬编码为本机开发目录数量。
 - 交付使用 `grain.xml` 和 `JNU_MWP_PDK_Startup.lym`；接收方运行 `Open_Lab_Package_Manager.ps1` 生成本地 Salt 索引，再通过 Manage Packages 安装、更新和卸载。更新提高 grain 版本号，库名和 Technology 名保持稳定。
 - 早期启动宏不能导入 `JNULib` 或 SiEPIC；公开库保留 `pymacros/__init__.py` 普通 autorun 入口，主窗口建立后才允许桥接 EBeam。SiEPIC 的 `_globals.Python_Env` 在首次导入时缓存，提前导入会跳过 `setup` 并导致 EBeam 宏菜单挂到错误位置。

@@ -7,7 +7,7 @@
 
 # JNU-MWP-SOI-PDK
 
-暨南大学光电混合集成实验室的 KLayout 硅光 PDK，提供 `JNU_MWP_SOI_PDK` Technology、参数化 `JNULib`、固定器件 `JNULib_BlackBox`、波导工具和 DRC。顶部功能菜单显示 `JNU_MWP_SOI_PDK V1.7`。公开仓库可独立使用 9 类 PCell 与 31 个固定黑盒；31 份固定白盒 GDS 由独立器件库授权安装。
+暨南大学光电混合集成实验室的 KLayout 硅光 PDK，提供 `JNU_MWP_SOI_PDK` Technology、参数化 `JNULib`、固定器件 `JNULib_BlackBox`、波导工具和 DRC。顶部功能菜单显示 `JNU_MWP_SOI_PDK V1.8`。公开仓库可独立使用 9 类 PCell 与 31 个固定黑盒；31 份固定白盒 GDS 由独立器件库授权安装。
 
 **[更新说明与日期](CHANGELOG.md)**
 
@@ -39,9 +39,9 @@
 <a id="更新与白盒-gds"></a><a id="updates-and-whitebox-gds"></a>
 ### 更新、语言与白盒
 
-- `main` 安装版每次启动会后台检查 GitHub 更新；发现新版可点击弹窗中的“立即更新”，也可使用 **JNU_MWP_SOI_PDK V1.7 → Check for PDK Updates**。开发分支不自动提示更新；完成更新后重启 KLayout。
+- `main` 安装版每次启动会后台检查 GitHub 更新；发现新版可点击弹窗中的“立即更新”，也可使用 **JNU_MWP_SOI_PDK V1.8 → Check for PDK Updates**。开发分支不自动提示更新；完成更新后重启 KLayout。
 - 功能菜单统一以 **中文 / English** 同时显示，无需切换语言。仅修改 Python 功能时可用 **重新加载 JNU PDK / Reload JNU PDK** 热重载；启动宏、Technology 或安装路径变动后仍应重启。
-- 获授权后使用 **JNU_MWP_SOI_PDK V1.7 → Install / Update Whitebox Library**，从独立 [JNU-MWP-SOI-Library](https://github.com/Jerry-behappy/JNU-MWP-SOI-Library) 安装 31 份固定白盒；公开 PDK 仓库不包含白盒 GDS。
+- 获授权后使用 **JNU_MWP_SOI_PDK V1.8 → Install / Update Whitebox Library**，从独立 [JNU-MWP-SOI-Library](https://github.com/Jinan-Photonics-Integration-Center/JNU-MWP-SOI-Library) 安装 31 份固定白盒；公开 PDK 仓库不包含白盒 GDS。
 
 ## 功能与使用说明
 

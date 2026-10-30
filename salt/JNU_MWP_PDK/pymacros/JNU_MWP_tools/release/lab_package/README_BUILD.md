@@ -3,14 +3,14 @@
 ## 中文
 
 代码来自 `Jerry-behappy/JNU-MWP-SOI-PDK`；固定 GDS 来自私有仓库
-`Jerry-behappy/JNU-MWP-SOI-Library` 的 `JNU_MWP_gds/`。
+`Jinan-Photonics-Integration-Center/JNU-MWP-SOI-Library` 的 `JNU_MWP_gds/`。
 发布者需要获得私有仓库访问权限，使用已登录的 GitHub CLI 或 Git 获取器件。
 不要把令牌写入代码、`grain.xml` 或交付包，也不要把白盒 GDS 上传公开 PDK 仓库。
 
 在本机开发目录或公开仓库根目录执行，输出目录须尚不存在：
 
 ```powershell
-gh repo clone Jerry-behappy/JNU-MWP-SOI-Library C:\JNU-internal\JNU-MWP-SOI-Library
+gh repo clone Jinan-Photonics-Integration-Center/JNU-MWP-SOI-Library C:\JNU-internal\JNU-MWP-SOI-Library
 python salt\JNU_MWP_PDK\pymacros\JNU_MWP_tools\release\package_lab_pdk.py `
   --gds-source C:\JNU-internal\JNU-MWP-SOI-Library\JNU_MWP_gds `
   --output C:\JNU-internal\JNU_MWP_PDK_lab_package_v1.1.2 --zip
@@ -51,7 +51,7 @@ python salt\JNU_MWP_PDK\pymacros\JNU_MWP_tools\tests\verify_lab_package_installa
 ## English
 
 The public PDK repository supplies the code. Obtain fixed GDS from the private
-`Jerry-behappy/JNU-MWP-SOI-Library/JNU_MWP_gds` repository using an authorized
+`Jinan-Photonics-Integration-Center/JNU-MWP-SOI-Library/JNU_MWP_gds` repository using an authorized
 GitHub account. Never embed access tokens or upload whitebox GDS to the public
 PDK repository. Use the commands above with an existing Python installation.
 

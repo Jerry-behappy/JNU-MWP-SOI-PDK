@@ -5,9 +5,21 @@
 
 # 更新说明
 
-[返回 README](README.md) · [完整提交记录](https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK/commits/JNU_MWP_PDK_V1.7/)
+[返回 README](README.md) · [完整提交记录](https://github.com/Jinan-Photonics-Integration-Center/JNU-MWP-SOI-PDK/commits/JNU_MWP_PDK_V1.8/)
 
 按更新日期倒序排列。历史日期采用 Git 提交日期（北京时间，UTC+8），同一天的相关改动合并说明；完整提交记录可查看每一次提交的内容与时间。
+
+## 2026-10-30 · 白盒库迁移至组织
+
+- 白盒仓库迁移至组织并保持私有，安装器使用新地址，同时兼容已有克隆的旧地址。
+
+## 2026-10-30 · 安装器更新保护
+
+- 允许存在不冲突的未跟踪文件时更新，保留本地文件；已跟踪文件被修改或未跟踪文件与新版冲突时停止并提示。兼容组织转移前后的公开仓库地址。
+
+## 2026-10-30 · V1.8 开发分支
+
+- V1.7 合并到 main，开发分支更名为 V1.8，菜单版本同步更新。
 
 ## 2026-10-30 · 许可证版权声明
 

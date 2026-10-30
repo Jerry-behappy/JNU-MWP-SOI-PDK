@@ -5,9 +5,21 @@
 
 # Changelog
 
-[Back to README](README.en.md) · [Full commit history](https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK/commits/JNU_MWP_PDK_V1.7/)
+[Back to README](README.en.md) · [Full commit history](https://github.com/Jinan-Photonics-Integration-Center/JNU-MWP-SOI-PDK/commits/JNU_MWP_PDK_V1.8/)
 
 Updates are listed newest first. Historical dates follow Git commit dates in Beijing time (UTC+8). Related changes on the same day are grouped; the full commit history shows the content and timestamp of every commit.
+
+## 2026-10-30 · Whitebox library organization transfer
+
+- Move the private whitebox repository into the organization, update the installer URL and retain compatibility with existing checkouts.
+
+## 2026-10-30 · Installer update protection
+
+- Allow updates with non-conflicting untracked files while preserving local data; stop on modified tracked files or conflicting untracked files. Accept the public repository URLs before and after the organization transfer.
+
+## 2026-10-30 · V1.8 development branch
+
+- Merge V1.7 into main and rename the development branch to V1.8, updating the menu version.
 
 ## 2026-10-30 · License copyright notice
 
