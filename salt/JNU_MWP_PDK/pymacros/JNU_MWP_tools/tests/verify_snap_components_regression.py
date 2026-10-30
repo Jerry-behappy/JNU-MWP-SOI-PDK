@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-07
+# 时间: 2026-10
 
 """Snap components 的端口匹配和平移逻辑回归。"""
 
@@ -291,7 +291,34 @@ def _test_gui_success_is_silent_and_failure_is_reported():
             setattr(snap_tool, name, value)
 
 
+def _test_array_ports_and_whole_array_move():
+    layout = _layout()
+    top = layout.create_cell("ARRAY_TEST")
+    moving_cell = _pin_cell(layout, "ARRAY_MOVING", 0)
+    fixed_cell = _pin_cell(layout, "ARRAY_FIXED", 180)
+    array = top.insert(pya.CellInstArray(moving_cell.cell_index(), pya.Trans(0, 0),
+                                        pya.Vector(10000, 0), pya.Vector(0, 10000), 2, 2))
+    fixed = _insert(top, fixed_cell, 20500, 10000)
+    moving_record = _record(array, layout, "array")
+    assert len(moving_record.pins) == 4
+    pair, delta, moved = perform_snap(layout, [moving_record], [_record(fixed, layout, "fixed")])
+    _assert_point(delta, 10500, 0, "阵列最近端口平移错误")
+    assert moved == 1 and array.na == 2 and array.nb == 2
+    assert array.a == pya.Vector(10000, 0) and array.b == pya.Vector(0, 10000)
+    assert _record(array, layout, "array").pins[3].center == pair.fixed_pin.center
+    assert len(_record(array, layout, "array").pins) == 4
+    fixed_array = top.insert(pya.CellInstArray(fixed_cell.cell_index(), pya.Trans(50000, 0),
+                                              pya.Vector(10000, 0), pya.Vector(0, 10000), 2, 2))
+    movable = _insert(top, moving_cell, 59000, 10000)
+    fixed_record = _record(fixed_array, layout, "fixed array")
+    assert len(fixed_record.pins) == 4
+    pair, delta, moved = perform_snap(layout, [_record(movable, layout, "movable")], [fixed_record])
+    _assert_point(delta, 1000, 0, "固定阵列最近端口平移错误")
+    assert moved == 1 and _pin_center(movable, layout) == pair.fixed_pin.center
+
+
 def main():
+    _test_array_ports_and_whole_array_move()
     _test_single_selected_instance_to_transient_reference()
     _test_nearest_pair_among_moving_group_and_fixed_reference()
     _test_no_opposite_rotation()

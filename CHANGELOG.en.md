@@ -9,6 +9,10 @@
 
 Updates are listed newest first. Historical dates follow Git commit dates in Beijing time (UTC+8). Related changes on the same day are grouped; the full commit history shows the content and timestamp of every commit.
 
+## 2026-10-30 · Array instance snapping
+
+- Snap components supports array instances as moving or reference objects and snaps the nearest opposing ports while preserving the array.
+
 ## 2026-10-28 · Edge coupler port markers
 
 - Remove PinRec and port labels from the four fork tips of all three edge couplers; retain the circuit connection port and update the blackboxes.
