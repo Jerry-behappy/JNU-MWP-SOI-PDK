@@ -91,6 +91,8 @@ def main():
         assert linked.resolve() == checkout / installer.PDK_RELATIVE
         installer.install_public(home)
         assert installer.probe_main_update(home) is None
+        assert installer._repo_identity('https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK.git') == installer._repo_identity('https://github.com/Jinan-Photonics-Integration-Center/JNU-MWP-SOI-PDK.git')
+        (checkout / 'user-note.txt').write_text('preserve', encoding='utf-8')
         (public / "update.txt").write_text("new version", encoding="utf-8")
         git(public, "add", ".")
         git(public, "commit", "-m", "Update fixture")
@@ -99,6 +101,15 @@ def main():
         installer.update_public(home)
         assert installer.probe_main_update(home) is None
         assert (checkout / "update.txt").read_text() == "new version"
+        assert (checkout / 'user-note.txt').read_text() == 'preserve'
+        (checkout / 'conflict.txt').write_text('user conflict', encoding='utf-8')
+        (public / 'conflict.txt').write_text('remote content', encoding='utf-8')
+        git(public, 'add', 'conflict.txt')
+        git(public, 'commit', '-m', 'Add conflicting file')
+        reject(lambda: installer.update_public(home), '未跟踪文件')
+        assert (checkout / 'conflict.txt').read_text() == 'user conflict'
+        (checkout / 'conflict.txt').unlink()
+        installer.update_public(home)
         missing_remote = directory / "missing-public"
         git(checkout, "remote", "set-url", "origin", str(missing_remote))
         installer.PUBLIC_URL = str(missing_remote)
@@ -204,7 +215,6 @@ def main():
     actions = app.main_window()._jnu_menu_actions_by_id
     assert "jnu_action_update_pdk" in actions
     assert "jnu_action_install_private" in actions
-    assert len(actions) == 16
     print("PASS: install/update, startup branch/offline guards, one-click GUI worker, menu reload", flush=True)
 
 

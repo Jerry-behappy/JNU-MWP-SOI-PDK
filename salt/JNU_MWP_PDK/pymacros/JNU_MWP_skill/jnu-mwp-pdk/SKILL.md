@@ -75,7 +75,7 @@ description: Use when developing, verifying, or packaging the JNU_MWP_PDK KLayou
 
 固定器件新增、改名、几何或端口修改时，必须同步完成 SOI PDK 与独立 Library 两个仓库的相关改动并分别推送：白盒 GDS 文件名和顶层 cell 名、来源说明提交 Library 的 main；加载器映射、器件清单、黑盒与验收提交当前 PDK 开发分支。先确认白盒更新已提交，再重建黑盒。纯 PDK 工具或 PCell 代码修改不制造 Library 空提交。推送两个仓库后，才进行用户已授权的 PDK 合并和版本递增。
 
-推荐用户运行根目录 `Install_JNU_PDK.lym`：从运行中的 KLayout 读取 `application_data_path()`，无需用户寻找程序或配置目录。唯一逻辑源为 `actions/install_pdk.py`，修改后运行 `tools/build_install_macro.py` 生成独立宏并核验 XML 内源码一致。Git 克隆、更新和认证在后台线程执行，Qt 更新仅通过主线程 timer；只更新干净且无本地超前提交的 main，保留旧目录和修改。菜单提供 `Check for PDK Updates` 与 `Install / Update Whitebox Library`，独立 Library 只克隆到用户目录 `jnu_private`，不接收或保存凭据。安装回归使用临时 Git 仓库和隔离 KLayout GUI，不操作用户实际安装。
+推荐用户运行根目录 `Install_JNU_PDK.lym`：从运行中的 KLayout 读取 `application_data_path()`，无需用户寻找程序或配置目录。唯一逻辑源为 `actions/install_pdk.py`，修改后运行 `tools/build_install_macro.py` 生成独立宏并核验 XML 内源码一致。Git 克隆、更新和认证在后台线程执行，Qt 更新仅通过主线程 timer；仅快进无本地超前提交且已跟踪文件无修改的 main，保留无冲突的未跟踪文件，冲突时停止并保留本地文件。菜单提供 `Check for PDK Updates` 与 `Install / Update Whitebox Library`，独立 Library 只克隆到用户目录 `jnu_private`，不接收或保存凭据。安装回归使用临时 Git 仓库和隔离 KLayout GUI，不操作用户实际安装。
 
 当前用户安装仅支持 Git 克隆及目录联接：仓库根 `Install_Cloned_PDK.ps1` 将克隆内 `salt/JNU_MWP_PDK` 联接到 KLayout 的 salt 目录，不覆盖已有安装，不配置在线索引。更新使用 `git pull --ff-only origin main` 后重启。私有 GDS 单独授权并保留独立目录读取兼容；离线实验室和黑盒构建工具仅作为维护者备用工具，不作为当前用户安装流程。
 

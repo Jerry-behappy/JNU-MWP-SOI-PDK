@@ -9,6 +9,10 @@
 
 Updates are listed newest first. Historical dates follow Git commit dates in Beijing time (UTC+8). Related changes on the same day are grouped; the full commit history shows the content and timestamp of every commit.
 
+## 2026-10-30 · Installer update protection
+
+- Allow updates with non-conflicting untracked files while preserving local data; stop on modified tracked files or conflicting untracked files. Accept the public repository URLs before and after the organization transfer.
+
 ## 2026-10-30 · V1.8 development branch
 
 - Merge V1.7 into main and rename the development branch to V1.8, updating the menu version.

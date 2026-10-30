@@ -15,7 +15,7 @@ import tempfile
 import threading
 
 
-PUBLIC_URL = "https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK.git"
+PUBLIC_URL = "https://github.com/Jinan-Photonics-Integration-Center/JNU-MWP-SOI-PDK.git"
 PRIVATE_URL = "https://github.com/Jerry-behappy/JNU-MWP-SOI-Library.git"
 PDK_RELATIVE = Path("salt/JNU_MWP_PDK")
 PRIVATE_SYNC_MANIFEST = ".jnu_private_gds_sync.json"
@@ -145,8 +145,11 @@ def _git(git, directory, *arguments):
 
 
 def _repo_identity(url):
-    return url.strip().removesuffix(".git").replace(
+    identity = url.strip().removesuffix(".git").replace(
         "git@github.com:", "https://github.com/").rstrip("/")
+    if identity.lower() == "https://github.com/jerry-behappy/jnu-mwp-soi-pdk":
+        return "https://github.com/Jinan-Photonics-Integration-Center/JNU-MWP-SOI-PDK"
+    return identity
 
 
 def check_checkout(git, directory, url):
@@ -157,8 +160,9 @@ def check_checkout(git, directory, url):
         raise RuntimeError("已有目录的 origin 不属于目标仓库：%s" % directory)
     if _git(git, directory, "branch", "--show-current") != "main":
         raise RuntimeError("当前克隆不在 main 分支，请先处理工作分支：%s" % directory)
-    if _git(git, directory, "status", "--porcelain"):
-        raise RuntimeError("检测到本地修改或未跟踪文件，请先保存并处理：%s" % directory)
+    tracked = _git(git, directory, "status", "--porcelain", "--untracked-files=no")
+    if tracked:
+        raise RuntimeError("检测到已跟踪文件的本地修改，请先保存并处理：%s\n%s" % (directory, tracked))
 
 
 def checkout(git, directory, url, notify):
@@ -177,7 +181,10 @@ def checkout(git, directory, url, notify):
             notify("已是最新版本。")
         else:
             notify("正在更新……")
-            _git(git, directory, "merge", "--ff-only", "refs/remotes/origin/main")
+            try:
+                _git(git, directory, "merge", "--ff-only", "refs/remotes/origin/main")
+            except RuntimeError as error:
+                raise RuntimeError("更新未完成；本地未跟踪文件若与新版同名，请备份后移开。所有本地文件已保留：%s\n%s" % (directory, error)) from error
     else:
         directory.parent.mkdir(parents=True, exist_ok=True)
         notify("正在克隆仓库，请稍候……")
