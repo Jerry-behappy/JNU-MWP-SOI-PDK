@@ -36,6 +36,13 @@
 - `Waveguide` 与 `Composite_Waveguide` 不进入公开 `JNULib`；`JNU_MWP_InternalWaveguideRegistry.lym` 以 early autorun 安装注册器，`pymacros/__init__.py` 和菜单 autorun 再作幂等安装。注册器必须覆盖已有视图、CellView 创建和文件打开前的视图同步，在每个用户 layout 中预注册同名本地 PCell 声明，确保用户在 GUI 重启后打开 GDS 时即可恢复 PCell 身份。Path to Waveguide 创建的 variant 直接实例化在原所属 cell 中，不新增中间容器。KLayout 禁止在活动 Undo transaction 中注册本地 PCell，也不允许本地 PCell 首次生产时向受 Undo 管理的只读 shape list 写入图形，因此声明注册和全部 variant 预生成都必须在 `LayoutView.transaction` 开始前完成；transaction 内只插入实例、写入实例恢复属性并删除输入 Path。若预生成或 transaction 失败，清理本轮新增且无父实例引用的 variant。原始 Manhattan Path 由 TypeShape `path` 参数保存；名为 `JNU_MWP_raw_manhattan_path` 的无图形属性提供后备，并以 GDS 数字实例属性镜像跨文件保存。新波导的 `1/99` 必须为空，不得创建 raw helper cell，也不得强制切换当前视图的图层显隐。反向转换依次读取 PCell 参数、恢复属性、旧版 cell 内 `1/99` 和旧版 helper；旧版容器和 helper 读取后删除，但不把 Path 写回 `1/99`。
 - Cell 名称包含所有可编辑弯曲参数及 Rmax/Rmin/Reff，排除 Bend Points 和波导层；完全相同的局部路径与参数复用同一 variant，不同路径碰撞同一基础名称时按稳定签名追加 `__002`、`__003`，不得保留 `$N`。
 
+## Legacy PCells and Cross-GDS Copy
+
+- 旧文件缺少恢复属性或 cell 被改名时，以 cold proxy 的 `basic_name` 和保存的参数识别内部波导；GDS 读入器可能把代理名称改回声明名，因此预览比对应按参数映射身份，再逐 cell 检查全部图层、文字、端口路径、属性及子实例。多边形顶点起点或绕向不同可用 Region 差集判等，不要求序列字符串一致。
+- 自动读后恢复只处理尚未编辑的文件；当前 PCell 与缓存图形不一致时保留缓存，不强制重新生成。新 Layout 创建后应立即具有内部声明，不能把等待轮询 timer 当作跨 GDS 粘贴的前提。
+- 用户授权另存修复时，可在独立原生 KLayout 进程调用 `release/repair_cross_gds_layout.py` 的 `repair_file(source, output, report_path)`。工具先保留静态快照，再尝试恢复内部波导、标准 JNU Taper／直波导及固定库引用；仅接受全部图形及端口一致的候选，其他器件保持原有静态图形和层级。原文件、已有修复文件均不得覆盖。
+- 运行 `tests/verify_cross_gds_copy.py` 验证无恢复属性的旧上下文、改名 cell、失效声明的静态 fallback、实例属性、真实 GUI 深复制到空 Layout，以及复制后保存重开的几何和 PCell 身份；不能只用 `copy_tree` 的结果代替原生剪贴板流程。
+
 ## Interactive DRC
 
 - `DRC → JNU_MWP_DRC` 直接打开 KLayout 原生 `Macro Development` 并定位到 `drc/JNU_MWP_DRC.lydrc`；使用原生保存功能持久化规则。规则文件只保留一个单参数 `report("标题")`，供原生绿色 Run 建立报告上下文；禁止 `source()` 和带报告路径的 `report()`。执行时选择 `DRC → Run JNU_MWP_DRC`，该动作会剥离单参数 report、注入临时输入与报告路径，只针对当前编辑 Cell 运行已保存代码。
@@ -43,7 +50,7 @@
 
 ## Runtime Reload
 
-- `JNU_MWP_SOI_PDK V1.6 → Reload JNU PDK` 在当前菜单回调退出后异步执行，避免重建菜单时销毁正在触发的 Action。待触发的单次 timer 只能由 `reload_pdk` 模块级引用保存，禁止写入或读取 `MainWindow` 的动态 Python 属性；重复触发必须合并为一次。
+- `JNU_MWP_SOI_PDK V1.7 → Reload JNU PDK` 在当前菜单回调退出后异步执行，避免重建菜单时销毁正在触发的 Action。待触发的单次 timer 只能由 `reload_pdk` 模块级引用保存，禁止写入或读取 `MainWindow` 的动态 Python 属性；重复触发必须合并为一次。
 - 清除 `JNU_MWP_pcells`、`JNU_MWP_tools` 与 `JNULib` 模块缓存后从磁盘重新导入；同名公开库只保留一个，并调用 `Library.refresh()` 更新全部 client layout。
 - 对已打开 layout 中现存的 `Waveguide` / `Composite_Waveguide` 以同名新声明调用 `register_pcell`，保持 PCell ID 不变，再调用 `Layout.refresh()` 重算已有 variant。
 - 菜单宏注册必须幂等：删除全部已知 action item、替换主窗口持久 action 列表后再插入。重建前以稳定 action ID 保存当前 `pya.Action.shortcut`；若当前值已为空，则从 `Application.get_config("key-bindings")` 中相同完整菜单路径恢复，且不得改写用户配置。成功只写短暂状态栏消息，失败弹窗且不得删除用户布局对象。
@@ -53,7 +60,7 @@
 
 - 总长度与长度差共用 `core/waveguide_length.py`：普通 Waveguide、复合宽度 Waveguide、普通 Paperclip Spiral、Archimedean Spiral 可混选。读取实际圆滑中心线长度；Spiral 不以目标长度或 delta_L 代替实际总长。复合宽度 Waveguide 排除 taper，并按宽度列出小计。
 - 选择中包含任何复合宽度 Spiral 时，报错并取消整次计算，不显示其余有效器件的部分总长或长度差。不要把复合宽度 Waveguide 一并拒绝。
-- 总长度计入副本、阵列及实例缩放；长度差要求恰好两个实际副本，返回 `abs(L1-L2)`。两者显示长度、宽度和对应弯曲参数；缺失或歧义长度数据不能当作零处理。
+- 总长度和长度差均计入副本、阵列及实例缩放；长度差使用非模态提示窗口依次选取第一组、第二组，每组至少一个实例并允许多选。第一组确认后只保存数值快照并清空选择，第二组确认后返回 `abs(sum(L1)-sum(L2))`，分组显示长度、宽度和对应弯曲参数。空组允许补选，取消或关闭窗口不显示结果；切换版图／编辑 cell 或选中非法对象时取消整次计算。缺失或歧义长度数据不能当作零处理。
 - 修改上述逻辑时运行 `tests/verify_waveguide_length.py` 与 `tests/verify_waveguide_length_difference.py`，覆盖普通 Spiral 混选、复合 Spiral 整次取消，以及保存重开 GDS 后的结果。
 
 ## EBeam Library Visibility in JNU Technology

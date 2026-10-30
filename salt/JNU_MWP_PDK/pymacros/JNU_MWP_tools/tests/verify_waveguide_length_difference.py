@@ -2,14 +2,13 @@
 # 创建者: Junyi Zhang
 # 时间: 2026-10
 
-"""验证波导及普通 Spiral 的长度差、复合 Spiral 拒绝、GDS 重读和双语菜单。"""
+"""验证两组多选长度差、非模态选取、整次取消、GDS 重读及双语菜单。"""
 
 import builtins
 from pathlib import Path
 import re
 import sys
 import tempfile
-from types import SimpleNamespace
 
 import pya
 
@@ -23,6 +22,8 @@ from JNU_MWP_tools.core.common import _value  # noqa: E402
 from JNU_MWP_tools.core.waveguide_length import (  # noqa: E402
     WaveguideLengthError,
     compare_selected_waveguides,
+    describe_selected_length_objects,
+    _route_bend_count,
 )
 
 
@@ -163,6 +164,72 @@ def _spiral_checks():
     print("PASS: ordinary Spiral differences, Waveguide mixing, actual lengths, parameters, composite cancellation and context/plain GDS", flush=True)
 
 
+def _bend_checks():
+    """用已知转角、实际 Paperclip waypoint 及保存重读验证弯曲计数。"""
+    layout = pya.Layout()
+    top, instances = _fixture(layout)
+    composite = _variant(layout, [(0, 0), (100, 0), (100, 100)], composite=True)
+    composite_inst = top.insert(pya.CellInstArray(composite.cell_index(), pya.Trans()))
+    chosen = _selection(top, instances + [composite_inst])
+    details = describe_selected_length_objects(chosen + chosen[:1], 0)
+    assert [item["bend_count"] for item in details] == [0, 0, 1, 1]
+    points = [pya.Point(*xy) for xy in ((0, 0), (0, 0), (50, 0), (100, 0), (100, 100), (200, 100))]
+    assert _route_bend_count(points) == 2
+    assert _route_bend_count([pya.Point(0, 0), pya.Point(1, 1)]) is None
+    assert _route_bend_count([pya.Point(0, 0), pya.Point(10, 0), pya.Point(0, 0)]) is None
+    scaled = top.insert(pya.CellInstArray(instances[2].cell_index, pya.ICplxTrans(2.0, 90, True, 0, 0)))
+    assert describe_selected_length_objects(_selection(top, [scaled]), 0)[0]["bend_count"] == 1
+    array = top.insert(pya.CellInstArray(
+        instances[2].cell_index, pya.Trans(), pya.Vector(200000, 0), pya.Vector(0, 200000), 2, 3,
+    ))
+    array_obj = pya.ObjectInstPath()
+    array_obj.top, array_obj.cv_index = top.cell_index(), 0
+    array_obj.append_path(pya.InstElement(array, -1, -1))
+    array_detail = describe_selected_length_objects([array_obj], 0)[0]
+    assert array_detail["bend_count"] == 1 and array_detail["copies"] == 6
+    from JNU_MWP_tools.actions.calculate_waveguide_length_difference import _result_message
+    report = _result_message([[array_detail], [details[2]]])
+    assert ("Group 1 90° bends: 6" in report or "第 1 组 90° 弯曲数：6" in report)
+    legacy = layout.create_cell("Waveguide_legacy_without_route")
+    legacy.shapes(layout.layer(10, 0)).insert(pya.Text("Waveguide width=0.5um length=100.000um", pya.Trans()))
+    legacy_inst = top.insert(pya.CellInstArray(legacy.cell_index(), pya.Trans()))
+    legacy_detail = describe_selected_length_objects(_selection(top, [legacy_inst]), 0)[0]
+    assert legacy_detail["length_um"] == 100 and legacy_detail["bend_count"] is None
+    report = _result_message([[legacy_detail, details[2]], [details[0]]])
+    assert "1 known; 1 waveguides unknown" in report or "已知 1；另有 1 个波导未知" in report
+    spirals, _ = _spiral_fixture(layout, top)
+    # 对照生成器的真实未圆角路径，而不是再次套用待验证的圈数公式。
+    for loops in (1, 3):
+        for port in ("type1", "type2", "type3"):
+            cell = layout.create_cell("Pcell_Paperclip_Spiral", {
+                "length": 100.0, "loops": loops, "ports_type": port, "vertical_stretch": 20.0,
+            })
+            native = dict(cell.pcell_parameters_by_name())
+            waypoints = cell.pcell_declaration()._centerline_waypoints(native)
+            expected = _route_bend_count([pya.Point(round(p.x / layout.dbu), round(p.y / layout.dbu)) for p in waypoints])
+            inst = top.insert(pya.CellInstArray(cell.cell_index(), pya.Trans()))
+            assert describe_selected_length_objects(_selection(top, [inst]), 0)[0]["bend_count"] == expected
+    for port, expected in (("type1", 4), ("type2", 4), ("type3", 5)):
+        cell = layout.create_cell("Pcell_Archimedean_Spiral", {"length": 1000.0, "ports_type": port})
+        inst = top.insert(pya.CellInstArray(cell.cell_index(), pya.Trans()))
+        item = describe_selected_length_objects(_selection(top, [inst]), 0)[0]
+        assert item["bend_count"] == expected and item["continuous_spiral_segments"] == 2
+    with tempfile.TemporaryDirectory(prefix="jnu_bend_counts_") as directory:
+        for context in (True, False):
+            path = Path(directory) / ("context.gds" if context else "plain.gds")
+            options = pya.SaveLayoutOptions()
+            options.set_format_from_filename(str(path))
+            options.write_context_info = context
+            options.gds2_write_cell_properties = True
+            layout.write(str(path), options)
+            saved = pya.Layout()
+            saved.read(str(path))
+            saved_top = saved.cell(top.name)
+            saved_instances = list(saved_top.each_inst())[:4]
+            assert [item["bend_count"] for item in describe_selected_length_objects(_selection(saved_top, saved_instances), 0)] == [0, 0, 1, 1]
+    print("PASS: bend counts, arrays, transforms, collinear points, unknown routes, Spirals and GDS reopen", flush=True)
+
+
 def _gui_checks():
     from JNU_MWP_tools.actions import calculate_waveguide_length as length_action
     from JNU_MWP_tools.actions import calculate_waveguide_length_difference as action
@@ -172,13 +239,11 @@ def _gui_checks():
     window = pya.Application.instance().main_window()
     if window is None:
         return
-    original_pya, original_show = action.pya, action._show_results
+    original_warning, original_show = action._warning, action._show_results
     original_exec = length_action.exec_dialog_with_persisted_size
     original_schedule = startup_update.schedule_startup_update_check
     messages = []
-    action.pya = SimpleNamespace(MessageBox=SimpleNamespace(
-        Ok=1, warning=lambda title, text, _buttons: messages.append(("warning", title, text, None)),
-    ))
+    action._warning = lambda title, text: messages.append(("warning", title, text, None))
     action._show_results = lambda title, text, key: messages.append(("info", title, text, key))
     startup_update.schedule_startup_update_check = lambda: False
     try:
@@ -195,7 +260,49 @@ def _gui_checks():
         spirals, composite_spiral = _spiral_fixture(layout, top)
         other = layout.create_cell("OTHER_DEVICE")
         invalid = top.insert(pya.CellInstArray(other.cell_index(), pya.Trans()))
+        array = top.insert(pya.CellInstArray(
+            instances[0].cell_index, pya.Trans(), pya.Vector(150000, 0), pya.Vector(0, 10000), 2, 3,
+        ))
+        array_obj = pya.ObjectInstPath()
+        array_obj.top = top.cell_index()
+        array_obj.cv_index = cv_index
+        array_obj.append_path(pya.InstElement(array, -1, -1))
+        cell_count = layout.cells()
+        instance_count = sum(1 for _ in top.each_inst())
         macro = pya.Macro(str(PYMACROS / "JNU_MWP_PDK_Menu.lym"))
+
+        def start(menu_action):
+            count = len(messages)
+            if hasattr(view, "switch_mode"):
+                view.switch_mode("path")
+            menu_action.trigger()
+            session = action._selection_session
+            assert session is not None and _value(session.dialog, "visible")
+            assert not _value(session.dialog, "modal") and _value(window, "enabled")
+            if hasattr(view, "mode_name"):
+                assert _value(view, "mode_name") == "select"
+            assert len(messages) == count
+            assert ("first group" if language == "en" else "第一组") in session.prompt.text
+            menu_action.trigger()
+            assert action._selection_session is session
+            return session
+
+        def compare(menu_action, group1, group2):
+            session = start(menu_action)
+            view.object_selection = _selection(top, group1, cv_index)
+            session.confirm.click()
+            assert action._selection_session is session and len(session.groups) == 1
+            assert len(view.object_selection) == 0
+            assert ("second group" if language == "en" else "第二组") in session.prompt.text
+            chosen = _selection(top, group2, cv_index)
+            view.object_selection = chosen
+            session.confirm.click()
+            assert action._selection_session is None
+            assert messages[-1][0:2] == ("info", title)
+            assert all(obj in view.object_selection for obj in chosen) and len(view.object_selection) == len(chosen)
+            assert messages[-1][3] == "calculate_waveguide_length_difference"
+            return messages[-1][2]
+
         for language, title in (("en", "Calculate Waveguide Length Difference"), ("zh_CN", "计算波导长度差")):
             setattr(builtins, ui_language._SESSION_KEY, language)
             macro.run()
@@ -204,30 +311,18 @@ def _gui_checks():
             assert len({str(item.title) for item in window._jnu_menu_actions}) == 14
             menu_action = window.menu().action("jnu_mwp_pdk_menu.waveguides.jnu_action_calculate_waveguide_length_difference")
             assert menu_action.title == "计算波导长度差 / Calculate Waveguide Length Difference"
-            chosen = _selection(top, [instances[0], long_instance], cv_index)
-            view.object_selection = chosen
-            menu_action.trigger()
-            report = messages[-1][2]
-            assert messages[-1][0:2] == ("info", title)
+            report = compare(menu_action, instances[:2], [instances[0], long_instance])
             assert "|L1 − L2|" in report and "20.000 µm" in report and "0.020000 mm" in report
+            assert "200.000 µm" in report and "220.000 µm" in report
             assert "100.000 µm" in report and "120.000 µm" in report
             assert ("Waveguide width: 0.800 µm" if language == "en" else "波导宽度：0.800 µm") in report
             assert ("Bend radius R: 20.000 µm" if language == "en" else "弯曲半径 R：20.000 µm") in report
-            assert all(obj in view.object_selection for obj in chosen) and len(view.object_selection) == 2
-            assert messages[-1][3] == "calculate_waveguide_length_difference"
-            view.object_selection = _selection(top, [instances[0], composite_instance], cv_index)
-            menu_action.trigger()
-            report = messages[-1][2]
-            assert messages[-1][0:2] == ("info", title)
+            report = compare(menu_action, [instances[0], composite_instance], [long_instance])
             assert ("taper lengths are excluded" if language == "en" else "taper（宽度渐变段）长度不计入") in report
             assert "116.000" in report and "40.000 µm" in report
             assert ("Comparison by width" if language == "en" else "按宽度比较") in report
             for group in ([spirals[1], spirals[4]], [instances[0], spirals[0]], [spirals[3], spirals[4]]):
-                chosen = _selection(top, group, cv_index)
-                view.object_selection = chosen
-                menu_action.trigger()
-                report = messages[-1][2]
-                assert messages[-1][0:2] == ("info", title)
+                report = compare(menu_action, group, [long_instance, instances[0]])
                 assert "|L1 − L2|" in report
                 assert ("Waveguide width: 0.700 µm" if language == "en" else "波导宽度：0.700 µm") in report
                 for instance in group:
@@ -237,25 +332,58 @@ def _gui_checks():
                         assert ("Archimedean Spiral" if language == "en" else "阿基米德 Spiral") in report
                 if group == [spirals[1], spirals[4]]:
                     assert "Bezier B: 0.400" in report
-                assert all(obj in view.object_selection for obj in chosen) and len(view.object_selection) == 2
-            for group in ([composite_spiral], [spirals[0], composite_spiral],
-                          [composite_spiral, instances[0]], [instances[0], spirals[3], composite_spiral]):
-                chosen = _selection(top, group, cv_index)
-                view.object_selection = chosen
+            # 整个阵列按实际副本计入，不再受旧版两个实例限制。
+            session = start(menu_action)
+            view.object_selection = [array_obj]
+            session.confirm.click()
+            assert action._group_length(session.groups[0]) == 600.0
+            view.object_selection = _selection(top, instances[:2], cv_index)
+            session.confirm.click()
+            assert "600.000 µm" in messages[-1][2] and "400.000 µm" in messages[-1][2]
+            # 第一组和第二组的非法器件都取消整次计算，不产生部分结果。
+            for stage in (0, 1):
+                for group in ([composite_spiral], [spirals[0], composite_spiral], [instances[0], invalid]):
+                    session = start(menu_action)
+                    if stage:
+                        view.object_selection = _selection(top, instances[:2], cv_index)
+                        session.confirm.click()
+                    chosen = _selection(top, group, cv_index)
+                    view.object_selection = chosen
+                    count_before = len(messages)
+                    session.confirm.click()
+                    assert action._selection_session is None and len(messages) == count_before + 1
+                    assert messages[-1][0:2] == ("warning", title)
+                    if composite_spiral in group:
+                        assert ("entire calculation was cancelled" if language == "en" else "已取消整次计算") in messages[-1][2]
+                    assert len(view.object_selection) == len(chosen)
+            # 空组不消费当前步骤；取消按钮和关闭窗口均不显示结果。
+            for stage in (0, 1):
+                session = start(menu_action)
+                if stage:
+                    view.object_selection = _selection(top, instances[:1], cv_index)
+                    session.confirm.click()
+                view.object_selection = []
+                session.confirm.click()
+                assert messages[-1][0:2] == ("warning", title)
+                assert action._selection_session is session and len(session.groups) == stage
                 count_before = len(messages)
-                menu_action.trigger()
-                assert len(messages) == count_before + 1
-                assert messages[-1][0:2] == ("warning", title)
-                assert ("entire calculation was cancelled" if language == "en" else "已取消整次计算") in messages[-1][2]
-                assert all(obj in view.object_selection for obj in chosen) and len(view.object_selection) == len(chosen)
-            for group in ([], instances[:1], instances, [instances[0], invalid]):
-                chosen = _selection(top, group, cv_index)
-                view.object_selection = chosen
-                menu_action.trigger()
-                assert messages[-1][0:2] == ("warning", title)
-                assert len(view.object_selection) == len(chosen)
+                if stage:
+                    session.dialog.close()
+                else:
+                    session.dialog.findChild("waveguide_group_cancel").click()
+                assert action._selection_session is None and len(messages) == count_before
+            # 选取中切换编辑 cell 后不混合两套上下文。
+            session = start(menu_action)
+            view.object_selection = _selection(top, instances[:1], cv_index)
+            session.confirm.click()
+            cellview.cell = other
+            session.confirm.click()
+            assert action._selection_session is None and messages[-1][0] == "warning"
+            cellview.cell = top
 
-        def check_dialog(dialog, key, default_size):
+        assert layout.cells() == cell_count and sum(1 for _ in top.each_inst()) == instance_count
+
+        def check_dialog(dialog, key, default_size, **options):
             output = dialog.findChild("waveguide_length_output")
             assert output.toPlainText() == report and _value(output, "readOnly")
             assert _value(_value(output, "font"), "pointSize") == 11
@@ -269,15 +397,97 @@ def _gui_checks():
 
         length_action.exec_dialog_with_persisted_size = check_dialog
         original_show("计算波导长度差", report, "calculate_waveguide_length_difference")
-        print("PASS: bilingual menu callbacks, duplicate registration, unchanged selection and native Qt difference dialog", flush=True)
+        print("PASS: bilingual two-stage modeless groups, totals, arrays, empty retry, cancellation, context guard and native Qt results", flush=True)
     finally:
-        action.pya, action._show_results = original_pya, original_show
+        if action._selection_session is not None:
+            action._selection_session.dialog.reject()
+        action._warning, action._show_results = original_warning, original_show
         length_action.exec_dialog_with_persisted_size = original_exec
         startup_update.schedule_startup_update_check = original_schedule
+
+
+def _result_close_checks():
+    """实际点击按钮并发送 Esc，避免直接调用 accept 掩盖信号参数错误。"""
+    from JNU_MWP_tools.actions import calculate_waveguide_length as length_action
+    from JNU_MWP_tools.actions import calculate_waveguide_length_difference as action
+    from JNU_MWP_tools.core import gui_state, ui_language
+
+    window = pya.Application.instance().main_window()
+    if window is None:
+        return
+    original_exec = length_action.exec_dialog_with_persisted_size
+    original_state_file = gui_state._gui_state_file
+    failures = []
+    completed = []
+
+    def execute(dialog, key, default_size, **options):
+        assert options.get("center_right")
+        def dismiss():
+            try:
+                area = (_value(_value(window, "screen"), "availableGeometry") if hasattr(window, "screen")
+                        else pya.QApplication.desktop().availableGeometry(window))
+                expected_x = max(_value(area, "left"), min(
+                    round(_value(area, "left") + _value(area, "width") * 0.70 - _value(dialog, "width") / 2),
+                    _value(area, "left") + _value(area, "width") - _value(dialog, "width"),
+                ))
+                assert abs(_value(dialog, "x") - expected_x) < 32
+                if close_mode == "button":
+                    dialog.findChild("waveguide_length_close").click()
+                elif close_mode == "titlebar":
+                    dialog.close()
+                else:
+                    event = pya.QKeyEvent(pya.QEvent.KeyPress, int(pya.Qt.Key_Escape), pya.Qt.NoModifier)
+                    pya.QApplication.sendEvent(dialog, event)
+                assert not _value(dialog, "visible"), (key, close_mode)
+            except Exception as error:
+                failures.append(str(error))
+            finally:
+                if _value(dialog, "visible"):
+                    dialog.reject()
+
+        timer = pya.QTimer(dialog)
+        timer.setSingleShot(True)
+        timer.timeout(dismiss)
+        timer.start(0)
+        value = original_exec(dialog, key, default_size, **options)
+        assert not failures, failures
+        completed.append((key, close_mode))
+        return value
+
+    try:
+        with tempfile.TemporaryDirectory(prefix="jnu_result_close_") as directory:
+            gui_state._gui_state_file = lambda: str(Path(directory) / "gui_state.json")
+            length_action.exec_dialog_with_persisted_size = execute
+            cv = window.create_layout(1)
+            top, instances = _fixture(cv.layout())
+            cv.cell = top
+            view = window.current_view()
+            cv_index = _value(view, "active_cellview_index")
+            for language in ("en", "zh_CN"):
+                setattr(builtins, ui_language._SESSION_KEY, language)
+                for close_mode in ("button", "titlebar", "escape"):
+                    length_action._show_results("Length", "100.000 µm")
+                    # 长度差从真实的第二组确定按钮进入结果窗口，不替换结果函数。
+                    action.calculate_waveguide_length_difference()
+                    session = action._selection_session
+                    view.object_selection = _selection(top, instances[:2], cv_index)
+                    session.confirm.click()
+                    view.object_selection = _selection(top, instances[2:], cv_index)
+                    session.confirm.click()
+                    assert action._selection_session is None
+            assert len(completed) == 12, completed
+        print("PASS: real length/group-result Close buttons, titlebar close and Esc in English/Chinese", flush=True)
+    finally:
+        length_action.exec_dialog_with_persisted_size = original_exec
+        gui_state._gui_state_file = original_state_file
+        if action._selection_session is not None:
+            action._selection_session.dialog.reject()
 
 
 if __name__ == "__main__":
     _database_checks()
     _spiral_checks()
+    _bend_checks()
     if hasattr(pya, "Application"):
         _gui_checks()
+        _result_close_checks()

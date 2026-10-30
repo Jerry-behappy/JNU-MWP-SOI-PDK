@@ -483,7 +483,7 @@ def _gui_checks():
             assert messages[-1][0:2] == ("warning", title)
         action.pya = original_pya
 
-        def check_dialog(dialog, key, default_size):
+        def check_dialog(dialog, key, default_size, **options):
             output = dialog.findChild("waveguide_length_output")
             assert _value(output, "readOnly")
             assert output.toPlainText() == report

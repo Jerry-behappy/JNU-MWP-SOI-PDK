@@ -65,7 +65,7 @@ def _result_message(details):
     return "\n".join(lines)
 
 
-def _waveguide_detail_lines(details):
+def _waveguide_detail_lines(details, include_bends=False):
     """共用实例参数明细，确保总长与长度差界面显示相同参数。"""
     lines = []
     for index, item in enumerate(details, 1):
@@ -75,6 +75,13 @@ def _waveguide_detail_lines(details):
         lines.append((
             _ui("Length (excluding tapers): ", "长度（不含 taper）：") if composite else _ui("Length: ", "长度：")
         ) + _format_parameter(item["length_um"]))
+        if include_bends:
+            bends = item.get("bend_count")
+            lines.append(_ui("90° bends per copy: ", "单个副本的 90° 弯曲数：") + (
+                str(bends) if bends is not None else _ui("Unknown (route data not stored)", "未知（未保存路径数据）")
+            ))
+            if item.get("continuous_spiral_segments"):
+                lines.append(_ui("Continuous spiral arms per copy: %d", "单个副本的连续螺旋臂数：%d") % item["continuous_spiral_segments"])
         if item["copies"] > 1:
             lines.append(_ui("Copies: %d; subtotal: %.3f µm", "副本数量：%d；小计：%.3f µm") % (
                 item["copies"], item["total_length_um"],
@@ -137,9 +144,11 @@ def _show_results(title, message, dialog_key="calculate_waveguide_length"):
     output.setPlainText(message)
     layout.addWidget(output)
     close = pya.QPushButton(_ui("Close", "关闭"), dialog)
-    close.clicked.connect(dialog.accept)
+    close.setObjectName("waveguide_length_close")
+    # clicked 携带 checked 参数，原生 accept 不接受该参数。
+    close.clicked.connect(lambda _checked=False: dialog.accept())
     layout.addWidget(close)
-    exec_dialog_with_persisted_size(dialog, dialog_key, (800, 520))
+    exec_dialog_with_persisted_size(dialog, dialog_key, (800, 520), center_right=True)
 
 
 def calculate_waveguide_length():

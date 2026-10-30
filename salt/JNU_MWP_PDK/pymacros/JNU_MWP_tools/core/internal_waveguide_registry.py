@@ -16,10 +16,12 @@ import pya
 from JNU_MWP_tools.core.ui_language import localize_pcell_declaration
 from JNU_MWP_tools.core.waveguide_variant_names import normalize_local_waveguide_names
 from JNU_MWP_tools.core.common import RAW_PATH_GDS_PROPERTY, RAW_PATH_PROPERTY
+from JNU_MWP_tools.core.pcell_geometry import layout_geometry_equal
 
 
 INTERNAL_WAVEGUIDE_PCELL_NAMES = ("Waveguide", "Composite_Waveguide")
 _STATE_KEY = "_jnu_mwp_internal_waveguide_registry_state"
+_RECOVERY_GENERATION = object()
 _REGISTRATION_STATE = getattr(builtins, _STATE_KEY, None)
 if _REGISTRATION_STATE is None:
     _REGISTRATION_STATE = {
@@ -37,6 +39,7 @@ else:
     _REGISTRATION_STATE.setdefault("main_window_hooks", [])
     _REGISTRATION_STATE.setdefault("main_window_timers", [])
     _REGISTRATION_STATE.setdefault("pending_repairs", [])
+_REGISTRATION_STATE.setdefault("incompatible_snapshots", [])
 
 
 def _property_or_call(obj, name, *args):
@@ -132,6 +135,10 @@ def _has_unrecognized_waveguides(layout):
     for cell in layout.each_cell():
         if cell.is_pcell_variant():
             continue
+        # 旧 GDS 可能只有 PCell 上下文，没有恢复属性，实际 cell 也可能被重命名。
+        # cold proxy 的 basic_name 仍保留声明名，可识别这一类跨文件复制风险。
+        if cell.is_proxy() and cell.basic_name() in INTERNAL_WAVEGUIDE_PCELL_NAMES:
+            return True
         name = str(cell.name)
         if not any(name == base or name.startswith(base + "_")
                    for base in INTERNAL_WAVEGUIDE_PCELL_NAMES):
@@ -166,8 +173,34 @@ def _clean_unrecognized_file_layouts(view):
     return layouts
 
 
+def _recovery_cell_names(layout, preview):
+    """冷代理可能被读入器改回声明名，按上下文参数匹配预览中的真实 variant。"""
+    derived = {"name_suffix", "points_per_90", "npoints", "Bezier_Rmax", "Bezier_Rmin", "Euler_Reff"}
+
+    def key(cell):
+        return (cell.basic_name(), tuple(sorted((name, str(value))
+                for name, value in cell.pcell_parameters_by_name().items() if name not in derived)))
+
+    candidates = {}
+    for cell in preview.each_cell():
+        if cell.is_proxy():
+            candidates.setdefault(key(cell), []).append(cell)
+    names = {}
+    for cell in layout.each_cell():
+        if cell.is_proxy():
+            matches = candidates.get(key(cell), [])
+            if len(matches) == 1:
+                names[cell.name] = matches[0].name
+    return names
+
+
 def _recover_loaded_view(view):
     """首开 GDS 时若声明注册晚于解析，则从磁盘重读并恢复真实 PCell。"""
+    try:
+        _declaration_factories()
+    except ImportError:
+        # 黑盒包没有生成器，保留文件缓存，不反复尝试无法完成的重新生成。
+        return
     try:
         count = int(_property_or_call(view, "cellviews"))
     except Exception:
@@ -184,6 +217,9 @@ def _recover_loaded_view(view):
 
             # 固定一次文件快照；用户同时保存 GDS 时不让两次读取拿到不同版本。
             before = os.stat(filename)
+            version = (layout, filename, before.st_size, before.st_mtime_ns, _RECOVERY_GENERATION)
+            if version in _REGISTRATION_STATE["incompatible_snapshots"]:
+                continue
             with tempfile.TemporaryDirectory(prefix="jnu_waveguide_open_") as directory:
                 snapshot = str(Path(directory) / Path(filename).name)
                 shutil.copyfile(filename, snapshot)
@@ -195,6 +231,13 @@ def _recover_loaded_view(view):
                 preview = pya.Layout()
                 ensure_internal_waveguide_pcells(preview)
                 preview.read(snapshot)
+                names = _recovery_cell_names(layout, preview)
+                if not layout_geometry_equal(layout, preview, names):
+                    # 同一文件版本只拒绝一次；文件更新或模块重载后再允许重新检查。
+                    _REGISTRATION_STATE["incompatible_snapshots"].append(version)
+                    _REGISTRATION_STATE["incompatible_snapshots"] = _REGISTRATION_STATE["incompatible_snapshots"][-32:]
+                    print("JNU MWP PDK: kept cached geometry; current PCells differ from saved layout.")
+                    continue
                 ensure_internal_waveguide_pcells(preview)
                 if _has_unrecognized_waveguides(preview):
                     continue

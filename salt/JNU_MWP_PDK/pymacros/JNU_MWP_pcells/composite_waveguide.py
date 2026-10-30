@@ -135,6 +135,7 @@ def draw_composite_waveguide_geometry(
     bend_type, bezier_k=DEFAULT_BEZIER_K,
     euler_rmax=DEFAULT_EULER_RMAX, euler_rmin=DEFAULT_EULER_RMIN,
     start_width=None, end_width=None, transition_length=DEFAULT_TRANSITION_LENGTH,
+    waveguide_layer=None,
 ):
     """绘制复合宽度波导并返回DBU量化后的中心线长度。"""
     dbu = layout.dbu
@@ -157,7 +158,8 @@ def draw_composite_waveguide_geometry(
     bend_dbu = max(1, _to_itype(bend_width, dbu))
     taper_dbu = max(0, _to_itype(taper_length, dbu))
     transition_dbu = max(0, _to_itype(transition_length, dbu))
-    si_layer = layout.layer(SI_LAYER)
+    physical_layer = SI_LAYER if waveguide_layer is None else waveguide_layer
+    si_layer = layout.layer(physical_layer)
     devrec_layer = layout.layer(DEVREC_LAYER)
     pin_layer = layout.layer(PIN_LAYER)
     text_layer = layout.layer(TEXT_LAYER)
@@ -165,6 +167,7 @@ def draw_composite_waveguide_geometry(
     _store_raw_manhattan_path(
         cell, raw_path, raw_points, straight_dbu, dbu,
         {
+            "waveguide_layer": "%d/%d" % (physical_layer.layer, physical_layer.datatype),
             "straight_width_um": straight_dbu * dbu,
             "start_width_um": start_dbu * dbu,
             "end_width_um": end_dbu * dbu,
@@ -231,6 +234,7 @@ class CompositeWaveguide(pya.PCellDeclarationHelper):
             self.name_suffix_param.hidden = True
         except Exception:
             pass
+        self.param("waveguide_layer", self.TypeLayer, "Waveguide layer", default=SI_LAYER)
         self.bezier_rmax_param = self.param("Bezier_Rmax", self.TypeDouble, "Bezier max radius [uneditable]", unit="um", default=0.0, readonly=True)
         self.bezier_rmin_param = self.param("Bezier_Rmin", self.TypeDouble, "Bezier min radius [uneditable]", unit="um", default=0.0, readonly=True)
         self.euler_reff_param = self.param("Euler_Reff", self.TypeDouble, "Euler effective radius [uneditable]", unit="um", default=0.0, readonly=True)
@@ -320,6 +324,7 @@ class CompositeWaveguide(pya.PCellDeclarationHelper):
             self.Euler_Rmax, self.Euler_Rmin,
             start_width=self.start_width, end_width=self.end_width,
             transition_length=self.transition_length,
+            waveguide_layer=self.waveguide_layer,
         )
         name_waveguide_variant(self.layout, self.cell, self.display_text_impl())
 

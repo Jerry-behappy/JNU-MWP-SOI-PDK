@@ -5,9 +5,47 @@
 
 # Changelog
 
-[Back to README](README.en.md) · [Full commit history](https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK/commits/JNU_MWP_PDK_V1.6/)
+[Back to README](README.en.md) · [Full commit history](https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK/commits/JNU_MWP_PDK_V1.7/)
 
 Updates are listed newest first. Historical dates follow Git commit dates in Beijing time (UTC+8). Related changes on the same day are grouped; the full commit history shows the content and timestamp of every commit.
+
+## 2026-10-30 · License copyright notice
+
+- Update the JNU copyright contributors in the MIT license.
+
+## 2026-10-30 · Array instance snapping
+
+- Snap components supports array instances as moving or reference objects and snaps the nearest opposing ports while preserving the array.
+
+## 2026-10-28 · Edge coupler port markers
+
+- Remove PinRec and port labels from the four fork tips of all three edge couplers; retain the circuit connection port and update the blackboxes.
+
+## 2026-10-28 · Edge coupler port extensions
+
+- Extend the four fork tips of each edge coupler with 40 µm straight waveguides matching the tip widths, move the ports to the new ends and update the blackboxes.
+
+## 2026-10-26 · Waveguide output layer selection
+
+- Add a Waveguide Layer dropdown to Path to Waveguide, defaulting to Si (1/0), with technology layers and custom layers from the current layout. Single-width, composite-width and user-defined modes use the selected output layer and remember the last choice. PinRec and DevRec retain their dedicated layers. Store the output layer in PCell parameters so identical routes on different layers remain distinct variants.
+
+## 2026-10-26 · Cross-GDS copying and legacy PCell recovery
+
+- Recover legacy Waveguides identified by PCell context even when route properties are missing or cells were renamed, preventing empty waveguides after copying to another GDS.
+- Compare every cell's layers, text, PinRec, properties and child hierarchy before automatic recovery. Retain cached geometry when the current implementation differs.
+- Add `JNU_MWP_tools/release/repair_cross_gds_layout.py` to save a repaired copy while preserving the source. Restore matching local Taper, straight and Waveguide references; retain unmatched devices as static cells and verify the saved GDS by rereading it.
+
+## 2026-10-23 · Waveguide group length difference
+
+- Add group totals and per-device counts of discrete 90° bends to length-difference results, including array copies. List continuous spiral arms separately and mark unavailable historical route data as unknown.
+- Place waveguide selection prompts and length results toward the center-right of the current screen, within its available area.
+- Fix the Close buttons in length and length-difference results and the Cancel button during group selection by handling the Qt clicked signal argument before closing the dialog.
+- Calculate Waveguide Length Difference now prompts for two groups in sequence. Select the first group and click OK, then select the second group and confirm. Each group supports multiple waveguides, ordinary Spirals and array copies; the result compares the group totals.
+- The selection prompt leaves the layout interactive and clears the selection after confirming group 1. Results retain group details, widths and bend parameters. Composite Waveguide tapers remain excluded; a composite-width Spiral cancels the entire calculation.
+
+## 2026-10-22 · V1.7 development branch
+
+- Merge MMI naming updates into main through PR #4 and rename the development branch to `JNU_MWP_PDK_V1.7`, updating the menu version and default push target.
 
 ## 2026-10-22 · V1.6 development branch
 

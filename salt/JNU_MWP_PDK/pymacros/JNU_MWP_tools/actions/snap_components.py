@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 创建者: Junyi Zhang
-# 时间: 2026-07
+# 时间: 2026-10
 
 """选中待移动实例组，并吸附到鼠标悬停参考实例的最近相向 PinRec 端口。"""
 
@@ -119,6 +119,10 @@ def _instance_transform(obj):
     """读取 ObjectInstPath 的完整变换，失败时退回实例自身变换。"""
     inst = obj.inst()
     try:
+        return _value(obj, "source_trans") * _value(inst, "cplx_trans")
+    except Exception:
+        pass
+    try:
         return _value(obj, "trans")
     except Exception:
         return _value(inst, "trans")
@@ -219,6 +223,22 @@ def _primitive_label(obj, index):
 def _build_instance_record(obj, inst, trans, layout, key=None, label=None):
     """构造实例记录；测试可直接传入 inst/trans，GUI 入口传入 obj。"""
     pins = _pins_for_instance(inst, trans, layout)
+    if _is_array_instance(inst):
+        # 阵列向量位于父 cell 坐标系，整阵列保持为一个移动对象。
+        base_pins = pins
+        pins = []
+        a, b = _value(inst, "a"), _value(inst, "b")
+        try:
+            parent_trans = _value(obj, "source_trans") if obj is not None else pya.Trans()
+        except Exception:
+            parent_trans = pya.Trans()
+        origin = _point_to_int(parent_trans * pya.Point(0, 0))
+        for ia in range(int(_value(inst, "na"))):
+            for ib in range(int(_value(inst, "nb"))):
+                offset = _point_to_int(parent_trans * pya.Point(a.x * ia + b.x * ib,
+                                                               a.y * ia + b.y * ib)) - origin
+                pins.extend(_OpticalPin(pin.center + offset, pin.rotation, pin.width)
+                            for pin in base_pins)
     if key is None:
         key = _instance_key(obj) if obj is not None else "%s|%s" % (int(_value(inst, "cell_index")), str(trans))
     if label is None:
@@ -261,11 +281,11 @@ def _records_from_objects(objects, layout, role):
     for index, obj in enumerate(objects):
         if obj.is_cell_inst():
             inst = obj.inst()
+            if inst is not None and any(record.is_instance and record.inst == inst for record in records):
+                continue
             if inst is None or inst.cell is None:
                 record = _build_primitive_record(obj, layout, index)
             else:
-                if _is_array_instance(inst):
-                    raise RuntimeError("Snap components 暂不展开 array instance，请先解除阵列。")
                 record = _build_instance_record(
                     obj,
                     inst,

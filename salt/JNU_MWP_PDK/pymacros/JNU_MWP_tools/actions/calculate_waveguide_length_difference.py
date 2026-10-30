@@ -2,7 +2,9 @@
 # 创建者: Junyi Zhang
 # 时间: 2026-10
 
-"""只读比较两个波导或普通 Spiral 的长度，复合波导排除 taper。"""
+"""分两步选取波导组并比较总长，复合波导排除 taper。"""
+
+import math
 
 import pya
 
@@ -13,35 +15,66 @@ from JNU_MWP_tools.actions.calculate_waveguide_length import (
     _ui,
     _waveguide_detail_lines,
 )
-from JNU_MWP_tools.core.common import _active_context, _value
+from JNU_MWP_tools.core.common import _active_context, _main_window, _value
+from JNU_MWP_tools.core.gui_state import position_dialog_center_right
 from JNU_MWP_tools.core.waveguide_length import (
     WaveguideLengthError,
-    compare_selected_waveguides,
+    describe_selected_length_objects,
 )
 
 
-def _result_message(details, difference_um):
+_selection_session = None
+
+
+def _group_length(details):
+    return math.fsum(item["total_length_um"] for item in details)
+
+
+def _width_totals(details):
+    totals = {}
+    for item in details:
+        for width, length in item["length_by_width_um"].items():
+            totals[width] = totals.get(width, 0.0) + length * item["copies"]
+    return totals
+
+
+def _result_message(groups):
     """总差取绝对值，各宽度分项分别比较，不把分项绝对差相加当作总差。"""
     lines = []
-    for index, item in enumerate(details, 1):
-        lines.append(_ui("Waveguide %d length L%d: %.3f µm (%.6f mm)",
-                         "波导 %d 长度 L%d：%.3f µm（%.6f mm）") % (
-            index, index, item["length_um"], item["length_um"] / 1000.0,
+    for index, details in enumerate(groups, 1):
+        length = _group_length(details)
+        lines.append(_ui("Group %d total L%d: %.3f µm (%.6f mm); waveguides: %d",
+                         "第 %d 组总长度 L%d：%.3f µm（%.6f mm）；波导数量：%d") % (
+            index, index, length, length / 1000.0, sum(item["copies"] for item in details),
         ))
+        known = sum(item["bend_count"] * item["copies"] for item in details if item["bend_count"] is not None)
+        unknown = sum(item["copies"] for item in details if item["bend_count"] is None)
+        count = str(known) if not unknown else _ui("%d known; %d waveguides unknown", "已知 %d；另有 %d 个波导未知") % (known, unknown)
+        lines.append(_ui("Group %d 90° bends: %s", "第 %d 组 90° 弯曲数：%s") % (index, count))
+        spiral_arms = sum(item["continuous_spiral_segments"] * item["copies"] for item in details)
+        if spiral_arms:
+            lines.append(_ui("Group %d continuous spiral arms: %d", "第 %d 组连续螺旋臂数：%d") % (index, spiral_arms))
+    difference_um = abs(_group_length(groups[0]) - _group_length(groups[1]))
     lines.append(_ui("Absolute length difference |L1 − L2|: %.3f µm (%.6f mm)",
                      "绝对长度差 |L1 − L2|：%.3f µm（%.6f mm）") % (
         difference_um, difference_um / 1000.0,
     ))
-    if any(item["kind"] == "composite" for item in details):
+    lines.extend(["", _ui(
+        "Bend count: each discrete 90° turn counts once, including array copies; "
+        "continuous Archimedean spiral arms are listed separately. Unknown counts are not treated as zero.",
+        "计数说明：每个独立的 90° 弯计 1 次，阵列按副本累计；阿基米德 Spiral 的连续螺旋臂单独列出。未知弯曲数不按零处理。",
+    )])
+    has_composite = any(item["kind"] == "composite" for group in groups for item in group)
+    if has_composite:
         lines.extend(["", _taper_note(), _ui(
             "The length difference also excludes tapers.",
             "长度差同样不包含 taper。",
         )])
 
-    first, second = (item["length_by_width_um"] for item in details)
+    first, second = (_width_totals(group) for group in groups)
     widths = set(first) | set(second)
     # 历史数据缺少宽度时只能比较总长，不能把未知宽度与已知宽度当作不同分项。
-    if None not in widths and (len(widths) > 1 or any(item["kind"] == "composite" for item in details)):
+    if None not in widths and (len(widths) > 1 or has_composite):
         lines.extend(["", _ui("Comparison by width (L1 / L2 / |difference|):",
                                "按宽度比较（L1 / L2 / |长度差|）：")])
         for width in sorted(widths):
@@ -52,30 +85,21 @@ def _result_message(details, difference_um):
             ))
         lines.append(_ui("Width differences are separate comparisons; their sum is not the total difference.",
                          "各宽度的绝对差分别列出，不将其相加作为总长度差。"))
-    lines.extend(_waveguide_detail_lines(details))
+    for index, details in enumerate(groups, 1):
+        lines.extend(["", _ui("Group %d details:", "第 %d 组明细：") % index])
+        lines.extend(_waveguide_detail_lines(details, include_bends=True))
     return "\n".join(lines)
 
 
-def calculate_waveguide_length_difference():
-    """要求恰好两个独立波导或普通 Spiral 实例；选择和版图均保持不变。"""
-    title = _ui("Calculate Waveguide Length Difference", "计算波导长度差")
-    try:
-        view, _layout, _cell = _active_context()
-        details, difference = compare_selected_waveguides(
-            view.object_selection, _value(view, "active_cellview_index")
-        )
-    except WaveguideLengthError as error:
-        count_message = _ui(
-            "Select exactly two instances: Waveguide, Composite_Waveguide, "
-            "ordinary Paperclip_Spiral or Archimedean_Spiral.\n"
-            "For arrays, select two individual members instead of a whole array.",
-            "请恰好选中两个实例：单宽度或复合宽度 Waveguide、普通回形针 "
-            "Paperclip_Spiral 或阿基米德 Archimedean_Spiral。\n"
-            "对于阵列，请选择两个单独成员，不要选择整个阵列。",
-        )
+def _warning(title, message):
+    pya.MessageBox.warning(title, message, pya.MessageBox.Ok)
+
+
+def _selection_error(error):
+    if isinstance(error, WaveguideLengthError):
         messages = {
-            "empty": count_message,
-            "not_two": count_message,
+            "empty": _ui("Select at least one waveguide instance for this group, then click OK.",
+                         "请为当前组选取至少一个波导实例，再按确定。"),
             "unsupported": _ui(
                 "Only Waveguide, Composite_Waveguide, ordinary Paperclip_Spiral "
                 "and Archimedean_Spiral instances are supported.\n"
@@ -103,13 +127,105 @@ def calculate_waveguide_length_difference():
                 "请重新生成该波导后重试。",
             ),
         }
-        pya.MessageBox.warning(title, messages[error.reason], pya.MessageBox.Ok)
-        return
+        return messages.get(error.reason, str(error))
+    return _ui("Unable to calculate waveguide length difference:\n", "无法计算波导长度差：\n") + str(error)
+
+
+class _GroupSelection:
+    """用非模态提示保留画布交互；第一组确认后只保存数值快照。"""
+
+    def __init__(self):
+        self.title = _ui("Calculate Waveguide Length Difference", "计算波导长度差")
+        self.view, self.layout, cell = _active_context()
+        self.cell_index = cell.cell_index()
+        self.cv_index = _value(self.view, "active_cellview_index")
+        self.groups = []
+        if hasattr(self.view, "switch_mode"):
+            self.view.switch_mode("select")
+        self.dialog = pya.QDialog(_main_window())
+        self.dialog.setWindowTitle(self.title)
+        self.dialog.setModal(False)
+        font = pya.QFont(self.dialog.font)
+        font.setPointSize(11)
+        self.dialog.setFont(font)
+        layout = pya.QVBoxLayout(self.dialog)
+        self.prompt = pya.QLabel(self.dialog)
+        self.prompt.setWordWrap(True)
+        layout.addWidget(self.prompt)
+        buttons = pya.QHBoxLayout()
+        self.confirm = pya.QPushButton(_ui("OK", "确定"), self.dialog)
+        cancel = pya.QPushButton(_ui("Cancel", "取消"), self.dialog)
+        cancel.setObjectName("waveguide_group_cancel")
+        buttons.addWidget(self.confirm)
+        buttons.addWidget(cancel)
+        layout.addLayout(buttons)
+        self.confirm.clicked.connect(self._confirm)
+        cancel.clicked.connect(lambda _checked=False: self.dialog.reject())
+        self.dialog.finished.connect(self._finished)
+        self.dialog.setFixedSize(600, 240)
+        self._update_prompt()
+
+    def _update_prompt(self):
+        text = _ui(
+            "Select the first group of waveguides in the layout (one or more cells), then click OK.",
+            "请在版图中选取第一组波导（可选多个波导 cell），选取完后按确定。",
+        ) if not self.groups else _ui(
+            "Group 1 confirmed: %d waveguides, %.3f µm.\n\n"
+            "The selection has been cleared. Select the second group (one or more cells), "
+            "then click OK to calculate the length difference.",
+            "第一组已确认：%d 个波导，%.3f µm。\n\n"
+            "已清空选择。请选取第二组波导（可选多个波导 cell），选取完后按确定计算长度差。",
+        ) % (sum(item["copies"] for item in self.groups[0]), _group_length(self.groups[0]))
+        self.prompt.setText(text + "\n\n" + _ui(
+            "You can select cells while this window is open. Do not edit or switch layouts during selection.",
+            "此窗口打开时仍可操作版图选择器件。选取期间请勿编辑或切换版图。",
+        ))
+
+    def show(self):
+        if not _value(self.dialog, "visible"):
+            position_dialog_center_right(self.dialog)
+        self.dialog.show()
+        self.dialog.raise_()
+        self.dialog.activateWindow()
+
+    def _finished(self, _result):
+        global _selection_session
+        if _selection_session is self:
+            _selection_session = None
+        self.dialog.deleteLater()
+
+    def _confirm(self):
+        try:
+            view, layout, cell = _active_context()
+            if (view != self.view or layout != self.layout or cell.cell_index() != self.cell_index
+                    or _value(view, "active_cellview_index") != self.cv_index):
+                raise RuntimeError(_ui(
+                    "The active layout or cell changed. Restart the group selection.",
+                    "当前版图或编辑 cell 已切换，请重新开始分组选取。",
+                ))
+            details = describe_selected_length_objects(view.object_selection, self.cv_index)
+        except Exception as error:
+            # 空组允许原步骤补选；其他无效器件或上下文变化取消全部结果。
+            if not isinstance(error, WaveguideLengthError) or error.reason != "empty":
+                self.dialog.reject()
+            _warning(self.title, _selection_error(error))
+            return
+        self.groups.append(details)
+        if len(self.groups) == 1:
+            self.view.object_selection = []
+            self._update_prompt()
+        else:
+            self.confirm.setEnabled(False)
+            self.dialog.accept()
+            _show_results(self.title, _result_message(self.groups), "calculate_waveguide_length_difference")
+
+
+def calculate_waveguide_length_difference():
+    """菜单重复触发时复用正在选取的窗口，避免两组状态交叉。"""
+    global _selection_session
+    try:
+        if _selection_session is None:
+            _selection_session = _GroupSelection()
+        _selection_session.show()
     except Exception as error:
-        pya.MessageBox.warning(
-            title,
-            _ui("Unable to calculate waveguide length difference:\n", "无法计算波导长度差：\n") + str(error),
-            pya.MessageBox.Ok,
-        )
-        return
-    _show_results(title, _result_message(details, difference), "calculate_waveguide_length_difference")
+        _warning(_ui("Calculate Waveguide Length Difference", "计算波导长度差"), _selection_error(error))
