@@ -50,7 +50,7 @@
 
 ## Runtime Reload
 
-- `JNU_MWP_SOI_PDK V1.7 → Reload JNU PDK` 在当前菜单回调退出后异步执行，避免重建菜单时销毁正在触发的 Action。待触发的单次 timer 只能由 `reload_pdk` 模块级引用保存，禁止写入或读取 `MainWindow` 的动态 Python 属性；重复触发必须合并为一次。
+- `JNU_MWP_SOI_PDK V1.8 → Reload JNU PDK` 在当前菜单回调退出后异步执行，避免重建菜单时销毁正在触发的 Action。待触发的单次 timer 只能由 `reload_pdk` 模块级引用保存，禁止写入或读取 `MainWindow` 的动态 Python 属性；重复触发必须合并为一次。
 - 清除 `JNU_MWP_pcells`、`JNU_MWP_tools` 与 `JNULib` 模块缓存后从磁盘重新导入；同名公开库只保留一个，并调用 `Library.refresh()` 更新全部 client layout。
 - 对已打开 layout 中现存的 `Waveguide` / `Composite_Waveguide` 以同名新声明调用 `register_pcell`，保持 PCell ID 不变，再调用 `Layout.refresh()` 重算已有 variant。
 - 菜单宏注册必须幂等：删除全部已知 action item、替换主窗口持久 action 列表后再插入。重建前以稳定 action ID 保存当前 `pya.Action.shortcut`；若当前值已为空，则从 `Application.get_config("key-bindings")` 中相同完整菜单路径恢复，且不得改写用户配置。成功只写短暂状态栏消息，失败弹窗且不得删除用户布局对象。

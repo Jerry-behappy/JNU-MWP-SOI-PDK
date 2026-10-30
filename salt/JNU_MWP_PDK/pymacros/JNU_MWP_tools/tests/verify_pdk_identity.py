@@ -32,7 +32,7 @@ def _probe():
 
     app = pya.Application.instance()
     window = app.main_window()
-    assert MENU_TITLE == "JNU_MWP_SOI_PDK V1.7"
+    assert MENU_TITLE == "JNU_MWP_SOI_PDK V1.8"
     assert pya.Technology.has_technology(TECHNOLOGY_NAME)
     assert not pya.Technology.has_technology(LEGACY_TECHNOLOGY_NAME)
     assert app.get_config("initial-technology") == TECHNOLOGY_NAME
