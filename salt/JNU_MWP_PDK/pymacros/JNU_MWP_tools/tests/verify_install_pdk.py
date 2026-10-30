@@ -92,6 +92,7 @@ def main():
         installer.install_public(home)
         assert installer.probe_main_update(home) is None
         assert installer._repo_identity('https://github.com/Jerry-behappy/JNU-MWP-SOI-PDK.git') == installer._repo_identity('https://github.com/Jinan-Photonics-Integration-Center/JNU-MWP-SOI-PDK.git')
+        assert installer._repo_identity('https://github.com/Jerry-behappy/JNU-MWP-SOI-Library.git') == installer._repo_identity('https://github.com/Jinan-Photonics-Integration-Center/JNU-MWP-SOI-Library.git')
         (checkout / 'user-note.txt').write_text('preserve', encoding='utf-8')
         (public / "update.txt").write_text("new version", encoding="utf-8")
         git(public, "add", ".")

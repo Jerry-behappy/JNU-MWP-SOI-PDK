@@ -41,7 +41,7 @@
 
 - `main` 安装版每次启动会后台检查 GitHub 更新；发现新版可点击弹窗中的“立即更新”，也可使用 **JNU_MWP_SOI_PDK V1.8 → Check for PDK Updates**。开发分支不自动提示更新；完成更新后重启 KLayout。
 - 功能菜单统一以 **中文 / English** 同时显示，无需切换语言。仅修改 Python 功能时可用 **重新加载 JNU PDK / Reload JNU PDK** 热重载；启动宏、Technology 或安装路径变动后仍应重启。
-- 获授权后使用 **JNU_MWP_SOI_PDK V1.8 → Install / Update Whitebox Library**，从独立 [JNU-MWP-SOI-Library](https://github.com/Jerry-behappy/JNU-MWP-SOI-Library) 安装 31 份固定白盒；公开 PDK 仓库不包含白盒 GDS。
+- 获授权后使用 **JNU_MWP_SOI_PDK V1.8 → Install / Update Whitebox Library**，从独立 [JNU-MWP-SOI-Library](https://github.com/Jinan-Photonics-Integration-Center/JNU-MWP-SOI-Library) 安装 31 份固定白盒；公开 PDK 仓库不包含白盒 GDS。
 
 ## 功能与使用说明
 

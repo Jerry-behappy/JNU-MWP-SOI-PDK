@@ -99,7 +99,7 @@
 
 ### Offline Laboratory Package
 
-- 公开代码仓库为 `Jerry-behappy/JNU-MWP-SOI-PDK`，私有固定器件仓库为 `Jerry-behappy/JNU-MWP-SOI-Library`。运行时继续从安装包内 `pymacros/JNU_MWP_gds` 加载；独立器件仓库不直接作为未经认证的公共 Salt 依赖。
+- 公开代码仓库为 `Jinan-Photonics-Integration-Center/JNU-MWP-SOI-PDK`，私有固定器件仓库为 `Jinan-Photonics-Integration-Center/JNU-MWP-SOI-Library`。运行时继续从安装包内 `pymacros/JNU_MWP_gds` 加载；独立器件仓库不直接作为未经认证的公共 Salt 依赖。
 - 完整内部交付使用 `release/package_lab_pdk.py --gds-source <checkout/JNU_MWP_gds> --output <新目录> --zip`；源码、私有 GDS checkout、本机正在使用的 PDK 都不因构建而修改。GDS 数量以所选器件版本为准，不硬编码为本机开发目录数量。
 - 交付使用 `grain.xml` 和 `JNU_MWP_PDK_Startup.lym`；接收方运行 `Open_Lab_Package_Manager.ps1` 生成本地 Salt 索引，再通过 Manage Packages 安装、更新和卸载。更新提高 grain 版本号，库名和 Technology 名保持稳定。
 - 早期启动宏不能导入 `JNULib` 或 SiEPIC；公开库保留 `pymacros/__init__.py` 普通 autorun 入口，主窗口建立后才允许桥接 EBeam。SiEPIC 的 `_globals.Python_Env` 在首次导入时缓存，提前导入会跳过 `setup` 并导致 EBeam 宏菜单挂到错误位置。

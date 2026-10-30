@@ -16,7 +16,7 @@ import threading
 
 
 PUBLIC_URL = "https://github.com/Jinan-Photonics-Integration-Center/JNU-MWP-SOI-PDK.git"
-PRIVATE_URL = "https://github.com/Jerry-behappy/JNU-MWP-SOI-Library.git"
+PRIVATE_URL = "https://github.com/Jinan-Photonics-Integration-Center/JNU-MWP-SOI-Library.git"
 PDK_RELATIVE = Path("salt/JNU_MWP_PDK")
 PRIVATE_SYNC_MANIFEST = ".jnu_private_gds_sync.json"
 
@@ -149,6 +149,8 @@ def _repo_identity(url):
         "git@github.com:", "https://github.com/").rstrip("/")
     if identity.lower() == "https://github.com/jerry-behappy/jnu-mwp-soi-pdk":
         return "https://github.com/Jinan-Photonics-Integration-Center/JNU-MWP-SOI-PDK"
+    if identity.lower() == "https://github.com/jerry-behappy/jnu-mwp-soi-library":
+        return "https://github.com/Jinan-Photonics-Integration-Center/JNU-MWP-SOI-Library"
     return identity
 
 
