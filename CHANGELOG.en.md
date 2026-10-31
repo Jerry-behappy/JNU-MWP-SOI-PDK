@@ -9,6 +9,10 @@
 
 Updates are listed newest first. Historical dates follow Git commit dates in Beijing time (UTC+8). Related changes on the same day are grouped; the full commit history shows the content and timestamp of every commit.
 
+## 2026-10-31 · DRC deep trench layer
+
+- Use layer 201/0 for deep trench spacing checks against metal.
+
 ## 2026-10-30 · Whitebox library organization transfer
 
 - Move the private whitebox repository into the organization, update the installer URL and retain compatibility with existing checkouts.

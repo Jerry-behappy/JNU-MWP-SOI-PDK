@@ -16,7 +16,7 @@
  <interpreter>dsl</interpreter>
  <dsl-interpreter-name>drc-dsl-xml</dsl-interpreter-name>
  <text># 创建者: Junyi Zhang
-# 时间: 2026-08
+# 时间: 2026-10
 
 # 暨南大学微波光子实验室 DRC 检查脚本
 # 在 KLayout Macro Development 中编辑并使用原生保存功能持久化。
@@ -36,7 +36,7 @@ LayerFP = input(99)               # 版图边界/允许设计区域
 LayerM1 = input(11, 0)            # 金属 1 层
 LayerM2 = input(12, 0)            # 金属 2 层
 LayerMLOpen = input(13, 0)        # 金属焊盘开口层
-LayerDeepTrench = input(40, 0)    # 深槽隔离层
+LayerDeepTrench = input(201, 0)   # 深槽隔离层
 
 #################
 # 非物理规则检查（功能检查）
